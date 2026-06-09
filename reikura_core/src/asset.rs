@@ -66,6 +66,10 @@ impl AssetManager {
         })
     }
 
+    pub fn load_data(&mut self, name: &str) -> Result<Vec<u8>> {
+        self.data.get_asset(name)
+    }
+
     pub fn load_image(&mut self, name: &str) -> Result<Image> {
         if let Some(image) = self.cache.image.get(name) {
             return Ok(image.clone());
@@ -78,7 +82,7 @@ impl AssetManager {
         Ok(image)
     }
 
-    pub fn load_scenario(&mut self, name: &str) -> Result<Scenario> {
+    pub fn load_scene(&mut self, name: &str) -> Result<Scenario> {
         if let Some(scene) = self.cache.scene.get(name) {
             return Ok(scene.into());
         }
