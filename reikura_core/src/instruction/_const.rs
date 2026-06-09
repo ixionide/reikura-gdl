@@ -54,6 +54,19 @@ pub const INSTRUCTIONS: [InstFn; 256] = const {
     insts[0x31] = Sk::execute;
     insts[0x32] = Sks::execute;
     insts[0x33] = Hf::execute;
+    insts[0x34] = Ft::execute;
+    // insts[0x35] = Sp::execute;
+    // insts[0x36] = Hp::execute;
+    // insts[0x37] = Sts::execute;
+    // insts[0x38] = Es::execute;
+    // insts[0x39] = Ec::execute;
+    // insts[0x3A] = Stc::execute;
+    insts[0x3B] = Hn::execute;
+    // insts[0x3C] = Hxp::execute;
+    insts[0x40] = Hln::execute;
+    insts[0x41] = Hs::execute;
+    insts[0x42] = Hinc::execute;
+    insts[0x43] = Hdec::execute;
 
     insts
 };

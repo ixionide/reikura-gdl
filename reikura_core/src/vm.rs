@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    io::{Seek, SeekFrom},
     time::{Duration, Instant},
 };
 
@@ -33,6 +34,11 @@ impl Vm {
         let inst = INSTRUCTIONS[op as usize];
         let info = self.scene.param()?;
         inst(self, info)?;
+
+        if info.end_of_scenario() {
+            self.scene.seek(SeekFrom::End(0))?;
+        }
+
         Ok(())
     }
 }

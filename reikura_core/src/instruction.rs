@@ -33,6 +33,20 @@ mod sks;
 pub use sks::Sks;
 mod hf;
 pub use hf::Hf;
+mod ft;
+pub use ft::Ft;
+// todo
+mod hn;
+pub use hn::Hn;
+// todo
+mod hln;
+pub use hln::Hln;
+mod hs;
+pub use hs::Hs;
+mod hinc;
+pub use hinc::Hinc;
+mod hdec;
+pub use hdec::Hdec;
 
 pub use _const::INSTRUCTIONS;
 pub use _param::*;
