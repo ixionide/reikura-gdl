@@ -5,7 +5,10 @@ use std::{
 
 use reikura_util::{bitset::BitSet, variable::Variables};
 
-use crate::{AssetManager, Config, Manifest, Scenario};
+use crate::{
+    AssetManager, Config, Manifest, Scenario,
+    instruction::{INSTRUCTIONS, ReadParam},
+};
 
 pub struct VmContext {
     pub flags: BitSet,
@@ -22,4 +25,14 @@ pub struct Vm {
     pub config: Config,
     pub ctx: VmContext,
     pub scene: Scenario,
+}
+
+impl Vm {
+    pub fn update(&mut self) -> anyhow::Result<()> {
+        let op = self.scene.read_opcode()?;
+        let inst = INSTRUCTIONS[op as usize];
+        let info = self.scene.param()?;
+        inst(self, info)?;
+        Ok(())
+    }
 }

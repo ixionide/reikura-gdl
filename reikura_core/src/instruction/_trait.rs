@@ -1,11 +1,17 @@
 use anyhow::Result;
 use reikura_util::io::{ReadEndian, ReadExt};
 
-use crate::{Scenario, Vm, vm::VmContext};
+use crate::{Scenario, Vm, instruction::InstructionInfo, vm::VmContext};
 
 pub trait Instruction {
-    fn execute(vm: &mut Vm) -> Result<()> {
+    fn execute(vm: &mut Vm, _info: InstructionInfo) -> Result<()> {
         let _ = vm;
+        Ok(())
+    }
+
+    fn skip(vm: &mut Vm, info: InstructionInfo) -> Result<()> {
+        // unsupported instruction. we skip this instruction
+        vm.scene.ip += info.param_length();
         Ok(())
     }
 }

@@ -1,10 +1,11 @@
-use crate::instruction::{Instruction, ReadParam};
+use crate::instruction::{Instruction, InstructionInfo, ReadParam};
 
 pub struct Js;
 
 impl Instruction for Js {
-    fn execute(vm: &mut crate::Vm) -> anyhow::Result<()> {
+    fn execute(vm: &mut crate::Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         let sub_index: u16 = vm.scene.param()?;
-        vm.scene.call_sub(sub_index as _)
+
+        vm.scene.call_sub(sub_index)
     }
 }
