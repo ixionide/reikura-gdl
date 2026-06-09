@@ -3,6 +3,9 @@ name = "reikura_core"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [dependencies]
 reikura_util = { workspace = true }
 

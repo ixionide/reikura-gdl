@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, bail};
 
 use crate::format::{
     gga::Gga,
@@ -23,7 +23,7 @@ impl Image {
             b"GGA00000" => Gga::load(name, data),
             [0xCD, 0xCA, 0xC9, 0xB8, ..] => Ggd256g::load(name, data),
             [0xB9, 0xAA, 0xB3, 0xB3, ..] => GgdFull::load(name, data),
-            unk => Err(anyhow!("unknown image format with magic: {unk:?}")),
+            unk => bail!("unknown image format with magic: {unk:?}"),
         }
     }
 }

@@ -14,9 +14,9 @@ impl<I: Into<usize>, V> Deref for IndexVec<I, V> {
     }
 }
 
-impl<I: Into<usize>, V> Into<Vec<V>> for IndexVec<I, V> {
-    fn into(self) -> Vec<V> {
-        self.0
+impl<I: Into<usize>, V> From<IndexVec<I, V>> for Vec<V> {
+    fn from(val: IndexVec<I, V>) -> Self {
+        val.0
     }
 }
 
@@ -26,13 +26,14 @@ impl<I: Into<usize>, V> From<Vec<V>> for IndexVec<I, V> {
     }
 }
 
-impl<I: ReadEndian + Into<usize>, V: ReadEndian + Default + Copy> ReadEndian for IndexVec<I, V> {
+impl<I: ReadEndian + Into<usize>, V: ReadEndian> ReadEndian for IndexVec<I, V> {
     fn read_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self> {
         let len = I::read_le(reader)?.into();
-        let mut values = vec![V::default(); len];
+        let mut values = Vec::with_capacity(len);
 
-        for val in values.iter_mut() {
-            *val = V::read_le(reader)?;
+        for _ in 0..len {
+            let val = V::read_le(reader)?;
+            values.push(val);
         }
 
         Ok(Self(values, PhantomData))
@@ -40,10 +41,11 @@ impl<I: ReadEndian + Into<usize>, V: ReadEndian + Default + Copy> ReadEndian for
 
     fn read_be<R: Read + ?Sized>(reader: &mut R) -> Result<Self> {
         let len = I::read_be(reader)?.into();
-        let mut values = vec![V::default(); len];
+        let mut values = Vec::with_capacity(len);
 
-        for val in values.iter_mut() {
-            *val = V::read_be(reader)?;
+        for _ in 0..len {
+            let val = V::read_be(reader)?;
+            values.push(val);
         }
 
         Ok(Self(values, PhantomData))

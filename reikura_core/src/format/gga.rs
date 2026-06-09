@@ -1,7 +1,4 @@
-use std::{
-    io::{Cursor, Read},
-    rc::Rc,
-};
+use std::io::{Cursor, Read};
 
 use anyhow::Result;
 use reikura_util::{

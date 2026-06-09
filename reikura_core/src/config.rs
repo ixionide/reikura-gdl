@@ -30,7 +30,7 @@ impl Config {
         }
 
         let mmap = unsafe { MmapMut::map_mut(&file)? };
-        Ok(mmap.into())
+        Ok(Self(mmap))
     }
 
     pub fn fullscreen(&self) -> bool {
@@ -111,11 +111,5 @@ impl Config {
     pub fn reset_to_default(&mut self) {
         let len = DEFAULT.len();
         self.0[..len].copy_from_slice(DEFAULT);
-    }
-}
-
-impl From<MmapMut> for Config {
-    fn from(value: MmapMut) -> Self {
-        Self(value)
     }
 }

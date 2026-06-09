@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, bail};
 use reikura_util::io::ReadExt;
 
 use crate::format::isf::IsfMetadata;
@@ -89,11 +89,9 @@ impl Scenario {
     }
 
     pub fn jump_sub(&mut self, index: u16) -> Result<()> {
-        let err = |total| anyhow!("jump table index out of bounds: {index} >= {total}");
-
         match self.jump_table.get(index as usize).copied() {
             Some(pos) => self.ip = pos,
-            None => return Err(err(self.sub_count())),
+            None => bail!("jump table index out of bounds: {index}"),
         }
 
         Ok(())
