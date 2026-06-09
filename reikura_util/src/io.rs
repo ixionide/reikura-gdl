@@ -1,0 +1,137 @@
+use std::io::{Read, Result, Write};
+
+pub trait ReadEndian: Sized {
+    fn read_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self>;
+    fn read_be<R: Read + ?Sized>(reader: &mut R) -> Result<Self>;
+}
+
+pub trait WriteEndian: Sized {
+    fn write_le<W: Write + ?Sized>(self, writer: &mut W) -> Result<()>;
+    fn write_be<W: Write + ?Sized>(self, writer: &mut W) -> Result<()>;
+}
+
+macro_rules! impl_endian {
+    ($($type:ty),*) => ($(
+        impl ReadEndian for $type {
+            #[inline]
+            fn read_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self> {
+                let mut buf = [0; size_of::<$type>()];
+                reader.read_exact(&mut buf)?;
+                Ok(<$type>::from_le_bytes(buf))
+            }
+
+            #[inline]
+            fn read_be<R: Read + ?Sized>(reader: &mut R) -> Result<Self> {
+                let mut buf = [0; size_of::<$type>()];
+                reader.read_exact(&mut buf)?;
+                Ok(<$type>::from_be_bytes(buf))
+            }
+        }
+        impl<const N: usize> ReadEndian for [$type; N] {
+            fn read_le<R: Read + ?Sized>(mut reader: &mut R) -> Result<Self> {
+                let mut buf = [0; N];
+                for ele in buf.iter_mut() {
+                    *ele = reader.read_le()?;
+                }
+
+                Ok(buf)
+            }
+            fn read_be<R: Read + ?Sized>(mut reader: &mut R) -> Result<Self> {
+                let mut buf = [0; N];
+
+                for ele in buf.iter_mut() {
+                    *ele = reader.read_be()?;
+                }
+
+                Ok(buf)
+            }
+        }
+
+        impl WriteEndian for $type {
+            #[inline]
+            fn write_le<W: Write + ?Sized>(self, writer: &mut W) -> Result<()> {
+                let buf = <$type>::to_le_bytes(self);
+                writer.write_all(&buf)?;
+                Ok(())
+            }
+            #[inline]
+            fn write_be<W: Write + ?Sized>(self, writer: &mut W) -> Result<()> {
+                let buf = <$type>::to_be_bytes(self);
+                writer.write_all(&buf)?;
+                Ok(())
+            }
+        }
+        impl WriteEndian for &$type {
+            #[inline]
+            fn write_le<W: Write + ?Sized>(self, writer: &mut W) -> Result<()> {
+                let buf = self.to_le_bytes();
+                writer.write_all(&buf)?;
+                Ok(())
+            }
+            #[inline]
+            fn write_be<W: Write + ?Sized>(self, writer: &mut W) -> Result<()> {
+                let buf = self.to_be_bytes();
+                writer.write_all(&buf)?;
+                Ok(())
+            }
+        }
+        impl<const N: usize> WriteEndian for [$type; N] {
+            fn write_le<W: Write + ?Sized>(self, mut writer: &mut W) -> Result<()> {
+                for ele in self {
+                    writer.write_le(ele)?;
+                }
+
+                Ok(())
+            }
+            fn write_be<W: Write + ?Sized>(self, mut writer: &mut W) -> Result<()> {
+                for ele in self {
+                    writer.write_be(ele)?;
+                }
+
+                Ok(())
+            }
+        }
+    )*)
+}
+
+impl_endian!(i8, i16, i32, i64);
+impl_endian!(u8, u16, u32, u64);
+
+pub trait ReadExt: Read {
+    #[inline]
+    fn read_bytes<const N: usize>(&mut self) -> Result<[u8; N]> {
+        let mut buf = [0; N];
+        self.read_exact(&mut buf)?;
+        Ok(buf)
+    }
+
+    #[inline]
+    fn read_le<T: ReadEndian>(&mut self) -> Result<T> {
+        T::read_le(self)
+    }
+
+    #[inline]
+    fn read_be<T: ReadEndian>(&mut self) -> Result<T> {
+        T::read_be(self)
+    }
+}
+
+pub trait WriteExt: Write {
+    #[inline]
+    fn write_bytes<B: AsRef<[u8]>>(&mut self, bytes: B) -> Result<()> {
+        self.write_all(bytes.as_ref())
+    }
+
+    #[inline]
+    fn write_le<T: WriteEndian>(&mut self, value: T) -> Result<()> {
+        T::write_le(value, self)
+    }
+
+    #[inline]
+    fn write_be<T: WriteEndian>(&mut self, value: T) -> Result<()> {
+        T::write_be(value, self)
+    }
+}
+
+impl<T: Read> ReadExt for T {}
+impl<T: Write> WriteExt for T {}

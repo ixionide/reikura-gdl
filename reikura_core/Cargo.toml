@@ -1,0 +1,12 @@
+[package]
+name = "reikura_core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reikura_util = { workspace = true }
+
+anyhow = { workspace = true }
+fastrand = "2.4.1"
+lru = "0.18.0"
+memmap2 = { workspace = true }
