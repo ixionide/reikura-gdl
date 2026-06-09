@@ -1,3 +1,5 @@
+use std::io::Seek;
+
 use anyhow::Result;
 use reikura_util::io::{ReadEndian, ReadExt};
 
@@ -11,7 +13,7 @@ pub trait Instruction {
 
     fn skip(vm: &mut Vm, info: InstructionInfo) -> Result<()> {
         // unsupported instruction. we skip this instruction
-        vm.scene.ip += info.param_length();
+        vm.scene.seek_relative(info.param_length() as i64)?;
         Ok(())
     }
 }
