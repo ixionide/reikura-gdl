@@ -16,7 +16,7 @@ impl Instruction for Ft {
             // copy in descending order
             for i in range.rev() {
                 match vm.ctx.flags.get(src + i) {
-                    Some(value) => vm.ctx.flags.set(dst + i, value),
+                    Some(val) => vm.ctx.flags.set(dst + i, val),
                     None => bail!("flag index out of bounds: {}", src + i),
                 };
             }
@@ -24,7 +24,7 @@ impl Instruction for Ft {
             // copy in ascending order
             for i in range {
                 match vm.ctx.flags.get(src + i) {
-                    Some(value) => vm.ctx.flags.set(dst + i, value),
+                    Some(val) => vm.ctx.flags.set(dst + i, val),
                     None => bail!("flag index out of bounds: {}", src + i),
                 };
             }
