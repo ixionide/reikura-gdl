@@ -12,7 +12,6 @@ on:
 jobs:
   code-check:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -26,34 +25,20 @@ jobs:
 
   build-win:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        target:
-          - i686-pc-windows-gnu
-          - i686-pc-windows-msvc
-          - x86_64-pc-windows-gnu
-          - x86_64-pc-windows-msvc
-
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable-${{ matrix.target }}
+          targets: i686-pc-windows-gnu,i686-pc-windows-msvc,x86_64-pc-windows-gnu,x86_64-pc-windows-msvc
       - name: Build
-        run: cargo build
+        run: cargo build --all-targets
 
   build-linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - i686-unknown-linux-gnu
-          - x86_64-unknown-linux-gnu
-
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable-${{ matrix.target }}
+          targets: i686-unknown-linux-gnu,i686-unknown-linux-musl,x86_64-unknown-linux-gnu,x86_64-unknown-linux-musl,x86_64-linux-android
       - name: Build
-        run: cargo build
+        run: cargo build --all-targets
