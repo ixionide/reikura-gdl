@@ -47,6 +47,8 @@ mod hinc;
 pub use hinc::Hinc;
 mod hdec;
 pub use hdec::Hdec;
+mod calc;
+pub use calc::Calc;
 
 pub use _const::INSTRUCTIONS;
 pub use _param::*;
