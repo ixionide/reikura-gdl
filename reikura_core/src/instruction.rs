@@ -49,6 +49,10 @@ mod hdec;
 pub use hdec::Hdec;
 mod calc;
 pub use calc::Calc;
+mod hsg;
+pub use hsg::Hsg;
+mod ht;
+pub use ht::Ht;
 
 pub use _const::INSTRUCTIONS;
 pub use _param::*;

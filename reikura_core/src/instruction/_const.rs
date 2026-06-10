@@ -68,6 +68,9 @@ pub const INSTRUCTIONS: [InstFn; 256] = const {
     insts[0x42] = Hinc::execute;
     insts[0x43] = Hdec::execute;
     insts[0x44] = Calc::execute;
+    insts[0x45] = Hsg::execute;
+    insts[0x46] = Ht::execute;
+    // insts[0x47] = If::execute;
 
     insts
 };
