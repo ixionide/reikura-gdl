@@ -5,6 +5,7 @@ pub mod format;
 mod image;
 pub mod instruction;
 mod manifest;
+mod save;
 mod scenario;
 mod vm;
 
@@ -13,5 +14,6 @@ pub use cache::CacheManager;
 pub use config::Config;
 pub use image::{Image, ImageDecoder};
 pub use manifest::Manifest;
+pub use save::SaveManager;
 pub use scenario::{Scenario, ScenarioCache};
 pub use vm::Vm;
