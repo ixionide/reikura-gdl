@@ -25,7 +25,7 @@ pub struct Vm {
     pub assets: AssetManager,
     pub config: Config,
     pub ctx: VmContext,
-    pub save: SaveManager,
+    pub save: Option<SaveManager>,
     pub scene: Scenario,
 }
 

@@ -53,6 +53,10 @@ mod hsg;
 pub use hsg::Hsg;
 mod ht;
 pub use ht::Ht;
+mod r#if;
+pub use r#if::If;
+mod exa;
+pub use exa::Exa;
 
 pub use _const::INSTRUCTIONS;
 pub use _param::*;
