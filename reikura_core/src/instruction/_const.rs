@@ -70,7 +70,14 @@ pub const INSTRUCTIONS: [InstFn; 256] = const {
     insts[0x44] = Calc::execute;
     insts[0x45] = Hsg::execute;
     insts[0x46] = Ht::execute;
-    // insts[0x47] = If::execute;
+    insts[0x47] = If::execute;
+    insts[0x48] = Exa::execute;
+    // insts[0x49] = Exs::execute;
+    // insts[0x4A] = Exc::execute;
+    // insts[0x4B] = Scp::execute;
+    // insts[0x4C] = Ssp::execute;
+    // insts[0x50] = Vset::execute;
+    // insts[0x51] = Gn::execute;
 
     insts
 };
