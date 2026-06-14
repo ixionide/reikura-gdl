@@ -41,32 +41,31 @@ impl Manifest {
         let bytes = std::fs::read(&suf_path)?;
         let content = decode_sjis(bytes)?;
 
+        let mut root_section = HashMap::new();
         let mut startup_info_section = HashMap::new();
         let mut game_info_section = HashMap::new();
         let mut reikura_info_section = HashMap::new();
 
-        let mut current_section = String::new();
+        let mut current_section = &mut root_section;
 
         for line in content.lines().map(str::trim) {
             if line.starts_with('[') && line.ends_with(']') {
-                current_section = line.into();
-                continue;
+                current_section = match line {
+                    STARTUP_INFO => &mut startup_info_section,
+                    GAME_INFO => &mut game_info_section,
+                    REIKURA_INFO => &mut reikura_info_section,
+                    _ => &mut root_section,
+                };
+            } else {
+                let Some((key, value)) = line.split_once('=') else {
+                    bail!("invalid key value pair: {line}");
+                };
+
+                let key = key.trim().to_string();
+                let value = value.trim().to_string();
+
+                current_section.insert(key, value);
             }
-
-            let Some((key, value)) = line.split_once('=') else {
-                bail!("invalid key value pair: {line}");
-            };
-
-            let key = key.trim().to_string();
-            let value = value.trim().to_string();
-
-            match current_section.as_str() {
-                STARTUP_INFO => &mut startup_info_section,
-                GAME_INFO => &mut game_info_section,
-                REIKURA_INFO => &mut reikura_info_section,
-                _ => continue,
-            }
-            .insert(key, value);
         }
 
         let Some(key) = startup_info_section.remove(KEY) else {
