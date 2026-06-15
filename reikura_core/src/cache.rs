@@ -2,18 +2,18 @@
 //     fn mem_size(&self) -> usize;
 // }
 
-use std::{num::NonZeroUsize, rc::Rc};
+use std::num::NonZeroUsize;
 
 use lru::LruCache;
 
-use crate::{Image, ScenarioCache};
+use crate::{Audio, Image, ScenarioCache};
 
 pub struct CacheManager {
     pub image: LruCache<String, Image>,
     pub scene: LruCache<String, ScenarioCache>,
-    pub voice: LruCache<String, Rc<[u8]>>,
-    pub sfx: LruCache<String, Rc<[u8]>>,
-    pub bgm: LruCache<String, Rc<[u8]>>,
+    pub voice: LruCache<String, Audio>,
+    pub sfx: LruCache<String, Audio>,
+    pub bgm: LruCache<String, Audio>,
 }
 
 impl CacheManager {
