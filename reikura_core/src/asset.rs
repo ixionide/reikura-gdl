@@ -82,6 +82,18 @@ impl AssetManager {
         Ok(image)
     }
 
+    pub fn load_image_wipe(&mut self, name: &str) -> Result<Image> {
+        if let Some(image) = self.cache.image.get(name) {
+            return Ok(image.clone());
+        }
+
+        let data = self.data.get_asset(name)?;
+        let image = Image::load(name, &data)?;
+        self.cache.image.put(name.to_string(), image.clone());
+
+        Ok(image)
+    }
+
     pub fn load_scene(&mut self, name: &str) -> Result<Scenario> {
         if let Some(scene) = self.cache.scene.get(name) {
             return Ok(scene.into());
