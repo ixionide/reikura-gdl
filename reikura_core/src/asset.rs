@@ -3,12 +3,11 @@ use std::{
     fs::File,
     io::{Read, Seek, SeekFrom},
     path::Path,
-    rc::Rc,
 };
 
 use anyhow::{Context, Result, anyhow};
 
-use crate::{CacheManager, Image, Scenario, format::sm2mpx10::Sm2mpx10};
+use crate::{Audio, CacheManager, Image, Scenario, format::sm2mpx10::Sm2mpx10};
 
 const DATA: &str = "data";
 const GGD: &str = "ggd";
@@ -106,41 +105,49 @@ impl AssetManager {
         Ok(scene)
     }
 
-    pub fn load_sfx(&mut self, name: &str) -> Result<Rc<[u8]>> {
+    pub fn load_sfx(&mut self, name: &str) -> Result<Audio> {
         if let Some(data) = self.cache.sfx.get(name) {
             return Ok(data.clone());
         }
 
-        let data: Rc<[u8]> = self.sfx.get_asset(name)?.into();
-        self.cache.sfx.put(name.to_string(), data.clone());
+        let data = self.sfx.get_asset(name)?;
+        let audio = Audio::load(name, data)?;
+        self.cache.sfx.put(name.to_string(), audio.clone());
 
-        Ok(data)
+        Ok(audio)
     }
 
-    pub fn load_bgm(&mut self, name: &str) -> Result<Rc<[u8]>> {
+    pub fn load_bgm(&mut self, name: &str) -> Result<Audio> {
         if let Some(data) = self.cache.bgm.get(name) {
             return Ok(data.clone());
         }
 
-        let data: Rc<[u8]> = match &mut self.bgm_midi {
-            Some(arc) => arc.get_asset(name),
-            None => self.bgm.get_asset(name),
-        }?
-        .into();
-        self.cache.bgm.put(name.to_string(), data.clone());
+        let audio = match &mut self.bgm_midi {
+            Some(arc) => {
+                let _data = arc.get_asset(name)?;
+                todo!(); // Audio::load_midi
+            }
+            None => {
+                let data = self.bgm.get_asset(name)?;
+                Audio::load(name, data)?
+            }
+        };
 
-        Ok(data)
+        self.cache.bgm.put(name.to_string(), audio.clone());
+
+        Ok(audio)
     }
 
-    pub fn load_voice(&mut self, name: &str) -> Result<Rc<[u8]>> {
+    pub fn load_voice(&mut self, name: &str) -> Result<Audio> {
         if let Some(data) = self.cache.voice.get(name) {
             return Ok(data.clone());
         }
 
-        let data: Rc<[u8]> = self.voice.get_asset(name)?.into();
-        self.cache.voice.put(name.to_string(), data.clone());
+        let data = self.voice.get_asset(name)?;
+        let audio = Audio::load(name, data)?;
+        self.cache.voice.put(name.to_string(), audio.clone());
 
-        Ok(data)
+        Ok(audio)
     }
 }
 

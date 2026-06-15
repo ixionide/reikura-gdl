@@ -8,7 +8,7 @@ use kira::{
     track::{TrackBuilder, TrackHandle},
 };
 
-pub const MAX_SE_SLOT: usize = 32;
+pub const MAX_SFX_SLOT: usize = 32;
 
 const DEFAULT_TWEEN: Tween = Tween {
     start_time: StartTime::Immediate,
@@ -47,7 +47,7 @@ pub struct AudioManager {
     _manager: kira::AudioManager,
     pub track: AllTrack,
     pub bgm: Option<Audio>,
-    pub sfx: Option<Audio>,
+    pub sfx: [Option<Audio>; MAX_SFX_SLOT],
     pub voice: Option<Audio>,
 }
 
@@ -61,7 +61,7 @@ impl AudioManager {
             _manager: kira_manager,
             track,
             bgm: None,
-            sfx: None,
+            sfx: [const { None }; MAX_SFX_SLOT],
             voice: None,
         })
     }
@@ -95,9 +95,9 @@ impl AudioManager {
         self.track.bgm.stop_audio(fade_duration.map(tween_duration));
     }
 
-    pub fn play_sfx(&mut self, slot: u8, fade_duration: Option<Duration>) -> Result<()> {
-        let Some(audio) = self.sfx.take() else {
-            bail!("no sfx loaded");
+    pub fn play_sfx(&mut self, slot: usize, fade_duration: Option<Duration>) -> Result<()> {
+        let Some(audio) = self.sfx[slot].take() else {
+            bail!("no sfx loaded at slot: {slot}");
         };
 
         let Audio { name, mut data } = audio;
@@ -108,16 +108,16 @@ impl AudioManager {
 
         self.track
             .sfx
-            .play_audio_at_slot(slot as usize, data)
+            .play_audio_at_slot(slot, data)
             .with_context(|| format!("failed to play sfx {name}"))?;
 
         Ok(())
     }
 
-    pub fn stop_sfx(&mut self, slot: u8, fade_duration: Option<Duration>) {
+    pub fn stop_sfx(&mut self, slot: usize, fade_duration: Option<Duration>) {
         self.track
             .sfx
-            .stop_audio_at_slot(slot as usize, fade_duration.map(tween_duration));
+            .stop_audio_at_slot(slot, fade_duration.map(tween_duration));
     }
 
     pub fn play_voice(&mut self, fade_duration: Option<Duration>) -> Result<()> {
@@ -148,7 +148,7 @@ impl AudioManager {
 
 pub struct AllTrack {
     pub bgm: Track<1>,
-    pub sfx: Track<MAX_SE_SLOT>,
+    pub sfx: Track<MAX_SFX_SLOT>,
     pub voice: Track<1>,
     pub volume: AllVolume,
 }
@@ -187,7 +187,7 @@ impl<const SLOT: usize> Track<SLOT> {
     }
 
     pub fn play_audio_at_slot(&mut self, slot: usize, sound_data: StaticSoundData) -> Result<()> {
-        let index = slot & SLOT;
+        let index = slot % SLOT;
 
         if let Some(old_handle) = &mut self.slots[index] {
             old_handle.stop(DEFAULT_TWEEN);
@@ -204,7 +204,7 @@ impl<const SLOT: usize> Track<SLOT> {
     }
 
     pub fn stop_audio_at_slot(&mut self, slot: usize, fade_duration: Option<Tween>) {
-        let index = slot & SLOT;
+        let index = slot % SLOT;
 
         if let Some(mut handle) = self.slots[index].take() {
             handle.stop(fade_duration.unwrap_or(DEFAULT_TWEEN));
