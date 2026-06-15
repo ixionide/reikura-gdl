@@ -82,7 +82,7 @@ impl AssetManager {
         Ok(image)
     }
 
-    pub fn load_image_wipe(&mut self, name: &str) -> Result<Image> {
+    pub fn load_wipe_image(&mut self, name: &str) -> Result<Image> {
         if let Some(image) = self.cache.image.get(name) {
             return Ok(image.clone());
         }
