@@ -7,7 +7,7 @@ use std::{
 use reikura_util::{bitset::BitSet, variable::Variables};
 
 use crate::{
-    AssetManager, Config, Manifest, SaveManager, Scenario,
+    AssetManager, AudioManager, Config, Manifest, SaveManager, Scenario,
     instruction::{INSTRUCTIONS, ReadParam},
 };
 
@@ -23,6 +23,7 @@ pub struct VmContext {
 pub struct Vm {
     pub manifest: Manifest,
     pub assets: AssetManager,
+    pub audio: AudioManager,
     pub config: Config,
     pub ctx: VmContext,
     pub save: Option<SaveManager>,
