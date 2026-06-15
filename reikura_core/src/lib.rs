@@ -1,4 +1,5 @@
 mod asset;
+mod audio;
 mod cache;
 mod config;
 pub mod format;
@@ -10,6 +11,7 @@ mod scenario;
 mod vm;
 
 pub use asset::{Archive, AssetManager};
+pub use audio::{Audio, AudioManager};
 pub use cache::CacheManager;
 pub use config::Config;
 pub use image::{Image, ImageDecoder};

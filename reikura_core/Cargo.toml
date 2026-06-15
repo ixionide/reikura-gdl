@@ -12,5 +12,14 @@ reikura_util = { workspace = true }
 anyhow = { workspace = true }
 fastrand = "2.4.1"
 image = { version = "0.25.10", default-features = false, features = ["png", "bmp"] }
+kira = { version = "0.12.0", default-features = false, features = [
+    "cpal",
+    "mp3",
+    "ogg",
+    "vorbis",
+    "wav",
+    "pcm",
+    "adpcm",
+] }
 lru = "0.18.0"
 memmap2 = { workspace = true }
