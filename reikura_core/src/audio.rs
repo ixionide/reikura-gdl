@@ -52,6 +52,22 @@ pub struct AudioManager {
 }
 
 impl AudioManager {
+    pub fn new(bgm_vol: f64, sfx_vol: f64, voice_vol: f64) -> Result<Self> {
+        let mut kira_manager = kira::AudioManager::new(Default::default())?;
+        let volume = AllVolume::new(&mut kira_manager, bgm_vol, sfx_vol, voice_vol)?;
+        let track = AllTrack::new(&mut kira_manager, volume)?;
+
+        Ok(Self {
+            _manager: kira_manager,
+            track,
+            bgm: None,
+            sfx: None,
+            voice: None,
+        })
+    }
+}
+
+impl AudioManager {
     pub fn play_bgm(&mut self, looping: bool, fade_duration: Option<Duration>) -> Result<()> {
         let Some(audio) = self.bgm.take() else {
             bail!("no bgm loaded");
@@ -138,10 +154,10 @@ pub struct AllTrack {
 }
 
 impl AllTrack {
-    pub fn new(audio_manager: &mut kira::AudioManager, volume: AllVolume) -> Result<Self> {
-        let bgm = Track::new(audio_manager, &volume.bgm)?;
-        let sfx = Track::new(audio_manager, &volume.sfx)?;
-        let voice = Track::new(audio_manager, &volume.voice)?;
+    pub fn new(kira_manager: &mut kira::AudioManager, volume: AllVolume) -> Result<Self> {
+        let bgm = Track::new(kira_manager, &volume.bgm)?;
+        let sfx = Track::new(kira_manager, &volume.sfx)?;
+        let voice = Track::new(kira_manager, &volume.voice)?;
 
         Ok(Self {
             bgm,
