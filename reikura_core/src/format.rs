@@ -1,3 +1,4 @@
+pub mod bin;
 pub mod gga;
 pub mod ggd;
 pub mod ggp;
