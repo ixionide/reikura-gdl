@@ -12,6 +12,7 @@ use crate::{Image, ImageDecoder};
 pub struct GgdFull;
 
 pub struct GgdFullMetadata {
+    magic: [u8; 4],
     width: u16,
     height: u16,
 }
@@ -22,14 +23,16 @@ impl ImageDecoder for GgdFull {
 
     fn parse(mut data: &[u8]) -> Result<Self::Metadata> {
         Ok(GgdFullMetadata {
+            magic: data.read_le()?,
             width: data.read_le()?,
             height: data.read_le()?,
         })
     }
 
     fn decode(md: Self::Metadata, name: &str, data: &[u8]) -> Result<Image> {
-        let size = md.width as usize * md.height as usize * PIXEL_STRIDE;
+        debug_assert_eq!(md.magic, Self::MAGIC);
 
+        let size = md.width as usize * md.height as usize * PIXEL_STRIDE;
         let mut pixels = Vec::with_capacity(size);
         let mut reader = &data[8..];
         let mut buf = [0xFF; PIXEL_STRIDE];
@@ -87,6 +90,7 @@ impl ImageDecoder for GgdFull {
 pub struct Ggd256g;
 
 pub struct Ggd256gMetadata {
+    magic: [u8; 4],
     header_len: u32,
     width: u32,
     height: u32,
@@ -101,6 +105,7 @@ impl ImageDecoder for Ggd256g {
 
     fn parse(mut data: &[u8]) -> Result<Self::Metadata> {
         Ok(Ggd256gMetadata {
+            magic: data.read_le()?,
             header_len: data.read_le()?,
             width: data.read_le()?,
             height: data.read_le::<i32>()?.unsigned_abs(),
@@ -111,6 +116,8 @@ impl ImageDecoder for Ggd256g {
     }
 
     fn decode(md: Self::Metadata, name: &str, data: &[u8]) -> Result<Image> {
+        debug_assert_eq!(md.magic, Self::MAGIC);
+
         let size = md.width as usize * md.height as usize * PIXEL_STRIDE;
         let palette_pos = md.header_len as usize + 4;
         let palette_len = size_of::<u32>() * 256;

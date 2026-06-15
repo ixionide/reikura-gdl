@@ -28,12 +28,14 @@ impl ImageDecoder for GgpFaike {
     }
 
     fn decode(mut md: Self::Metadata, name: &str, data: &[u8]) -> anyhow::Result<crate::Image> {
+        debug_assert_eq!(md.magic, Self::MAGIC);
+
         let offset = md.offset as usize;
         let length = md.length as usize;
 
         md.key
             .iter_mut()
-            .zip(Self::MAGIC)
+            .zip(md.magic)
             .for_each(|(key, magic)| *key ^= magic);
 
         let mut png_data = data[offset..][..length].to_vec();
