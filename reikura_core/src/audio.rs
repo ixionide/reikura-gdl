@@ -211,17 +211,17 @@ impl<const SLOT: usize> Track<SLOT> {
         }
     }
 
-    pub fn is_audio_finished(&self) -> Option<bool> {
+    pub fn is_audio_finished(&self) -> bool {
         self.is_audio_at_slot_finished(0)
     }
 
-    pub fn is_audio_at_slot_finished(&self, slot: usize) -> Option<bool> {
+    pub fn is_audio_at_slot_finished(&self, slot: usize) -> bool {
         let index = slot % SLOT;
 
         self.slots[index]
             .as_ref()
             .map(StaticSoundHandle::state)
-            .map(|it| !it.is_advancing())
+            .map_or(true, |state| !state.is_advancing())
     }
 
     pub fn pause_track(&mut self) {
