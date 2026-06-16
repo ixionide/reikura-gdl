@@ -11,7 +11,7 @@ impl Instruction for Mp {
 
         if info.param_length() == 5 {
             let ms = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
-            fade = ms.try_into().ok().map(Duration::from_millis);
+            fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
         }
 
         vm.audio.play_bgm(looping, fade)?;

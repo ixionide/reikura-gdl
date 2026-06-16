@@ -28,6 +28,7 @@ pub struct Vm {
     pub ctx: VmContext,
     pub save: Option<SaveManager>,
     pub scene: Scenario,
+    pub state: State,
 }
 
 impl Vm {
@@ -42,5 +43,49 @@ impl Vm {
         }
 
         Ok(())
+    }
+}
+
+pub enum State {
+    Exit,
+    Running,
+    Wait { start: Instant, duration: Duration },
+    WaitClick,
+    WaitText,
+    WaitTransition,
+    WaitVoice,
+    WaitVideo,
+}
+
+impl State {
+    pub fn exit(&mut self) {
+        *self = Self::Exit;
+    }
+
+    pub fn run(&mut self) {
+        *self = Self::Running;
+    }
+
+    pub fn wait(&mut self, duration: Duration) {
+        *self = Self::Wait {
+            start: Instant::now(),
+            duration,
+        }
+    }
+
+    pub fn wait_click(&mut self) {
+        *self = Self::WaitClick;
+    }
+
+    pub fn wait_text(&mut self) {
+        *self = Self::WaitText;
+    }
+
+    pub fn wait_voice(&mut self) {
+        *self = Self::WaitVoice;
+    }
+
+    pub fn wait_video(&mut self) {
+        *self = Self::WaitVideo;
     }
 }
