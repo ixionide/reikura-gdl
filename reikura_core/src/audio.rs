@@ -221,7 +221,7 @@ impl<const SLOT: usize> Track<SLOT> {
         self.slots[index]
             .as_ref()
             .map(StaticSoundHandle::state)
-            .map_or(true, |state| !state.is_advancing())
+            .is_none_or(|state| !state.is_advancing())
     }
 
     pub fn pause_track(&mut self) {
