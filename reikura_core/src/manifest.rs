@@ -96,7 +96,7 @@ impl Manifest {
 
 fn parse_view_size(value: Option<String>, key: &str) -> (u32, u32) {
     let default = match key {
-        "KANAOKA" => (800, 600),
+        "KANAOKA" | "TOSHIAKI" => (800, 600),
         _ => (640, 480),
     };
 
