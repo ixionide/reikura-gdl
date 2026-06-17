@@ -11,6 +11,8 @@ use crate::{
     instruction::{INSTRUCTIONS, ReadParam},
 };
 
+pub const FRAME_DURATION: Duration = Duration::from_millis(16);
+
 pub struct VmContext {
     pub flags: BitSet,
     // patterns: HashMap<u8, FlagPattern>,
@@ -33,13 +35,39 @@ pub struct Vm {
 
 impl Vm {
     pub fn update(&mut self) -> anyhow::Result<()> {
-        let op = self.scene.read_opcode()?;
-        let inst = INSTRUCTIONS[op as usize];
-        let info = self.scene.param()?;
-        inst(self, info)?;
+        match self.state {
+            State::Exit => todo!(),
+            State::Running => {
+                let op = self.scene.read_opcode()?;
+                let inst = INSTRUCTIONS[op as usize];
+                let info = self.scene.param()?;
+                inst(self, info)?;
 
-        if info.end_of_scenario() {
-            self.scene.seek(SeekFrom::End(0))?;
+                if info.end_of_scenario() {
+                    self.scene.seek(SeekFrom::End(0))?;
+                }
+            }
+            State::Wait { start, duration } => {
+                let elapsed = start.elapsed();
+
+                if elapsed > duration {
+                    self.state.run();
+                    return Ok(());
+                }
+
+                let time_remaining = duration.saturating_sub(elapsed);
+                let sleep_duration = FRAME_DURATION.min(time_remaining);
+                std::thread::sleep(sleep_duration);
+            }
+            State::WaitClick => todo!(),
+            State::WaitText => todo!(),
+            State::WaitTransition => todo!(),
+            State::WaitVoice => {
+                if self.audio.track.voice.is_audio_finished() {
+                    self.state.run();
+                }
+            }
+            State::WaitVideo => todo!(),
         }
 
         Ok(())
