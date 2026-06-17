@@ -1,5 +1,5 @@
 use anyhow::Result;
-use reikura_util::{encoding::decode_sjis, io::ReadExt};
+use reikura_util::{encoding::sjis_to_utf8, io::ReadExt};
 
 use crate::{
     Scenario,
@@ -118,7 +118,7 @@ pub struct ParamString<const CAP: usize = 32> {
 
 impl<const CAP: usize> ParamString<CAP> {
     pub fn decode(self) -> Result<String> {
-        let string = decode_sjis(self.buffer)?;
+        let string = sjis_to_utf8(self.buffer)?;
         Ok(string)
     }
 }

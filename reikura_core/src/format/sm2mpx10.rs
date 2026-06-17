@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 use reikura_util::{
-    encoding::{InvalidSJIS, decode_sjis},
+    encoding::{InvalidSJIS, sjis_to_utf8},
     io::ReadExt,
 };
 
@@ -67,7 +67,7 @@ impl TryFrom<Sm2mpx10Entry> for ArchiveEntry {
             .position(|b| *b == 0)
             .unwrap_or(MAX_NAME_LENGTH);
 
-        let filename = decode_sjis(entry.filename[..end].to_vec())?;
+        let filename = sjis_to_utf8(entry.filename[..end].to_vec())?;
 
         Ok(Self {
             filename,
