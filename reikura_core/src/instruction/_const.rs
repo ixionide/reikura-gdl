@@ -113,7 +113,7 @@ pub const INSTRUCTIONS: [InstFn; 256] = const {
     insts[0x77] = Pcmon::execute;
     insts[0x78] = Pcml::execute;
     insts[0x79] = Pcms::execute;
-    // insts[0x7A] = Pcmend::execute;
+    insts[0x7A] = Pcmend::execute;
     insts[0x7B] = Ses::execute;
 
     insts
