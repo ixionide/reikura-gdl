@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Result, bail};
-use reikura_util::encoding::decode_sjis;
+use reikura_util::encoding::sjis_to_utf8;
 
 const STARTUP_INFO: &str = "[StartUpInfo]";
 const COMPANY: &str = "COMPANY";
@@ -39,7 +39,7 @@ pub struct Manifest {
 impl Manifest {
     pub fn parse(suf_path: impl AsRef<Path>) -> Result<Self> {
         let bytes = std::fs::read(&suf_path)?;
-        let content = decode_sjis(bytes)?;
+        let content = sjis_to_utf8(bytes)?;
 
         let mut root_section = HashMap::new();
         let mut startup_info_section = HashMap::new();
