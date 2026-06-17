@@ -12,6 +12,11 @@ use crate::format::isf::IsfMetadata;
 const MAX_SCENARIO_STACK: usize = 256;
 const MAX_CALL_STACK: usize = 1024;
 
+const HO: [u8; 2] = [0x89, 0xCE]; // 火 in sjis
+const KAZE: [u8; 2] = [0x95, 0x97]; // 風 in sjis
+const HAYASHI: [u8; 2] = [0x97, 0xD1]; // 林 in sjis
+const SAKURA: [u8; 2] = [0x8D, 0xF7]; // 桜 in sjis
+
 pub struct Scenario {
     pub ip: usize,
     pub name: Rc<String>,
@@ -32,12 +37,11 @@ impl Scenario {
         // decrypting
         let encrypted = data.iter_mut().skip(table_start);
         match isf.version {
-            35278 => encrypted.for_each(|byte| *byte ^= isf.xor_key),
-            38295 => encrypted.for_each(|byte| *byte = byte.rotate_right(2)),
-            38865 => encrypted.for_each(|byte| *byte = !*byte),
-            // NOTE: debug version unencrypted
-            36343 => (), // log::warn!("scenario {} is a debug version", name)
-            ver => bail!("unsupported scenario version: {ver}"),
+            HO => encrypted.for_each(|byte| *byte ^= isf.xor_key),
+            KAZE => encrypted.for_each(|byte| *byte = byte.rotate_right(2)),
+            HAYASHI => encrypted.for_each(|byte| *byte = !*byte),
+            SAKURA => (), // debug version, no encryption
+            ver => bail!("unsupported scenario version: {ver:?}"),
         }
 
         let table_count = (bytecode_start - table_start) / size_of::<u32>();
