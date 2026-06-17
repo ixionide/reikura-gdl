@@ -64,19 +64,19 @@ impl SaveManager {
         })
     }
 
-    pub fn init_read_flags(&mut self, read_flag_count: usize) -> Result<()> {
+    pub fn init_read_flags(&mut self, count: usize) -> Result<()> {
         let read_flag_save_path = self.save_path.join(READFLAG_SAVE_NAME);
         let mut opt = std::fs::OpenOptions::new();
         opt.read(true).write(true).create(true);
 
         let flags = unsafe {
-            let count = read_flag_count.div_ceil(u8::BITS as _);
+            let count = count.div_ceil(u8::BITS as _);
             let read_flag_save_file = opt
                 .open(read_flag_save_path)
                 .context("failed to create readflag save file")?;
             read_flag_save_file.set_len(count as u64)?;
             let mmapmut = MmapMut::map_mut(&read_flag_save_file)?;
-            BitSet::from_raw(mmapmut, read_flag_count)
+            BitSet::from_raw(mmapmut, count)
         };
 
         self.read_flags = Some(flags);

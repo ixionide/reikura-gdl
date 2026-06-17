@@ -86,6 +86,14 @@ mod pcmend;
 pub use pcmend::Pcmend;
 mod ses;
 pub use ses::Ses;
+//
+mod kidfn;
+pub use kidfn::Kidfn;
+//
+mod atimes;
+pub use atimes::Atimes;
+mod r#await;
+pub use r#await::Await;
 
 pub use _const::INSTRUCTIONS;
 pub use _param::*;
