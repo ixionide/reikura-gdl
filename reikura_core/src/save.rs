@@ -18,7 +18,7 @@ pub struct SaveManager {
     pub flags: BitSet<MmapMut>,
     pub variables: Variables<MmapMut>,
     read_flags: Option<BitSet<MmapMut>>,
-    game_info: Option<String>,
+    pub game_info: Option<String>,
 }
 
 impl SaveManager {
@@ -28,7 +28,7 @@ impl SaveManager {
         variable_count: usize,
     ) -> Result<Self> {
         let save_path = game_path.as_ref().join(SAVE_DIR);
-        std::fs::create_dir(&save_path).ok();
+        _ = std::fs::create_dir(&save_path);
 
         let mut opt = std::fs::OpenOptions::new();
         opt.read(true).write(true).create(true);
@@ -95,13 +95,5 @@ impl SaveManager {
         if let Some(read_flags) = &mut self.read_flags {
             read_flags.set(index, true);
         }
-    }
-
-    pub fn get_game_info(&self) -> Option<&String> {
-        self.game_info.as_ref()
-    }
-
-    pub fn set_game_info(&mut self, info: String) {
-        self.game_info.replace(info);
     }
 }

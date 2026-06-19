@@ -25,6 +25,9 @@ pub use child::Child;
 mod url;
 pub use url::Url;
 // todo
+mod cns;
+pub use cns::Cns;
+// todo
 mod fln;
 pub use fln::Fln;
 mod sk;
@@ -90,10 +93,15 @@ pub use ses::Ses;
 mod kidfn;
 pub use kidfn::Kidfn;
 //
+mod cnf;
+pub use cnf::Cnf;
 mod atimes;
 pub use atimes::Atimes;
 mod r#await;
 pub use r#await::Await;
+//
+mod setgameinfo;
+pub use setgameinfo::Setgameinfo;
 
 pub use _const::INSTRUCTIONS;
 pub use _param::*;
