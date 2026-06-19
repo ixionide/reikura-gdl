@@ -20,6 +20,8 @@ pub struct VmContext {
     pub characters: HashMap<u8, String>,
     pub wait_time: Option<i32>,
     pub time_counter: Option<(Instant, Duration)>,
+    // TODO: this make much more sense stored in the text renderer struct
+    pub char_names: [Option<String>; 256],
 }
 
 pub struct Vm {
