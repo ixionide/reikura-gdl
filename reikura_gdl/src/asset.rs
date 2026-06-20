@@ -65,10 +65,6 @@ impl AssetManager {
         })
     }
 
-    pub fn load_data(&mut self, name: &str) -> Result<Vec<u8>> {
-        self.data.get_asset(name)
-    }
-
     pub fn load_image(&mut self, name: &str) -> Result<Image> {
         if let Some(image) = self.cache.image.get(name) {
             return Ok(image.clone());
@@ -82,13 +78,13 @@ impl AssetManager {
     }
 
     pub fn load_wipe_image(&mut self, name: &str) -> Result<Image> {
-        if let Some(image) = self.cache.image.get(name) {
+        if let Some(image) = self.cache.wipe_image.get(name) {
             return Ok(image.clone());
         }
 
         let data = self.data.get_asset(name)?;
         let image = Image::load(name, &data)?;
-        self.cache.image.put(name.to_string(), image.clone());
+        self.cache.wipe_image.put(name.to_string(), image.clone());
 
         Ok(image)
     }
