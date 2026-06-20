@@ -4,6 +4,8 @@ pub struct Rt;
 
 impl Instruction for Rt {
     fn execute(vm: &mut crate::Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-        vm.scene.ret_sub()
+        vm.scene.ret_sub()?;
+
+        Ok(())
     }
 }

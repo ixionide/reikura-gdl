@@ -8,6 +8,8 @@ impl Instruction for Lsbs {
         let name = asset_name.decode()?;
         let scene = vm.assets.load_scene(&name)?;
 
-        vm.scene.call(scene)
+        vm.scene.call(scene)?;
+
+        Ok(())
     }
 }

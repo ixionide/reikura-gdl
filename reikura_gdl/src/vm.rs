@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     io::{Seek, SeekFrom},
     time::{Duration, Instant},
 };
@@ -17,12 +16,10 @@ pub struct VmContext {
     pub flags: BitSet,
     // patterns: HashMap<u8, FlagPattern>,
     pub variables: Variables,
-    pub characters: HashMap<u8, String>,
     pub wait_duration: Option<Duration>,
-    pub time_counter: Option<(Instant, Duration)>,
+    pub timer: Option<Timer>,
     // TODO: this make much more sense stored in the text renderer struct
     pub char_names: [Option<String>; 256],
-    pub timer: Option<Timer>,
 }
 
 pub struct Vm {
