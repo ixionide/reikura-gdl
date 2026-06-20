@@ -4,6 +4,8 @@ pub struct Sret;
 
 impl Instruction for Sret {
     fn execute(vm: &mut crate::Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-        vm.scene.ret()
+        vm.scene.ret()?;
+
+        Ok(())
     }
 }
