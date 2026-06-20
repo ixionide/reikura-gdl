@@ -102,6 +102,13 @@ pub use r#await::Await;
 //
 mod setgameinfo;
 pub use setgameinfo::Setgameinfo;
+//
+mod timerset;
+pub use timerset::Timerset;
+mod timerend;
+pub use timerend::Timerend;
+mod timerget;
+pub use timerget::Timerget;
 
 pub use _const::INSTRUCTIONS;
 pub use _param::*;

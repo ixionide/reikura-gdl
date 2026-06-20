@@ -22,6 +22,7 @@ pub struct VmContext {
     pub time_counter: Option<(Instant, Duration)>,
     // TODO: this make much more sense stored in the text renderer struct
     pub char_names: [Option<String>; 256],
+    pub timer: Option<Timer>,
 }
 
 pub struct Vm {
@@ -73,6 +74,26 @@ impl Vm {
         }
 
         Ok(())
+    }
+}
+
+pub struct Timer {
+    start: Instant,
+    delay: i32,
+}
+
+impl Timer {
+    pub fn new(delay: i32) -> Self {
+        Self {
+            start: Instant::now(),
+            delay,
+        }
+    }
+
+    pub fn get(&self) -> i32 {
+        let elapsed = self.start.elapsed().as_millis() as i32;
+        // NOTE: not sure if saturating is accurate here
+        elapsed.saturating_sub(self.delay)
     }
 }
 
