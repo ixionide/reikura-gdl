@@ -18,7 +18,7 @@ pub struct VmContext {
     // patterns: HashMap<u8, FlagPattern>,
     pub variables: Variables,
     pub characters: HashMap<u8, String>,
-    pub wait_time: Option<i32>,
+    pub wait_duration: Option<Duration>,
     pub time_counter: Option<(Instant, Duration)>,
     // TODO: this make much more sense stored in the text renderer struct
     pub char_names: [Option<String>; 256],

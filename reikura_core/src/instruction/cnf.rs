@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 
 use crate::instruction::{AssetName, Instruction, ReadParam};
 
