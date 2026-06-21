@@ -49,17 +49,14 @@ impl ReikuraApp {
 
 impl ApplicationHandler for ReikuraApp {
     fn new_events(&mut self, event_loop: &dyn ActiveEventLoop, cause: StartCause) {
-        match cause {
-            StartCause::Init => {
-                let attr = self.window_attributes();
-                let window = event_loop
-                    .create_window(attr)
-                    .expect("failed to create window");
+        if cause == StartCause::Init {
+            let attr = self.window_attributes();
+            let window = event_loop
+                .create_window(attr)
+                .expect("failed to create window");
 
-                window.set_visible(true);
-                self.window = Some(Arc::from(window));
-            }
-            _ => (),
+            window.set_visible(true);
+            self.window = Some(Arc::from(window));
         }
     }
 
@@ -71,6 +68,5 @@ impl ApplicationHandler for ReikuraApp {
         _window_id: WindowId,
         _event: WindowEvent,
     ) {
-        ()
     }
 }

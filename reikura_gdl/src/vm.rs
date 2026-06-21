@@ -6,7 +6,7 @@ use std::{
 use reikura_util::{bitset::BitSet, variable::Variables};
 
 use crate::{
-    AssetManager, AudioManager, Config, Manifest, SaveManager, Scenario,
+    AssetManager, AudioManager, Config, InputManager, Manifest, SaveManager, Scenario,
     instruction::{INSTRUCTIONS, ReadParam},
 };
 
@@ -31,6 +31,7 @@ pub struct Vm {
     pub save: Option<SaveManager>,
     pub scene: Scenario,
     pub state: State,
+    pub input: InputManager,
 }
 
 impl Vm {
