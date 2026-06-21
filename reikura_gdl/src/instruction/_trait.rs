@@ -11,8 +11,8 @@ pub trait Instruction {
         Ok(())
     }
 
+    // we used this for unsupported instruction
     fn skip(vm: &mut Vm, info: InstructionInfo) -> Result<()> {
-        // unsupported instruction. we skip this instruction
         vm.scene.seek_relative(info.param_length() as i64)?;
         Ok(())
     }
