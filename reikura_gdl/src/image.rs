@@ -13,7 +13,7 @@ use crate::format::{
 pub struct Image {
     pub width: u32,
     pub height: u32,
-    pub name: Rc<String>,
+    pub name: Rc<str>,
     pub data: Rc<[u8]>,
 }
 

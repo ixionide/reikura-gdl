@@ -19,7 +19,7 @@ const SAKURA: [u8; 2] = [0x8D, 0xF7]; // 桜 in sjis
 
 pub struct Scenario {
     pub ip: usize,
-    pub name: Rc<String>,
+    pub name: Rc<str>,
     bytecode_start_pos: usize,
     bytecode: Rc<[u8]>,
     jump_table: Rc<[usize]>,
@@ -210,7 +210,7 @@ impl From<&ScenarioCache> for Scenario {
 }
 
 pub struct ScenarioCache {
-    pub name: Rc<String>,
+    pub name: Rc<str>,
     pub data: Rc<[u8]>,
     pub pos: usize,
     pub table: Rc<[usize]>,
