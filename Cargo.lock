@@ -701,7 +701,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "reikura_core"
+name = "reikura_gdl"
 version = "0.1.0"
 dependencies = [
  "anyhow",
