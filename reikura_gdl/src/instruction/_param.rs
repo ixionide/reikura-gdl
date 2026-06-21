@@ -3,7 +3,7 @@ use reikura_util::{encoding::sjis_to_utf8, io::ReadExt};
 
 use crate::{
     Scenario,
-    instruction::{Evaluate, Parameters},
+    instruction::{Evaluate, Parameters, ReadParam},
     vm::VmContext,
 };
 
@@ -138,5 +138,42 @@ impl<const CAP: usize> Parameters for ParamString<CAP> {
         }
 
         Ok(Self { buffer })
+    }
+}
+
+pub struct Rect<T> {
+    pub x: T,
+    pub y: T,
+    pub w: T,
+    pub h: T,
+}
+
+impl<T: Parameters> Parameters for Rect<T> {
+    fn deserialize(scene: &mut Scenario) -> anyhow::Result<Self> {
+        Ok(Self {
+            x: scene.param()?,
+            y: scene.param()?,
+            w: scene.param()?,
+            h: scene.param()?,
+        })
+    }
+}
+
+impl<T> From<Rect<T>> for [T; 4] {
+    fn from(rect: Rect<T>) -> Self {
+        [rect.x, rect.y, rect.w, rect.h]
+    }
+}
+
+impl<T: Evaluate> Evaluate for Rect<T> {
+    type Evaluated = Rect<T::Evaluated>;
+
+    fn evaluate(&self, ctx: &VmContext) -> Self::Evaluated {
+        Self::Evaluated {
+            x: self.x.evaluate(ctx),
+            y: self.y.evaluate(ctx),
+            w: self.w.evaluate(ctx),
+            h: self.h.evaluate(ctx),
+        }
     }
 }
