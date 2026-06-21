@@ -90,6 +90,18 @@ pub use pcmend::Pcmend;
 mod ses;
 pub use ses::Ses;
 //
+mod ih;
+pub use ih::Ih;
+//
+mod ihk;
+pub use ihk::Ihk;
+mod ihkdef;
+pub use ihkdef::Ihkdef;
+mod ihgl;
+pub use ihgl::Ihgl;
+mod ihgc;
+pub use ihgc::Ihgc;
+//
 mod kidfn;
 pub use kidfn::Kidfn;
 //

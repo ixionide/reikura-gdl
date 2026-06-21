@@ -29,17 +29,17 @@ impl InputManager {
 pub struct HotSpot {
     pub id: u8,
     pub rect: [i32; 4],
-    pub state_invar: bool,
+    pub flag: bool,
     pub state_index: usize,
-    _unknown: [u8; 3],
+    pub _unknown: [u8; 3],
 }
 
 impl HotSpot {
     pub fn is_enabled(&self, ctx: &VmContext) -> bool {
-        if self.state_invar {
-            ctx.variables.get(self.state_index).unwrap_or(0) != 0
-        } else {
+        if self.flag {
             ctx.flags.get(self.state_index).unwrap_or(false)
+        } else {
+            ctx.variables.get(self.state_index).unwrap_or(0) != 0
         }
     }
 
@@ -50,13 +50,8 @@ impl HotSpot {
 }
 
 pub struct KeyMap {
-    map: [u8; 8], // TODO: figure out the remaining 4 bytes
-}
-
-impl From<[u8; 8]> for KeyMap {
-    fn from(map: [u8; 8]) -> Self {
-        Self { map }
-    }
+    pub id: u8,
+    pub map: [u8; 8], // TODO: figure out the remaining 4 bytes
 }
 
 impl KeyMap {
@@ -78,19 +73,12 @@ impl KeyMap {
 }
 
 pub struct HitMask {
-    _x: i32,
-    _y: i32,
-    image: Image,
+    pub x: i32,
+    pub y: i32,
+    pub image: Image,
 }
 
 impl HitMask {
-    pub fn new(_x: i32, _y: i32, image: Image) -> Self {
-        debug_assert!(_x == 0);
-        debug_assert!(_y == 0);
-
-        Self { _x, _y, image }
-    }
-
     pub fn get(&self, x: i32, y: i32) -> Option<u8> {
         let x: u32 = x.try_into().ok()?;
         let y: u32 = y.try_into().ok()?;
