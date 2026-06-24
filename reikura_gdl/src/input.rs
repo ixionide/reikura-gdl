@@ -83,7 +83,7 @@ impl HitMask {
         let x: u32 = x.try_into().ok()?;
         let y: u32 = y.try_into().ok()?;
 
-        if self.image.width < x || y > self.image.height {
+        if self.image.width < x || self.image.height < y {
             return None;
         }
 
