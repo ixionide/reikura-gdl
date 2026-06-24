@@ -1157,6 +1157,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "reikura_gfx"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "reikura_util",
+ "winit",
+]
+
+[[package]]
 name = "reikura_util"
 version = "0.1.0"
 dependencies = [

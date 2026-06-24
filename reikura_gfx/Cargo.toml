@@ -1,0 +1,13 @@
+[package]
+name = "reikura_gfx"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reikura_util = { workspace = true }
+
+anyhow = { workspace = true }
+winit = { workspace = true }
+
+[lints]
+workspace = true
