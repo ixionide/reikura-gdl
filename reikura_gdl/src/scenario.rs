@@ -12,10 +12,10 @@ use crate::format::isf::IsfMetadata;
 const MAX_SCENARIO_STACK: usize = 256;
 const MAX_CALL_STACK: usize = 1024;
 
-const HO: [u8; 2] = [0x89, 0xCE]; // 火 in sjis
-const KAZE: [u8; 2] = [0x95, 0x97]; // 風 in sjis
-const HAYASHI: [u8; 2] = [0x97, 0xD1]; // 林 in sjis
-const SAKURA: [u8; 2] = [0x8D, 0xF7]; // 桜 in sjis
+const 火: [u8; 2] = [0x89, 0xCE];
+const 風: [u8; 2] = [0x95, 0x97];
+const 林: [u8; 2] = [0x97, 0xD1];
+const 桜: [u8; 2] = [0x8D, 0xF7];
 
 pub struct Scenario {
     pub ip: usize,
@@ -37,10 +37,10 @@ impl Scenario {
         // decrypting
         let encrypted = data.iter_mut().skip(table_start);
         match isf.version {
-            HO => encrypted.for_each(|byte| *byte ^= isf.xor_key),
-            KAZE => encrypted.for_each(|byte| *byte = byte.rotate_right(2)),
-            HAYASHI => encrypted.for_each(|byte| *byte = !*byte),
-            SAKURA => (), // debug version, no encryption
+            火 => encrypted.for_each(|byte| *byte ^= isf.xor_key),
+            風 => encrypted.for_each(|byte| *byte = byte.rotate_right(2)),
+            林 => encrypted.for_each(|byte| *byte = !*byte),
+            桜 => (), // debug version, no encryption
             ver => bail!("unsupported scenario version: {ver:?}"),
         }
 

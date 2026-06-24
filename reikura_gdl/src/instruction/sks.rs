@@ -2,6 +2,10 @@ use anyhow::bail;
 
 use crate::instruction::{Instruction, ReadParam};
 
+const CMD_UNSET: u8 = 0;
+const CMD_SET: u8 = 1;
+const CMD_TOGGLE: u8 = 2;
+
 pub struct Sks;
 
 impl Instruction for Sks {
@@ -13,17 +17,17 @@ impl Instruction for Sks {
         let range = start..end.min(bound_end);
 
         match value {
-            0 => {
+            CMD_UNSET => {
                 for i in range {
                     vm.ctx.flags.set(i, false);
                 }
             }
-            1 => {
+            CMD_SET => {
                 for i in range {
                     vm.ctx.flags.set(i, true);
                 }
             }
-            2 => {
+            CMD_TOGGLE => {
                 for i in range {
                     vm.ctx.flags.toggle(i);
                 }
