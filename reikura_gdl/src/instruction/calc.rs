@@ -3,6 +3,13 @@ use reikura_util::io::ReadExt;
 
 use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
 
+const ADD: u8 = 0;
+const MIN: u8 = 1;
+const MUL: u8 = 2;
+const DIV: u8 = 3;
+const MOD: u8 = 4;
+const END: u8 = 5;
+
 pub struct Calc;
 
 impl Instruction for Calc {
@@ -13,28 +20,28 @@ impl Instruction for Calc {
 
         loop {
             match vm.scene.read_le::<u8>()? {
-                0 => {
+                ADD => {
                     let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(num) = tmp.replace(rhs) {
                         result += num;
                     }
                 }
-                1 => {
+                MIN => {
                     let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(num) = tmp.replace(-rhs) {
                         result += num;
                     }
                 }
-                2 => {
+                MUL => {
                     let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(lhs) = &mut tmp {
                         *lhs *= rhs
                     }
                 }
-                3 => {
+                DIV => {
                     let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(lhs) = &mut tmp
@@ -43,7 +50,7 @@ impl Instruction for Calc {
                         *lhs /= rhs;
                     }
                 }
-                4 => {
+                MOD => {
                     let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(lhs) = &mut tmp
@@ -52,7 +59,7 @@ impl Instruction for Calc {
                         *lhs %= rhs;
                     }
                 }
-                5 => {
+                END => {
                     if let Some(rhs) = tmp.take() {
                         result += rhs;
                     }

@@ -4,6 +4,9 @@ use anyhow::bail;
 
 use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
 
+const COPY_FLAG: u8 = 0;
+const COPY_VARIABLE: u8 = 1;
+
 pub struct Exs;
 
 impl Instruction for Exs {
@@ -18,7 +21,7 @@ impl Instruction for Exs {
         let count = vm.scene.param::<Value>()?.evaluate(ctx) as usize;
 
         match vm.scene.param::<u8>()? {
-            0 => {
+            COPY_FLAG => {
                 let bound_count = min(ctx.flags.len() - src, save.flags.len() - dst);
 
                 for i in 0..count.min(bound_count) {
@@ -26,7 +29,7 @@ impl Instruction for Exs {
                     save.flags.set(dst + i, flag);
                 }
             }
-            1 => {
+            COPY_VARIABLE => {
                 let bound_count = min(ctx.variables.len() - src, save.variables.len() - dst);
 
                 for i in 0..count.min(bound_count) {
@@ -34,7 +37,7 @@ impl Instruction for Exs {
                     save.variables.set(dst + i, value);
                 }
             }
-            _ => bail!("invalid EXS slot param"),
+            _ => bail!("invalid EXS copy param"),
         }
 
         Ok(())
