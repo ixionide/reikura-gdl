@@ -35,3 +35,27 @@ pub const fn blend_color(bg: u32, fg: u32) -> u32 {
         mul_div_255(255 - fg_a, bg_a) + fg_a,
     ])
 }
+
+#[inline]
+pub const fn blend_premultiplied_color(bg: u32, fg: u32) -> u32 {
+    let [bg_r, bg_g, bg_b, bg_a] = bg.to_le_bytes();
+    let [fg_r, fg_g, fg_b, fg_a] = fg.to_le_bytes();
+
+    u32::from_le_bytes([
+        mul_div_255(255 - fg_a, bg_r) + fg_r,
+        mul_div_255(255 - fg_a, bg_g) + fg_g,
+        mul_div_255(255 - fg_a, bg_b) + fg_b,
+        mul_div_255(255 - fg_a, bg_a) + fg_a,
+    ])
+}
+
+#[inline]
+pub const fn premultiply_color(color: u32) -> u32 {
+    let [r, g, b, a] = color.to_le_bytes();
+
+    if a == 255 {
+        return color;
+    }
+
+    u32::from_le_bytes([mul_div_255(a, r), mul_div_255(a, g), mul_div_255(a, b), a])
+}

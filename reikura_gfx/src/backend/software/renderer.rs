@@ -25,14 +25,19 @@ impl Renderer {
         }
     }
 
-    pub fn update_screen(&mut self) {
+    pub fn update_screen(&mut self) -> bool {
         let dst = &mut self.screen_surface;
         let src = self.target_surface.and_then(|id| self.surfaces.get(&id));
 
         if let Some((damaged, src)) = self.damaged.zip(src) {
-            dst.blit_copy(damaged, damaged, src);
+            dst.blit_copy(damaged, damaged, src)
+                .expect("failed to blit screen surface");
             self.damaged = None;
+
+            return true;
         }
+
+        false
     }
 
     #[inline]
@@ -78,7 +83,7 @@ impl GraphicBackend for Renderer {
         let color = u32::from_le_bytes([r, g, b, 0xFF]);
         let rect = surface.rect();
 
-        surface.fill(color);
+        surface.clear(color);
         self.maybe_damaged(id, rect);
 
         Ok(())
@@ -89,18 +94,18 @@ impl GraphicBackend for Renderer {
             todo!();
         }
 
-        // i hate this
-        let Some(mut dst) = self.surfaces.remove(&param.dst_id) else {
-            bail!("dst image {} is empty", param.dst_id);
+        let [Some(src), Some(dst)] = self
+            .surfaces
+            .get_disjoint_mut([&param.src_id, &param.dst_id])
+        else {
+            bail!(
+                "fail to get src:{} or dst:{} image",
+                param.src_id,
+                param.dst_id
+            );
         };
 
-        let Some(src) = self.surfaces.get(&param.src_id) else {
-            bail!("src image {} is empty", param.src_id);
-        };
-
-        dst.blit_copy(param.src_rect(), param.dst_rect(), src);
-        // i hate this
-        self.surfaces.insert(param.dst_id, dst);
+        dst.blit_copy(param.src_rect(), param.dst_rect(), src)?;
         self.maybe_damaged(param.dst_id, param.dst_rect());
 
         Ok(())
@@ -111,24 +116,28 @@ impl GraphicBackend for Renderer {
             todo!();
         }
 
-        // i hate this
-        let Some(mut dst) = self.surfaces.remove(&param.dst_id) else {
-            bail!("dst image {} is empty", param.dst_id);
+        let [Some(src), Some(dst)] = self
+            .surfaces
+            .get_disjoint_mut([&param.src_id, &param.dst_id])
+        else {
+            bail!(
+                "fail to get src:{} or dst:{} image",
+                param.src_id,
+                param.dst_id
+            );
         };
 
-        let Some(src) = self.surfaces.get(&param.src_id) else {
-            bail!("src image {} is empty", param.src_id);
-        };
-
-        dst.blit_blend(param.src_rect(), param.dst_rect(), src);
-        // i hate this
-        self.surfaces.insert(param.dst_id, dst);
+        dst.blit_blend(param.src_rect(), param.dst_rect(), src)?;
         self.maybe_damaged(param.dst_id, param.dst_rect());
 
         Ok(())
     }
 
     fn _render(&mut self) -> anyhow::Result<()> {
+        if !self.update_screen() {
+            return Ok(());
+        }
+
         todo!()
     }
 

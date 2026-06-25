@@ -46,6 +46,13 @@ impl Rect {
         self.bottom - self.top
     }
 
+    pub fn contains(&self, other: Self) -> bool {
+        self.left <= other.left
+            && self.top <= other.top
+            && self.right >= other.right
+            && self.bottom >= other.bottom
+    }
+
     pub fn same_size(&self, other: Self) -> Option<(u16, u16)> {
         let other_size = other.size();
 

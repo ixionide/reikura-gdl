@@ -1161,6 +1161,7 @@ name = "reikura_gfx"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytemuck",
  "reikura_util",
  "winit",
 ]
