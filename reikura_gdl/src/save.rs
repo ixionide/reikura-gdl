@@ -37,11 +37,11 @@ impl SaveManager {
         let var_save_path = save_path.join(VAR_SAVE_NAME);
 
         let flags = unsafe {
-            let count = flag_count.div_ceil(u8::BITS as _);
+            let len = flag_count.div_ceil(u8::BITS as _);
             let flag_save_file = opt
                 .open(flag_save_path)
                 .context("failed to create flag save file")?;
-            flag_save_file.set_len(count as u64)?;
+            flag_save_file.set_len(len as u64)?;
             let mmapmut = MmapMut::map_mut(&flag_save_file)?;
             BitSet::from_raw(mmapmut, flag_count)
         };
@@ -70,11 +70,11 @@ impl SaveManager {
         opt.read(true).write(true).create(true);
 
         let flags = unsafe {
-            let count = count.div_ceil(u8::BITS as _);
+            let len = count.div_ceil(u8::BITS as _);
             let read_flag_save_file = opt
                 .open(read_flag_save_path)
                 .context("failed to create readflag save file")?;
-            read_flag_save_file.set_len(count as u64)?;
+            read_flag_save_file.set_len(len as u64)?;
             let mmapmut = MmapMut::map_mut(&read_flag_save_file)?;
             BitSet::from_raw(mmapmut, count)
         };
