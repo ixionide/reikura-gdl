@@ -1,8 +1,9 @@
-use std::io::{Seek, SeekFrom};
+use anyhow::{bail, ensure};
 
-use anyhow::{Ok, bail, ensure};
-
-use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
+use crate::{
+    Scenario,
+    instruction::{Evaluate, Instruction, ReadParam, Value},
+};
 
 const OP_EQ: u8 = 0;
 const OP_LT: u8 = 1;
@@ -18,52 +19,67 @@ const CMD_CONTINUE: u8 = 2;
 pub struct If;
 
 impl Instruction for If {
-    fn execute(vm: &mut crate::Vm, info: super::InstructionInfo) -> anyhow::Result<()> {
-        let next_inst = vm.scene.ip + info.param_length();
+    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
+        let mut conds = Vec::with_capacity(10);
+        let end: u8;
 
-        fn check_cond(vm: &mut crate::Vm) -> anyhow::Result<bool> {
-            let lhs: Value = vm.scene.param()?;
-            let op: u8 = vm.scene.param()?;
-            let rhs: Value = vm.scene.param()?;
+        fn read_param_cond(scene: &mut Scenario) -> anyhow::Result<(Value, u8, Value)> {
+            let lhs: Value = scene.param()?;
+            let op: u8 = scene.param()?;
+            let rhs: Value = scene.param()?;
 
-            let cond = match op {
-                OP_EQ => lhs.evaluate(&vm.ctx) == rhs.evaluate(&vm.ctx),
-                OP_LT => lhs.evaluate(&vm.ctx) < rhs.evaluate(&vm.ctx),
-                OP_LE => lhs.evaluate(&vm.ctx) <= rhs.evaluate(&vm.ctx),
-                OP_GT => lhs.evaluate(&vm.ctx) > rhs.evaluate(&vm.ctx),
-                OP_GE => lhs.evaluate(&vm.ctx) >= rhs.evaluate(&vm.ctx),
-                OP_NE => lhs.evaluate(&vm.ctx) != rhs.evaluate(&vm.ctx),
-                _ => bail!("unknown IF operator: {op}"),
-            };
+            if ![OP_EQ, OP_LT, OP_LE, OP_GT, OP_GE, OP_NE].contains(&op) {
+                bail!("unknown IF operator: {op}");
+            }
 
-            Ok(cond)
+            Ok((lhs, op, rhs))
         }
 
-        while check_cond(vm)? {
-            let cmd: u8 = vm.scene.param()?;
+        let check_cond = |&(lhs, op, rhs): &(Value, u8, Value)| {
+            let ctx = &vm.ctx;
+            match op {
+                OP_EQ => lhs.evaluate(ctx) == rhs.evaluate(ctx),
+                OP_LT => lhs.evaluate(ctx) < rhs.evaluate(ctx),
+                OP_LE => lhs.evaluate(ctx) <= rhs.evaluate(ctx),
+                OP_GT => lhs.evaluate(ctx) > rhs.evaluate(ctx),
+                OP_GE => lhs.evaluate(ctx) >= rhs.evaluate(ctx),
+                OP_NE => lhs.evaluate(ctx) != rhs.evaluate(ctx),
+                _ => unreachable!(),
+            }
+        };
+
+        loop {
+            conds.push(read_param_cond(&mut vm.scene)?);
+            let cmd = vm.scene.param()?;
 
             match cmd {
                 CMD_JUMP_SUB => {
                     let sub_index: u16 = vm.scene.param()?;
+                    end = vm.scene.param()?;
 
-                    vm.scene.jump_sub(sub_index)?;
+                    if conds.iter().all(check_cond) {
+                        vm.scene.jump_sub(sub_index)?;
+                    }
                 }
                 CMD_SET_VAR => {
                     let var_index = vm.scene.param::<u16>()? as usize;
-                    let var_value = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
+                    let var_value: Value = vm.scene.param()?;
+                    end = vm.scene.param()?;
 
-                    vm.ctx.variables.set(var_index, var_value);
+                    if conds.iter().all(check_cond) {
+                        let var_value = var_value.evaluate(&vm.ctx);
+                        vm.ctx.variables.set(var_index, var_value);
+                    }
                 }
                 CMD_CONTINUE => continue,
-                _ => bail!("unknown if command: {cmd}"),
+                _ => bail!("unknown IF command: {cmd}"),
             }
 
-            let end: u8 = vm.scene.param()?;
-            ensure!(end == 255, "if instruction isn't end properly");
-            return Ok(());
+            break;
         }
 
-        vm.scene.seek(SeekFrom::Start(next_inst as u64))?;
+        ensure!(end == 255, "IF instruction isn't end properly: {end}");
+
         Ok(())
     }
 }
