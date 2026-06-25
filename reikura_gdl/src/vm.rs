@@ -9,7 +9,7 @@ use reikura_util::{bitset::BitSet, variable::Variables};
 
 use crate::{
     AssetManager, AudioManager, Config, InputManager, Manifest, SaveManager, Scenario,
-    instruction::{INSTRUCTIONS, ReadParam},
+    instruction::{INSTRUCTIONS, InstructionInfo, ReadParam},
 };
 
 pub const FRAME_DURATION: Duration = Duration::from_millis(16);
@@ -77,7 +77,18 @@ impl Vm {
             State::Running => {
                 let op = self.scene.read_opcode()?;
                 let inst = INSTRUCTIONS[op as usize];
-                let info = self.scene.param()?;
+                let info = self.scene.param::<InstructionInfo>()?;
+
+                #[cfg(debug_assertions)]
+                {
+                    let next_ip = self.scene.ip + info.param_length();
+                    if let Err(err) = inst(self, info) {
+                        dbg!(err);
+                        self.scene.ip = next_ip
+                    }
+                }
+
+                #[cfg(not(debug_assertions))]
                 inst(self, info)?;
 
                 if info.end_of_scenario() {

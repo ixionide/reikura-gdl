@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, num::NonZeroU32, sync::Arc};
 
 use anyhow::bail;
 use winit::window::Window;
@@ -169,7 +169,12 @@ impl GraphicBackend for Renderer {
 
     fn _create_surface(&mut self, window: Arc<dyn Window>) -> anyhow::Result<()> {
         match softbuffer::Surface::new(&self.softbuffer_ctx, window) {
-            Ok(surface) => self.softbuffer_surface = Some(surface),
+            Ok(mut surface) => {
+                let w = NonZeroU32::new(self.screen_surface.width as _).unwrap();
+                let h = NonZeroU32::new(self.screen_surface.height as _).unwrap();
+                surface.resize(w, h).unwrap();
+                self.softbuffer_surface = Some(surface)
+            }
             Err(err) => bail!("failed to create surface: {err}"),
         }
 

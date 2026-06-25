@@ -16,7 +16,7 @@ impl Surface {
         Self {
             width,
             height,
-            pixels: vec![TRANSPARENT; (width * height) as usize],
+            pixels: vec![TRANSPARENT; width as usize * height as usize],
         }
     }
 
@@ -26,13 +26,13 @@ impl Surface {
         Self {
             width,
             height,
-            pixels: vec![BLACK; (width * height) as usize],
+            pixels: vec![BLACK; width as usize * height as usize],
         }
     }
 
     // assume the format is rgba8
     pub fn from_bytes(width: u16, height: u16, bytes: &[u8]) -> anyhow::Result<Self> {
-        if bytes.len() != (width * height) as usize * size_of::<u32>() {
+        if bytes.len() != width as usize * height as usize * size_of::<u32>() {
             bail!("invalid bytes length");
         }
 
