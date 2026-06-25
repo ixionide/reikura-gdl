@@ -147,6 +147,19 @@ impl GraphicBackend for Renderer {
             return Ok(());
         };
 
+        let Some(surface) = self.softbuffer_surface.as_mut() else {
+            bail!("surface is destroyed");
+        };
+
+        match surface.buffer_mut() {
+            // XXX: fix the pixel format and the size
+            Ok(mut buffer) => {
+                buffer.copy_from_slice(&self.screen_surface.pixels);
+                buffer.present().map_err(|it| anyhow::anyhow!("{it}"))?
+            }
+            Err(err) => bail!("failed to get surface buffer: {err}"),
+        }
+
         Ok(())
     }
 
