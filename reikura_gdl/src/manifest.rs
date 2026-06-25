@@ -19,6 +19,7 @@ const REIKURA_INFO: &str = "[ReikuraInfo]";
 const VIEW_SIZE: &str = "ViewSize";
 const FONT_PATH: &str = "FontPath";
 
+#[derive(Clone)]
 pub struct Manifest {
     pub suf_path: PathBuf,
 

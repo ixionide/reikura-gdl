@@ -10,6 +10,7 @@ reikura_util = { path = "reikura_util" }
 
 anyhow = "1.0"
 memmap2 = "0.9.10"
+softbuffer = "0.4.8"
 winit = "0.31.0-beta.2"
 
 [workspace.lints.clippy]

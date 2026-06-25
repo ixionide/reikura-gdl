@@ -3,6 +3,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+use anyhow::Context;
+use reikura_gfx::GraphicEngine;
 use reikura_util::{bitset::BitSet, variable::Variables};
 
 use crate::{
@@ -22,19 +24,53 @@ pub struct VmContext {
     pub char_names: [Option<String>; 256],
 }
 
+impl VmContext {
+    pub fn new() -> Self {
+        Self {
+            flags: BitSet::new(2048),
+            variables: Variables::new(2048),
+            wait_duration: None,
+            timer: None,
+            char_names: [const { None }; 256],
+        }
+    }
+}
+
 pub struct Vm {
     pub manifest: Manifest,
     pub assets: AssetManager,
     pub audio: AudioManager,
-    pub config: Config,
+    pub scene: Scenario,
+    pub gfx: GraphicEngine,
     pub ctx: VmContext,
     pub save: Option<SaveManager>,
-    pub scene: Scenario,
-    pub state: State,
+    pub config: Config,
     pub input: InputManager,
+    pub state: State,
 }
 
 impl Vm {
+    pub fn new(manifest: Manifest, gfx: GraphicEngine) -> anyhow::Result<Self> {
+        let game_path = manifest.game_path().to_owned();
+        let mut assets = AssetManager::new(&game_path)?;
+        let scene = assets
+            .load_scene("START")
+            .context("failed to load start script")?;
+
+        Ok(Self {
+            manifest,
+            assets,
+            audio: AudioManager::new(1.0, 1.0, 1.0)?,
+            scene,
+            gfx,
+            ctx: VmContext::new(),
+            save: None,
+            config: Config::open(game_path.join("user_setup"))?,
+            input: InputManager::new(),
+            state: State::Running,
+        })
+    }
+
     pub fn update(&mut self) -> anyhow::Result<()> {
         match self.state {
             State::Exit => todo!(),

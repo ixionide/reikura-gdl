@@ -9,6 +9,8 @@ use crate::{
 };
 
 pub struct Renderer {
+    softbuffer_ctx: softbuffer::Context<Arc<dyn Window>>,
+    softbuffer_surface: Option<softbuffer::Surface<Arc<dyn Window>, Arc<dyn Window>>>,
     target_surface: Option<u8>,
     screen_surface: Surface,
     surfaces: HashMap<u8, Surface>,
@@ -16,28 +18,31 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(width: u16, height: u16) -> Self {
-        Self {
+    pub fn new(window: Arc<dyn Window>, width: u16, height: u16) -> anyhow::Result<Self> {
+        let softbuffer_ctx = match softbuffer::Context::new(window) {
+            Ok(ctx) => ctx,
+            Err(err) => bail!("failed to create softbuffer context: {err}"),
+        };
+
+        Ok(Self {
+            softbuffer_ctx,
+            softbuffer_surface: None,
             target_surface: None,
             screen_surface: Surface::new_black(width, height),
             surfaces: HashMap::with_capacity(MAX_IMAGE),
             damaged: None,
-        }
+        })
     }
 
-    pub fn update_screen(&mut self) -> bool {
+    pub fn update_screen(&mut self) -> Option<Rect> {
         let dst = &mut self.screen_surface;
-        let src = self.target_surface.and_then(|id| self.surfaces.get(&id));
+        let target = self.target_surface?;
+        let (damaged, src) = self.damaged.take().zip(self.surfaces.get(&target))?;
 
-        if let Some((damaged, src)) = self.damaged.zip(src) {
-            dst.blit_copy(damaged, damaged, src)
-                .expect("failed to blit screen surface");
-            self.damaged = None;
+        dst.blit_copy(damaged, damaged, src)
+            .expect("failed to blit screen surface");
 
-            return true;
-        }
-
-        false
+        Some(damaged)
     }
 
     #[inline]
@@ -133,20 +138,32 @@ impl GraphicBackend for Renderer {
         Ok(())
     }
 
+    fn _init(&mut self, _window: Arc<dyn Window>) -> anyhow::Result<()> {
+        Ok(())
+    }
+
     fn _render(&mut self) -> anyhow::Result<()> {
-        if !self.update_screen() {
+        let Some(_damage) = self.update_screen() else {
             return Ok(());
+        };
+
+        Ok(())
+    }
+
+    fn _resumed(&mut self) {}
+
+    fn _suspended(&mut self) {}
+
+    fn _create_surface(&mut self, window: Arc<dyn Window>) -> anyhow::Result<()> {
+        match softbuffer::Surface::new(&self.softbuffer_ctx, window) {
+            Ok(surface) => self.softbuffer_surface = Some(surface),
+            Err(err) => bail!("failed to create surface: {err}"),
         }
 
-        todo!()
+        Ok(())
     }
 
-    #[allow(unused)]
-    fn _resumed(&mut self, window: Arc<dyn Window>) -> anyhow::Result<()> {
-        todo!()
-    }
-
-    fn _suspended(&mut self) {
-        todo!()
+    fn _destroy_surface(&mut self) {
+        self.softbuffer_surface = None;
     }
 }

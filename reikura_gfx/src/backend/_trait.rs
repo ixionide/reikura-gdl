@@ -14,7 +14,10 @@ pub trait GraphicBackend {
     fn blit_copy_image(&mut self, param: BlitParam) -> anyhow::Result<()>;
     fn blit_blend_image(&mut self, param: BlitParam) -> anyhow::Result<()>;
 
+    fn _init(&mut self, window: Arc<dyn Window>) -> anyhow::Result<()>;
     fn _render(&mut self) -> anyhow::Result<()>;
-    fn _resumed(&mut self, window: Arc<dyn Window>) -> anyhow::Result<()>;
+    fn _resumed(&mut self);
     fn _suspended(&mut self);
+    fn _create_surface(&mut self, window: Arc<dyn Window>) -> anyhow::Result<()>;
+    fn _destroy_surface(&mut self);
 }
