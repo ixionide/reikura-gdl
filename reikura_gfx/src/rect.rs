@@ -1,13 +1,13 @@
 #[derive(Clone, Copy)]
 pub struct Rect {
-    pub(crate) left: u16,
-    pub(crate) top: u16,
-    pub(crate) right: u16,
-    pub(crate) bottom: u16,
+    pub(crate) left: u32,
+    pub(crate) top: u32,
+    pub(crate) right: u32,
+    pub(crate) bottom: u32,
 }
 
 impl Rect {
-    pub fn from_xywh(x: u16, y: u16, w: u16, h: u16) -> Self {
+    pub fn from_xywh(x: u32, y: u32, w: u32, h: u32) -> Self {
         Self {
             left: x,
             top: y,
@@ -16,7 +16,7 @@ impl Rect {
         }
     }
 
-    pub fn from_ltrb(l: u16, t: u16, r: u16, b: u16) -> Option<Self> {
+    pub fn from_ltrb(l: u32, t: u32, r: u32, b: u32) -> Option<Self> {
         if l > r || t > b {
             return None;
         }
@@ -38,11 +38,11 @@ impl Rect {
         }
     }
 
-    pub fn width(&self) -> u16 {
+    pub fn width(&self) -> u32 {
         self.right - self.left
     }
 
-    pub fn height(&self) -> u16 {
+    pub fn height(&self) -> u32 {
         self.bottom - self.top
     }
 
@@ -53,13 +53,13 @@ impl Rect {
             && self.bottom >= other.bottom
     }
 
-    pub fn same_size(&self, other: Self) -> Option<(u16, u16)> {
+    pub fn same_size(&self, other: Self) -> Option<(u32, u32)> {
         let other_size = other.size();
 
         (self.size() == other_size).then_some(other_size)
     }
 
-    pub fn size(&self) -> (u16, u16) {
+    pub fn size(&self) -> (u32, u32) {
         (self.width(), self.height())
     }
 }

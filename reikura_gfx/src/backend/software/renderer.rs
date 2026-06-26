@@ -1,6 +1,7 @@
-use std::{collections::HashMap, num::NonZeroU32, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
-use anyhow::bail;
+use anyhow::{anyhow, bail};
+use softbuffer::{Context, Surface as WindowSurface};
 use winit::window::Window;
 
 use crate::{
@@ -9,8 +10,8 @@ use crate::{
 };
 
 pub struct Renderer {
-    softbuffer_ctx: softbuffer::Context<Arc<dyn Window>>,
-    softbuffer_surface: Option<softbuffer::Surface<Arc<dyn Window>, Arc<dyn Window>>>,
+    context: Context<Arc<dyn Window>>,
+    window_surface: Option<WindowSurface<Arc<dyn Window>, Arc<dyn Window>>>,
     target_surface: Option<u8>,
     screen_surface: Surface,
     surfaces: HashMap<u8, Surface>,
@@ -18,15 +19,15 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(window: Arc<dyn Window>, width: u16, height: u16) -> anyhow::Result<Self> {
-        let softbuffer_ctx = match softbuffer::Context::new(window) {
+    pub fn new(window: Arc<dyn Window>, width: u32, height: u32) -> anyhow::Result<Self> {
+        let context = match Context::new(window) {
             Ok(ctx) => ctx,
             Err(err) => bail!("failed to create softbuffer context: {err}"),
         };
 
         Ok(Self {
-            softbuffer_ctx,
-            softbuffer_surface: None,
+            context,
+            window_surface: None,
             target_surface: None,
             screen_surface: Surface::new_black(width, height),
             surfaces: HashMap::with_capacity(MAX_IMAGE),
@@ -63,7 +64,7 @@ impl GraphicBackend for Renderer {
     }
 
     fn new_image(&mut self, id: u8, width: u32, height: u32) -> anyhow::Result<()> {
-        let surface = Surface::new(width as u16, height as u16);
+        let surface = Surface::new(width, height);
 
         self.maybe_damaged(id, surface.rect());
         self.surfaces.insert(id, surface);
@@ -72,7 +73,7 @@ impl GraphicBackend for Renderer {
     }
 
     fn load_image(&mut self, id: u8, width: u32, height: u32, data: &[u8]) -> anyhow::Result<()> {
-        let surface = Surface::from_bytes(width as u16, height as u16, data)?;
+        let surface = Surface::from_bytes(width, height, data)?;
 
         self.maybe_damaged(id, surface.rect());
         self.surfaces.insert(id, surface);
@@ -147,7 +148,7 @@ impl GraphicBackend for Renderer {
             return Ok(());
         };
 
-        let Some(surface) = self.softbuffer_surface.as_mut() else {
+        let Some(surface) = self.window_surface.as_mut() else {
             bail!("surface is destroyed");
         };
 
@@ -168,12 +169,18 @@ impl GraphicBackend for Renderer {
     fn _suspended(&mut self) {}
 
     fn _create_surface(&mut self, window: Arc<dyn Window>) -> anyhow::Result<()> {
-        match softbuffer::Surface::new(&self.softbuffer_ctx, window) {
+        let size = window.surface_size();
+
+        match WindowSurface::new(&self.context, window) {
             Ok(mut surface) => {
-                let w = NonZeroU32::new(self.screen_surface.width as _).unwrap();
-                let h = NonZeroU32::new(self.screen_surface.height as _).unwrap();
-                surface.resize(w, h).unwrap();
-                self.softbuffer_surface = Some(surface)
+                let w = size.width.try_into()?;
+                let h = size.height.try_into()?;
+
+                surface
+                    .resize(w, h)
+                    .map_err(|err| anyhow!(" failed to resize window surface with error: {err}"))?;
+
+                self.window_surface = Some(surface);
             }
             Err(err) => bail!("failed to create surface: {err}"),
         }
@@ -182,6 +189,6 @@ impl GraphicBackend for Renderer {
     }
 
     fn _destroy_surface(&mut self) {
-        self.softbuffer_surface = None;
+        self.window_surface = None;
     }
 }

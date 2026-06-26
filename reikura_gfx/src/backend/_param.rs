@@ -13,20 +13,10 @@ pub struct BlitParam {
 
 impl BlitParam {
     pub fn src_rect(&self) -> Rect {
-        Rect::from_xywh(
-            self.src_x as u16,
-            self.src_y as u16,
-            self.width as u16,
-            self.height as u16,
-        )
+        Rect::from_xywh(self.src_x, self.src_y, self.width, self.height)
     }
 
     pub fn dst_rect(&self) -> Rect {
-        Rect::from_xywh(
-            self.src_x as u16,
-            self.src_y as u16,
-            self.width as u16,
-            self.height as u16,
-        )
+        Rect::from_xywh(self.src_x, self.src_y, self.width, self.height)
     }
 }

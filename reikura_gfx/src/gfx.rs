@@ -11,7 +11,7 @@ pub struct GraphicEngine {
 impl GraphicEngine {
     pub fn new(window: Arc<dyn Window>, width: u32, height: u32) -> anyhow::Result<Self> {
         // TODO: made hw renderer
-        let renderer = SoftwareRenderer::new(window, width as u16, height as u16)?;
+        let renderer = SoftwareRenderer::new(window, width, height)?;
 
         Ok(Self {
             backend: Box::new(renderer),

@@ -4,8 +4,8 @@ use reikura_util::image::{blend_color, blend_premultiplied_color, premultiply_co
 use crate::Rect;
 
 pub struct Surface<P = Vec<u32>> {
-    pub width: u16,
-    pub height: u16,
+    pub width: u32,
+    pub height: u32,
     pub pixels: P,
 }
 
@@ -16,7 +16,7 @@ impl<P> Surface<P> {
 }
 
 impl Surface {
-    pub fn new(width: u16, height: u16) -> Self {
+    pub fn new(width: u32, height: u32) -> Self {
         const TRANSPARENT: u32 = 0x00_00_00_00;
 
         Self {
@@ -26,7 +26,7 @@ impl Surface {
         }
     }
 
-    pub fn new_black(width: u16, height: u16) -> Self {
+    pub fn new_black(width: u32, height: u32) -> Self {
         const BLACK: u32 = 0xFF_00_00_00;
 
         Self {
@@ -37,7 +37,7 @@ impl Surface {
     }
 
     // assume the format is rgba8
-    pub fn from_bytes(width: u16, height: u16, bytes: &[u8]) -> anyhow::Result<Self> {
+    pub fn from_bytes(width: u32, height: u32, bytes: &[u8]) -> anyhow::Result<Self> {
         if bytes.len() != width as usize * height as usize * size_of::<u32>() {
             bail!("invalid bytes length");
         }
@@ -52,8 +52,9 @@ impl Surface {
     }
 }
 
+// TODO(ixionide): use iterators type
 impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
-    pub fn from_pixels(width: u16, height: u16, pixels: P) -> anyhow::Result<Self> {
+    pub fn from_pixels(width: u32, height: u32, pixels: P) -> anyhow::Result<Self> {
         if pixels.as_ref().len() != width as usize * height as usize {
             bail!("invalid pixels length");
         }
@@ -105,7 +106,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         let stride = self.width as usize;
         let start = rect.left as usize + rect.top as usize * stride;
 
-        for y in 0..h as usize {
+        for y in 0..h {
             let pos = start + y * stride;
 
             for x in 0..w {
@@ -327,7 +328,7 @@ mod tests {
     const GRAY: u32 = blend_color(WHITE, BLACK_50);
     const NAVY: u32 = blend_color(BLUE, BLACK_50);
 
-    fn create_test_surface(width: u16, height: u16, color: u32) -> Surface {
+    fn create_test_surface(width: u32, height: u32, color: u32) -> Surface {
         let mut surface = Surface::new(width, height);
         surface.clear(color);
 
