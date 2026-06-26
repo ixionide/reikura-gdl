@@ -3,10 +3,16 @@ use reikura_util::image::{blend_color, blend_premultiplied_color, premultiply_co
 
 use crate::Rect;
 
-pub struct Surface {
+pub struct Surface<P = Vec<u32>> {
     pub width: u16,
     pub height: u16,
-    pub pixels: Vec<u32>, // NOTE: consider making this generic
+    pub pixels: P,
+}
+
+impl<P> Surface<P> {
+    pub fn rect(&self) -> Rect {
+        Rect::from_xywh(0, 0, self.width, self.height)
+    }
 }
 
 impl Surface {
@@ -44,13 +50,23 @@ impl Surface {
             pixels,
         })
     }
+}
 
-    pub fn rect(&self) -> Rect {
-        Rect::from_xywh(0, 0, self.width, self.height)
+impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
+    pub fn from_pixels(width: u16, height: u16, pixels: P) -> anyhow::Result<Self> {
+        if pixels.as_ref().len() != width as usize * height as usize {
+            bail!("invalid pixels length");
+        }
+
+        Ok(Self {
+            width,
+            height,
+            pixels,
+        })
     }
 
     pub fn clear(&mut self, color: u32) {
-        self.pixels.fill(color);
+        self.pixels.as_mut().fill(color);
     }
 
     pub fn fill_rect_copy(&mut self, rect: Rect, color: u32) -> anyhow::Result<()> {
@@ -58,11 +74,13 @@ impl Surface {
             bail!("rect is outside of surface");
         }
 
+        let pixels = self.pixels.as_mut();
+
         let copy_len = rect.width() as usize;
 
         for i in rect.top as usize..rect.bottom as usize {
             let copy_pos = rect.left as usize + i * self.width as usize;
-            self.pixels[copy_pos..][..copy_len].fill(color);
+            pixels[copy_pos..][..copy_len].fill(color);
         }
 
         Ok(())
@@ -79,6 +97,8 @@ impl Surface {
             return Ok(());
         }
 
+        let pixels = self.pixels.as_mut();
+
         let color = premultiply_color(color);
         let h = rect.width() as usize;
         let w = rect.width() as usize;
@@ -89,7 +109,7 @@ impl Surface {
             let pos = start + y * stride;
 
             for x in 0..w {
-                let dst_color = &mut self.pixels[pos + x];
+                let dst_color = &mut pixels[pos + x];
                 *dst_color = blend_premultiplied_color(*dst_color, color);
             }
         }
@@ -101,7 +121,7 @@ impl Surface {
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface,
+        src: &Surface<P>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -110,6 +130,9 @@ impl Surface {
         let Some((rect_w, rect_h)) = src_rect.same_size(dst_rect) else {
             bail!("src_rect is not the same size as dst_rect");
         };
+
+        let src_pixels = src.pixels.as_ref();
+        let dst_pixels = self.pixels.as_mut();
 
         let copy_len = rect_w as usize;
         let src_stride = src.width as usize;
@@ -121,7 +144,7 @@ impl Surface {
         for i in 0..rect_h as usize {
             let src_pos = src_start + i * src_stride;
             let dst_pos = dst_start + i * dst_stride;
-            self.pixels[dst_pos..][..copy_len].copy_from_slice(&src.pixels[src_pos..][..copy_len]);
+            dst_pixels[dst_pos..][..copy_len].copy_from_slice(&src_pixels[src_pos..][..copy_len]);
         }
 
         Ok(())
@@ -131,7 +154,7 @@ impl Surface {
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface,
+        src: &Surface<P>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -140,6 +163,9 @@ impl Surface {
         let Some((rect_w, rect_h)) = src_rect.same_size(dst_rect) else {
             bail!("src_rect is not the same size as dst_rect");
         };
+
+        let src_pixels = src.pixels.as_ref();
+        let dst_pixels = self.pixels.as_mut();
 
         let src_stride = src.width as usize;
         let dst_stride = self.width as usize;
@@ -152,14 +178,14 @@ impl Surface {
             let dst_pos = dst_start + y * dst_stride;
 
             for x in 0..rect_w as usize {
-                let src_color = src.pixels[src_pos + x];
+                let src_color = src_pixels[src_pos + x];
 
                 // if transparent
                 if src_color >> 24 == 0 {
                     continue;
                 }
 
-                let dst_color = &mut self.pixels[dst_pos + x];
+                let dst_color = &mut dst_pixels[dst_pos + x];
                 *dst_color = blend_color(*dst_color, src_color);
             }
         }
@@ -171,7 +197,7 @@ impl Surface {
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface,
+        src: &Surface<P>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -185,6 +211,9 @@ impl Surface {
         if dst_w == 0 || dst_h == 0 {
             return Ok(());
         }
+
+        let src_pixels = src.pixels.as_ref();
+        let dst_pixels = self.pixels.as_mut();
 
         let src_stride = src.width as usize;
         let dst_stride = self.width as usize;
@@ -210,7 +239,7 @@ impl Surface {
                 let src_idx = src_row * src_stride + src_start_x + srcx;
                 let dst_idx = dst_row * dst_stride + dst_start_x + dx;
 
-                self.pixels[dst_idx] = src.pixels[src_idx];
+                dst_pixels[dst_idx] = src_pixels[src_idx];
                 posx += incx;
             }
 
@@ -224,7 +253,7 @@ impl Surface {
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface,
+        src: &Surface<P>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -238,6 +267,9 @@ impl Surface {
         if dst_w == 0 || dst_h == 0 {
             return Ok(());
         }
+
+        let src_pixels = src.pixels.as_ref();
+        let dst_pixels = self.pixels.as_mut();
 
         let src_stride = src.width as usize;
         let dst_stride = self.width as usize;
@@ -261,7 +293,7 @@ impl Surface {
             for dx in 0..dst_w as usize {
                 let srcx = (posx >> 16) as usize;
 
-                let src_color = src.pixels[src_row * src_stride + src_start_x + srcx];
+                let src_color = src_pixels[src_row * src_stride + src_start_x + srcx];
 
                 // if transparent
                 if src_color >> 24 == 0 {
@@ -269,7 +301,7 @@ impl Surface {
                     continue;
                 }
 
-                let dst_color = &mut self.pixels[dst_row * dst_stride + dst_start_x + dx];
+                let dst_color = &mut dst_pixels[dst_row * dst_stride + dst_start_x + dx];
                 *dst_color = blend_color(*dst_color, src_color);
                 posx += incx;
             }
