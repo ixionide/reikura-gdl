@@ -50,6 +50,10 @@ impl Surface {
             pixels,
         })
     }
+
+    pub fn size(&self) -> (u32, u32) {
+        (self.width, self.height)
+    }
 }
 
 // TODO(ixionide): use iterators type

@@ -14,6 +14,7 @@ use crate::{
 pub struct Renderer {
     context: WindowContext,
     window_size: Option<(u32, u32)>,
+    window_rect: Option<Rect>,
     window_surface: Option<WindowSurface>,
 
     game_surface: Surface,
@@ -32,6 +33,7 @@ impl Renderer {
         Ok(Self {
             context,
             window_size: None,
+            window_rect: None,
             window_surface: None,
             target_surface: None,
             game_surface: Surface::new_black(width, height),
@@ -165,7 +167,9 @@ impl GraphicBackend for Renderer {
 
         // NB: do render here??
 
-        self.window_size = Some((width.into(), height.into()));
+        let window_size = (width.into(), height.into());
+        self.window_size = Some(window_size);
+        self.window_rect = Some(calculate_window_rect(window_size, self.game_surface.size()));
         Ok(())
     }
 
@@ -175,24 +179,24 @@ impl GraphicBackend for Renderer {
         };
 
         let game_surface = &self.game_surface;
+        let game_rect = game_surface.rect();
 
-        let Some((window_surface, (width, height))) =
-            self.window_surface.as_mut().zip(self.window_size)
+        let Some((window_surface, (window_rect, window_size))) = self
+            .window_surface
+            .as_mut()
+            .zip(self.window_rect.zip(self.window_size))
         else {
-            bail!("surface is destroyed");
+            bail!("window surface is destroyed");
         };
 
         match window_surface.buffer_mut() {
             // XXX: fix the pixel channel
             Ok(mut buffer) => {
-                if width == game_surface.width && height == game_surface.height {
+                if window_rect == game_surface.rect() {
                     buffer.copy_from_slice(&game_surface.pixels);
                 } else {
-                    let mut window_surface =
-                        Surface::from_pixels(width, height, buffer.deref_mut())?;
-                    // TODO: mantain aspect ratio
-                    let window_rect = window_surface.rect();
-                    let game_rect = game_surface.rect();
+                    let (w, h) = window_size;
+                    let mut window_surface = Surface::from_pixels(w, h, buffer.deref_mut())?;
 
                     if window_rect.size() == game_rect.size() {
                         window_surface.blit_copy(game_rect, window_rect, &self.game_surface)?;
@@ -226,9 +230,11 @@ impl GraphicBackend for Renderer {
                 let h = size.height.try_into()?;
 
                 surface.resize(w, h).map_err(|err| anyhow!("{err}"))?;
-
                 self.window_surface = Some(surface);
-                self.window_size = Some((w.into(), h.into()));
+                let window_size = (w.into(), h.into());
+                let game_size = self.game_surface.size();
+                self.window_size = Some(window_size);
+                self.window_rect = Some(calculate_window_rect(window_size, game_size));
             }
             Err(err) => bail!("failed to create surface: {err}"),
         }
@@ -239,5 +245,35 @@ impl GraphicBackend for Renderer {
     fn _destroy_surface(&mut self) {
         self.window_surface = None;
         self.window_size = None;
+        self.window_rect = None;
     }
+}
+
+fn calculate_window_rect(window_size: (u32, u32), game_size: (u32, u32)) -> Rect {
+    let window_w = window_size.0 as f32;
+    let window_h = window_size.1 as f32;
+    let game_w = game_size.0 as f32;
+    let game_h = game_size.1 as f32;
+
+    let window_scale = window_w / window_h;
+    let game_scale = game_w / game_h;
+
+    let (x, y, w, h) = {
+        if window_scale < game_scale {
+            let w = window_w as u32;
+            let h = (window_w / game_scale) as u32;
+            let x = 0;
+            let y = (window_size.1 - h) / 2;
+
+            (x, y, w, h)
+        } else {
+            let w = (window_h * game_scale) as u32;
+            let h = window_h as u32;
+            let x = (window_size.0 - w) / 2;
+            let y = 0;
+            (x, y, w, h)
+        }
+    };
+
+    Rect::from_xywh(x, y, w, h)
 }
