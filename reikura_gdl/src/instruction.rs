@@ -102,6 +102,9 @@ pub use ihgl::Ihgl;
 mod ihgc;
 pub use ihgc::Ihgc;
 //
+mod setinsidevol;
+pub use setinsidevol::Setinsidevol;
+//
 mod kidfn;
 pub use kidfn::Kidfn;
 //
