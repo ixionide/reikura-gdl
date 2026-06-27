@@ -26,7 +26,6 @@ fn tween_duration(duration: Duration) -> Tween {
     }
 }
 
-// `StaticSoundData` can be cheaply cloned
 #[derive(Clone)]
 pub struct Audio {
     pub name: Rc<str>,
