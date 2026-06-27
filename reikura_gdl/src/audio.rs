@@ -1,10 +1,13 @@
-use std::{io::Cursor, rc::Rc, time::Duration};
+use std::{io::Cursor, rc::Rc, sync::Arc, time::Duration};
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use kira::{
     Decibels, Easing, Mapping, StartTime, Tween, Value,
     modulator::tweener::{TweenerBuilder, TweenerHandle},
-    sound::static_sound::{StaticSoundData, StaticSoundHandle},
+    sound::{
+        FromFileError,
+        streaming::{StreamingSoundData, StreamingSoundHandle},
+    },
     track::{TrackBuilder, TrackHandle},
 };
 
@@ -27,20 +30,29 @@ fn tween_duration(duration: Duration) -> Tween {
 #[derive(Clone)]
 pub struct Audio {
     pub name: Rc<str>,
-    pub data: StaticSoundData, // NOTE: consider using StreamingSoundData
+    pub data: Arc<[u8]>,
+    pub midi: bool,
+    pub volume: Option<f32>,
 }
 
 impl Audio {
     pub fn load(name: &str, data: Vec<u8>) -> Result<Self> {
-        let cursor = Cursor::new(data);
-
         Ok(Self {
             name: name.to_owned().into(),
-            data: StaticSoundData::from_cursor(cursor)?,
+            data: data.into(),
+            midi: false,
+            volume: None,
         })
     }
 
-    // TODO: pub fn load_midi
+    pub fn load_midi(name: &str, data: Vec<u8>) -> Result<Self> {
+        Ok(Self {
+            name: name.to_owned().into(),
+            data: data.into(),
+            midi: true,
+            volume: None,
+        })
+    }
 }
 
 pub struct AudioManager {
@@ -73,7 +85,12 @@ impl AudioManager {
             bail!("no bgm loaded");
         };
 
-        let Audio { name, mut data } = audio;
+        // TODO: handle midi bgm
+        let mut data = StreamingSoundData::from_cursor(Cursor::new(audio.data))?;
+
+        if let Some(volume) = audio.volume {
+            data = data.volume(volume);
+        }
 
         if looping {
             data = data.loop_region(..);
@@ -83,10 +100,7 @@ impl AudioManager {
             data = data.fade_in_tween(fade_tween);
         }
 
-        self.track
-            .bgm
-            .play_audio(data)
-            .with_context(|| format!("failed to play bgm {name}"))?;
+        self.track.bgm.play_audio(data)?;
 
         Ok(())
     }
@@ -100,16 +114,13 @@ impl AudioManager {
             bail!("no sfx loaded at slot: {slot}");
         };
 
-        let Audio { name, mut data } = audio;
+        let mut data = StreamingSoundData::from_cursor(Cursor::new(audio.data))?;
 
         if let Some(fade_tween) = fade_duration.map(tween_duration) {
             data = data.fade_in_tween(fade_tween);
         }
 
-        self.track
-            .sfx
-            .play_audio_at_slot(slot, data)
-            .with_context(|| format!("failed to play sfx {name}"))?;
+        self.track.sfx.play_audio_at_slot(slot, data)?;
 
         Ok(())
     }
@@ -125,16 +136,17 @@ impl AudioManager {
             bail!("no voice loaded");
         };
 
-        let Audio { name, mut data } = audio;
+        let mut data = StreamingSoundData::from_cursor(Cursor::new(audio.data))?;
+
+        if let Some(volume) = audio.volume {
+            data = data.volume(volume);
+        }
 
         if let Some(fade_tween) = fade_duration.map(tween_duration) {
             data = data.fade_in_tween(fade_tween);
         }
 
-        self.track
-            .voice
-            .play_audio(data)
-            .with_context(|| format!("failed to play voice {name}"))?;
+        self.track.voice.play_audio(data)?;
 
         Ok(())
     }
@@ -168,9 +180,12 @@ impl AllTrack {
     }
 }
 
+type SoundData = StreamingSoundData<FromFileError>;
+type SoundHandle = StreamingSoundHandle<FromFileError>;
+
 pub struct Track<const SLOT: usize> {
     track_handle: TrackHandle,
-    slots: [Option<StaticSoundHandle>; SLOT],
+    slots: [Option<SoundHandle>; SLOT],
 }
 
 impl<const SLOT: usize> Track<SLOT> {
@@ -182,11 +197,11 @@ impl<const SLOT: usize> Track<SLOT> {
         })
     }
 
-    pub fn play_audio(&mut self, sound_data: StaticSoundData) -> Result<()> {
+    pub fn play_audio(&mut self, sound_data: SoundData) -> Result<()> {
         self.play_audio_at_slot(0, sound_data)
     }
 
-    pub fn play_audio_at_slot(&mut self, slot: usize, sound_data: StaticSoundData) -> Result<()> {
+    pub fn play_audio_at_slot(&mut self, slot: usize, sound_data: SoundData) -> Result<()> {
         let index = slot % SLOT;
 
         if let Some(old_handle) = &mut self.slots[index] {
@@ -220,7 +235,7 @@ impl<const SLOT: usize> Track<SLOT> {
 
         self.slots[index]
             .as_ref()
-            .map(StaticSoundHandle::state)
+            .map(SoundHandle::state)
             .is_none_or(|state| !state.is_advancing())
     }
 
