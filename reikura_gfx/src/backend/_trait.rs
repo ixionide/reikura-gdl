@@ -15,6 +15,7 @@ pub trait GraphicBackend {
     fn blit_blend_image(&mut self, param: BlitParam) -> anyhow::Result<()>;
 
     fn _init(&mut self, window: Arc<dyn Window>) -> anyhow::Result<()>;
+    fn _resized(&mut self, width: u32, height: u32) -> anyhow::Result<()>;
     fn _render(&mut self) -> anyhow::Result<()>;
     fn _resumed(&mut self);
     fn _suspended(&mut self);

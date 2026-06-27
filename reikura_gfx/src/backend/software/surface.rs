@@ -118,11 +118,11 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         Ok(())
     }
 
-    pub fn blit_copy(
+    pub fn blit_copy<T: AsRef<[u32]>>(
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface<P>,
+        src: &Surface<T>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -151,11 +151,11 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         Ok(())
     }
 
-    pub fn blit_blend(
+    pub fn blit_blend<T: AsRef<[u32]>>(
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface<P>,
+        src: &Surface<T>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -194,11 +194,11 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         Ok(())
     }
 
-    pub fn blit_scale_copy(
+    pub fn blit_scale_copy<T: AsRef<[u32]>>(
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface<P>,
+        src: &Surface<T>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -250,11 +250,11 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         Ok(())
     }
 
-    pub fn blit_scale_blend(
+    pub fn blit_scale_blend<T: AsRef<[u32]>>(
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface<P>,
+        src: &Surface<T>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");

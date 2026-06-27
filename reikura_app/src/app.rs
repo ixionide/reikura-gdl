@@ -110,6 +110,13 @@ impl ApplicationHandler for ReikuraApp {
 
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::SurfaceResized(size) => {
+                let Some(vm) = &mut self.vm else {
+                    return;
+                };
+
+                vm.gfx._resized(size.width, size.height).unwrap();
+            }
             WindowEvent::RedrawRequested => {
                 let Some(vm) = &mut self.vm else {
                     return;

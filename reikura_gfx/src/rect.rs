@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Rect {
     pub(crate) left: u32,
     pub(crate) top: u32,

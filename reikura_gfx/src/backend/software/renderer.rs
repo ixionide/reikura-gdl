@@ -1,8 +1,10 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, num::NonZeroU32, ops::DerefMut, sync::Arc};
 
 use anyhow::{anyhow, bail};
-use softbuffer::{Context, Surface as WindowSurface};
 use winit::window::Window;
+
+type WindowContext = softbuffer::Context<Arc<dyn Window>>;
+type WindowSurface = softbuffer::Surface<Arc<dyn Window>, Arc<dyn Window>>;
 
 use crate::{
     Rect,
@@ -10,33 +12,36 @@ use crate::{
 };
 
 pub struct Renderer {
-    context: Context<Arc<dyn Window>>,
-    window_surface: Option<WindowSurface<Arc<dyn Window>, Arc<dyn Window>>>,
+    context: WindowContext,
+    window_size: Option<(u32, u32)>,
+    window_surface: Option<WindowSurface>,
+
+    game_surface: Surface,
     target_surface: Option<u8>,
-    screen_surface: Surface,
     surfaces: HashMap<u8, Surface>,
     damaged: Option<Rect>,
 }
 
 impl Renderer {
     pub fn new(window: Arc<dyn Window>, width: u32, height: u32) -> anyhow::Result<Self> {
-        let context = match Context::new(window) {
+        let context = match WindowContext::new(window) {
             Ok(ctx) => ctx,
             Err(err) => bail!("failed to create softbuffer context: {err}"),
         };
 
         Ok(Self {
             context,
+            window_size: None,
             window_surface: None,
             target_surface: None,
-            screen_surface: Surface::new_black(width, height),
+            game_surface: Surface::new_black(width, height),
             surfaces: HashMap::with_capacity(MAX_IMAGE),
             damaged: None,
         })
     }
 
     pub fn update_screen(&mut self) -> Option<Rect> {
-        let dst = &mut self.screen_surface;
+        let dst = &mut self.game_surface;
         let target = self.target_surface?;
         let (damaged, src) = self.damaged.take().zip(self.surfaces.get(&target))?;
 
@@ -143,20 +148,64 @@ impl GraphicBackend for Renderer {
         Ok(())
     }
 
-    fn _render(&mut self) -> anyhow::Result<()> {
-        let Some(_damage) = self.update_screen() else {
+    fn _resized(&mut self, width: u32, height: u32) -> anyhow::Result<()> {
+        let Some(width) = NonZeroU32::new(width) else {
             return Ok(());
         };
 
-        let Some(surface) = self.window_surface.as_mut() else {
+        let Some(height) = NonZeroU32::new(height) else {
+            return Ok(());
+        };
+
+        if let Some(surface) = &mut self.window_surface {
+            _ = surface
+                .resize(width, height)
+                .map_err(|it| anyhow!("{it}"))?;
+        }
+
+        // NB: do render here??
+
+        self.window_size = Some((width.into(), height.into()));
+        Ok(())
+    }
+
+    fn _render(&mut self) -> anyhow::Result<()> {
+        let Some(_damage) = self.update_screen() else {
+            return Ok(()); // state is clean no need to render
+        };
+
+        let game_surface = &self.game_surface;
+
+        let Some((window_surface, (width, height))) =
+            self.window_surface.as_mut().zip(self.window_size)
+        else {
             bail!("surface is destroyed");
         };
 
-        match surface.buffer_mut() {
-            // XXX: fix the pixel format and the size
+        match window_surface.buffer_mut() {
+            // XXX: fix the pixel channel
             Ok(mut buffer) => {
-                buffer.copy_from_slice(&self.screen_surface.pixels);
-                buffer.present().map_err(|it| anyhow::anyhow!("{it}"))?
+                if width == game_surface.width && height == game_surface.height {
+                    buffer.copy_from_slice(&game_surface.pixels);
+                } else {
+                    let mut window_surface =
+                        Surface::from_pixels(width, height, buffer.deref_mut())?;
+                    // TODO: mantain aspect ratio
+                    let window_rect = window_surface.rect();
+                    let game_rect = game_surface.rect();
+
+                    if window_rect.size() == game_rect.size() {
+                        window_surface.blit_copy(game_rect, window_rect, &self.game_surface)?;
+                    } else {
+                        window_surface.blit_scale_copy(
+                            game_rect,
+                            window_rect,
+                            &self.game_surface,
+                        )?;
+                    }
+                }
+
+                buffer.present().map_err(|err| anyhow::anyhow!("{err}"))?
             }
             Err(err) => bail!("failed to get surface buffer: {err}"),
         }
@@ -176,11 +225,10 @@ impl GraphicBackend for Renderer {
                 let w = size.width.try_into()?;
                 let h = size.height.try_into()?;
 
-                surface
-                    .resize(w, h)
-                    .map_err(|err| anyhow!(" failed to resize window surface with error: {err}"))?;
+                surface.resize(w, h).map_err(|err| anyhow!("{err}"))?;
 
                 self.window_surface = Some(surface);
+                self.window_size = Some((w.into(), h.into()));
             }
             Err(err) => bail!("failed to create surface: {err}"),
         }
@@ -190,5 +238,6 @@ impl GraphicBackend for Renderer {
 
     fn _destroy_surface(&mut self) {
         self.window_surface = None;
+        self.window_size = None;
     }
 }
