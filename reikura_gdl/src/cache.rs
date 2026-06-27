@@ -20,12 +20,12 @@ pub struct CacheManager {
 impl CacheManager {
     pub fn new() -> Self {
         Self {
-            image: LruCache::new(NonZeroUsize::new(100).unwrap()),
-            wipe_image: LruCache::new(NonZeroUsize::new(32).unwrap()),
-            scene: LruCache::new(NonZeroUsize::new(24).unwrap()),
+            image: LruCache::new(NonZeroUsize::new(64).unwrap()),
+            wipe_image: LruCache::new(NonZeroUsize::new(16).unwrap()),
+            scene: LruCache::new(NonZeroUsize::new(32).unwrap()),
             sfx: LruCache::new(NonZeroUsize::new(32).unwrap()),
             bgm: LruCache::new(NonZeroUsize::new(16).unwrap()),
-            voice: LruCache::new(NonZeroUsize::new(100).unwrap()),
+            voice: LruCache::new(NonZeroUsize::new(96).unwrap()),
         }
     }
 }
