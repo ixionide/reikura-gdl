@@ -160,7 +160,7 @@ impl GraphicBackend for Renderer {
         };
 
         if let Some(surface) = &mut self.window_surface {
-            _ = surface
+            surface
                 .resize(width, height)
                 .map_err(|it| anyhow!("{it}"))?;
         }
