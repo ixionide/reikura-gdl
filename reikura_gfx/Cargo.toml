@@ -1,0 +1,15 @@
+[package]
+name = "reikura_gfx"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reikura_util = { workspace = true }
+
+anyhow = { workspace = true }
+winit = { workspace = true }
+softbuffer = { workspace = true }
+bytemuck = { version = "1.25.0", default-features = false }
+
+[lints]
+workspace = true
