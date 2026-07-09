@@ -1,7 +1,8 @@
 use anyhow::bail;
-use reikura_util::image::{blend_color, blend_premultiplied_color, premultiply_color};
-
-use crate::Rect;
+use reikura_util::{
+    image::{blend_color, blend_premultiplied_color, premultiply_color},
+    rect::Rect,
+};
 
 pub struct Surface<P = Vec<u32>> {
     pub width: u32,

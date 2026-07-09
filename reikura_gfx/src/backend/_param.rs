@@ -1,4 +1,4 @@
-use crate::Rect;
+use reikura_util::rect::Rect;
 
 pub struct BlitParam {
     pub src_id: u8,

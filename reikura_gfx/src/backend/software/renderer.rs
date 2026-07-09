@@ -1,15 +1,13 @@
 use std::{collections::HashMap, num::NonZeroU32, ops::DerefMut, sync::Arc};
 
 use anyhow::{anyhow, bail};
+use reikura_util::rect::{Rect, surface_rect};
 use winit::window::Window;
 
 type WindowContext = softbuffer::Context<Arc<dyn Window>>;
 type WindowSurface = softbuffer::Surface<Arc<dyn Window>, Arc<dyn Window>>;
 
-use crate::{
-    Rect,
-    backend::{BlitParam, GraphicBackend, MAX_IMAGE, software::Surface},
-};
+use crate::backend::{BlitParam, GraphicBackend, MAX_IMAGE, software::Surface};
 
 pub struct Renderer {
     context: WindowContext,
@@ -169,7 +167,7 @@ impl GraphicBackend for Renderer {
 
         let window_size = (width.into(), height.into());
         self.window_size = Some(window_size);
-        self.window_rect = Some(calculate_window_rect(window_size, self.game_surface.size()));
+        self.window_rect = Some(surface_rect(window_size, self.game_surface.size()));
         Ok(())
     }
 
@@ -234,7 +232,7 @@ impl GraphicBackend for Renderer {
                 let window_size = (w.into(), h.into());
                 let game_size = self.game_surface.size();
                 self.window_size = Some(window_size);
-                self.window_rect = Some(calculate_window_rect(window_size, game_size));
+                self.window_rect = Some(surface_rect(window_size, game_size));
             }
             Err(err) => bail!("failed to create surface: {err}"),
         }
@@ -247,33 +245,4 @@ impl GraphicBackend for Renderer {
         self.window_size = None;
         self.window_rect = None;
     }
-}
-
-fn calculate_window_rect(window_size: (u32, u32), game_size: (u32, u32)) -> Rect {
-    let window_w = window_size.0 as f32;
-    let window_h = window_size.1 as f32;
-    let game_w = game_size.0 as f32;
-    let game_h = game_size.1 as f32;
-
-    let window_scale = window_w / window_h;
-    let game_scale = game_w / game_h;
-
-    let (x, y, w, h) = {
-        if window_scale < game_scale {
-            let w = window_w as u32;
-            let h = (window_w / game_scale) as u32;
-            let x = 0;
-            let y = (window_size.1 - h) / 2;
-
-            (x, y, w, h)
-        } else {
-            let w = (window_h * game_scale) as u32;
-            let h = window_h as u32;
-            let x = (window_size.0 - w) / 2;
-            let y = 0;
-            (x, y, w, h)
-        }
-    };
-
-    Rect::from_xywh(x, y, w, h)
 }
