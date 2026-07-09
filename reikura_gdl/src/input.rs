@@ -1,28 +1,50 @@
-use reikura_util::image::PIXEL_STRIDE;
+use reikura_util::{
+    image::PIXEL_STRIDE,
+    rect::{Rect, surface_rect},
+};
 
 use crate::{Image, vm::VmContext};
 
 pub const MAX_HOTSPOTS: usize = 0x40;
 
 pub struct InputManager {
-    #[allow(dead_code)]
-    selected: Option<u8>,
+    // inputs: HashMap<Input, InputState>,
+    pub selected: Option<u8>,
     pub default_key_map: Option<u8>,
     pub key_maps: [Option<KeyMap>; MAX_HOTSPOTS],
     pub hot_spots: [Option<HotSpot>; MAX_HOTSPOTS],
     pub hit_mask: Option<HitMask>,
-    // inputs: HashMap<Input, InputState>,
+
+    pub mouse_pos: Option<(i32, i32)>,
+    surface_rect: Rect,
+    view_size: (u32, u32),
 }
 
 impl InputManager {
-    pub fn new() -> Self {
+    pub fn new(view_size: (u32, u32)) -> Self {
         Self {
             selected: None,
             default_key_map: None,
             key_maps: [const { None }; MAX_HOTSPOTS],
             hot_spots: [const { None }; MAX_HOTSPOTS],
             hit_mask: None,
+            mouse_pos: None,
+            surface_rect: Rect::from_xywh(0, 0, view_size.0, view_size.1),
+            view_size,
         }
+    }
+
+    pub fn _mouse_moved(&mut self, (x, y): (i32, i32)) {
+        let x = (x - self.surface_rect.left as i32) as f32 / self.surface_rect.width() as f32;
+        let y = (y - self.surface_rect.top as i32) as f32 / self.surface_rect.height() as f32;
+        let (view_w, view_h) = (self.view_size.0 as f32, self.view_size.1 as f32);
+
+        self.mouse_pos = Some(((x * view_w) as i32, (y * view_h) as i32));
+        self.selected = None;
+    }
+
+    pub fn _resized(&mut self, window_size: (u32, u32)) {
+        self.surface_rect = surface_rect(window_size, self.view_size);
     }
 }
 

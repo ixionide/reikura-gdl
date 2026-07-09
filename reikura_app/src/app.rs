@@ -108,23 +108,30 @@ impl ApplicationHandler for ReikuraApp {
             return;
         }
 
+        let Some(vm) = &mut self.vm else {
+            if event == WindowEvent::CloseRequested {
+                event_loop.exit();
+            }
+            return;
+        };
+
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
-            WindowEvent::SurfaceResized(size) => {
-                let Some(vm) = &mut self.vm else {
-                    return;
-                };
-
-                vm.gfx._resized(size.width, size.height).unwrap();
-            }
             WindowEvent::RedrawRequested => {
-                let Some(vm) = &mut self.vm else {
-                    return;
-                };
-
                 vm.update().unwrap();
                 vm.gfx._render().unwrap();
                 window.request_redraw();
+            }
+            WindowEvent::SurfaceResized(size) => {
+                vm.gfx._resized(size.width, size.height).unwrap();
+                vm.input._resized(size.into());
+            }
+            WindowEvent::PointerMoved { position, .. } => {
+                let pos = (position.x as i32, position.y as i32);
+                vm.input._mouse_moved(pos);
+            }
+            WindowEvent::PointerLeft { .. } => {
+                vm.input.mouse_pos = None;
             }
             _ => (),
         }

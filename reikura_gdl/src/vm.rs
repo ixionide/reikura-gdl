@@ -56,6 +56,7 @@ impl Vm {
         let scene = assets
             .load_scene("START")
             .context("failed to load start script")?;
+        let input = InputManager::new(manifest.view_size);
 
         Ok(Self {
             manifest,
@@ -66,7 +67,7 @@ impl Vm {
             ctx: VmContext::new(),
             save: None,
             config: Config::open(game_path.join("user_setup"))?,
-            input: InputManager::new(),
+            input,
             state: State::Running,
         })
     }
@@ -124,21 +125,21 @@ impl Vm {
 
 pub struct Timer {
     start: Instant,
-    delay: i32,
+    duration: i32,
 }
 
 impl Timer {
-    pub fn new(delay: i32) -> Self {
+    pub fn new(duration: i32) -> Self {
         Self {
             start: Instant::now(),
-            delay,
+            duration,
         }
     }
 
     pub fn get(&self) -> i32 {
         let elapsed = self.start.elapsed().as_millis() as i32;
         // NOTE: not sure if saturating is accurate here
-        elapsed.saturating_sub(self.delay)
+        elapsed.saturating_sub(self.duration)
     }
 }
 
