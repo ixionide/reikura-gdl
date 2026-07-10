@@ -13,7 +13,7 @@ impl Instruction for Exs {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
         let ctx = &mut vm.ctx;
         let Some(save) = &mut vm.save else {
-            bail!("save is not initialized yet");
+            bail!("EXS: save is not initialized yet");
         };
 
         let dst = vm.scene.param::<Value>()?.evaluate(ctx) as usize;
