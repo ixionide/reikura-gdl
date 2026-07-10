@@ -30,7 +30,7 @@ impl Instruction for Sp {
                 // XXX: this logic only work when there is only one bit that is set
                 assert_eq!(bit.count_ones(), 1);
 
-                let index = byte_index as usize * 8 + bit.trailing_zeros() as usize;
+                let flag_index = byte_index as usize * 8 + bit.trailing_zeros() as usize;
                 flag_groups.push(index);
             }
         }
