@@ -67,7 +67,7 @@ impl Instruction for Calc {
                     vm.ctx.variables.set(var_index as usize, result);
                     break;
                 }
-                unk => bail!("unknown calc operator: {unk}"),
+                unk => bail!("unknown CALC operator: {unk}"),
             }
         }
 
