@@ -1,0 +1,25 @@
+use anyhow::bail;
+
+use crate::instruction::{Instruction, ReadParam};
+
+pub struct Hp;
+
+impl Instruction for Hp {
+    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
+        let group_index: u8 = vm.scene.param()?;
+        let sub_index: u16 = vm.scene.param()?;
+
+        let check_flag = |index| vm.ctx.flags.get(index).unwrap_or(false);
+
+        let jump = match vm.ctx.flag_groups[group_index as usize] {
+            Some(ref indices) => indices.iter().copied().all(check_flag),
+            None => bail!("HP: flag_groups of index {} is not set", group_index),
+        };
+
+        if jump {
+            vm.scene.jump_sub(sub_index)?;
+        }
+
+        Ok(())
+    }
+}
