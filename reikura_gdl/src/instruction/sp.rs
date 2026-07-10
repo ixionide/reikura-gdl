@@ -22,7 +22,7 @@ impl Instruction for Sp {
 
         let group_index: u8 = params.read_le()?;
 
-        while params.len() > 0 {
+        while !params.is_empty() {
             let byte_index_start: u16 = params.read_le()?;
             let bits: IndexVec<u16, u8> = params.read_le()?;
 
