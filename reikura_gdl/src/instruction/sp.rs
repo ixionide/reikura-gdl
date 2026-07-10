@@ -31,7 +31,7 @@ impl Instruction for Sp {
                 assert_eq!(bit.count_ones(), 1);
 
                 let flag_index = byte_index as usize * 8 + bit.trailing_zeros() as usize;
-                flag_groups.push(index);
+                flag_groups.push(flag_index);
             }
         }
 
