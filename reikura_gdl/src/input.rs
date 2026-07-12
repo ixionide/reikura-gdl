@@ -9,7 +9,7 @@ pub const MAX_HOTSPOTS: usize = 0x40;
 
 pub struct InputManager {
     // inputs: HashMap<Input, InputState>,
-    pub selected: Option<u8>,
+    selected: Option<u8>,
     pub default_key_map: Option<u8>,
     pub key_maps: [Option<KeyMap>; MAX_HOTSPOTS],
     pub hot_spots: [Option<HotSpot>; MAX_HOTSPOTS],
@@ -32,6 +32,30 @@ impl InputManager {
             surface_rect: Rect::from_xywh(0, 0, view_size.0, view_size.1),
             view_size,
         }
+    }
+
+    pub fn get_selected(&self, check_count: u8) -> i32 {
+        if let Some(selected) = self.selected {
+            return selected as i32;
+        }
+
+        let Some((x, y)) = self.mouse_pos else {
+            return -2;
+        };
+
+        let hovered_id = self.hit_mask.as_ref().and_then(|hm| hm.get(x, y));
+
+        for hotspot in self.hot_spots.iter().take(check_count as usize) {
+            let Some(hot_spot) = hotspot else {
+                continue;
+            };
+
+            if hot_spot.is_hovered(x, y) || hot_spot.is_equal(hovered_id) {
+                return hot_spot.id as i32;
+            }
+        }
+
+        -1
     }
 
     pub fn _mouse_moved(&mut self, (x, y): (i32, i32)) {
@@ -68,6 +92,10 @@ impl HotSpot {
     pub fn is_hovered(&self, x: i32, y: i32) -> bool {
         let [left, top, right, bottom] = self.rect;
         x >= left && x <= right && y >= top && y <= bottom
+    }
+
+    pub fn is_equal(&self, id: Option<u8>) -> bool {
+        id.is_some_and(|id| self.id == id)
     }
 }
 
