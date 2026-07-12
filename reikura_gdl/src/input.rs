@@ -4,34 +4,58 @@ use crate::{Image, vm::VmContext};
 
 pub const MAX_HOTSPOTS: usize = 0x40;
 
+pub struct ButtonState {
+    button: Button,
+    down: bool,
+}
+
+pub enum Button {
+    Left,
+    Right,
+}
+
 pub struct InputManager {
     // inputs: HashMap<Input, InputState>,
     focused: Option<u8>,
+    button: Option<ButtonState>,
     pub default_key_map: Option<u8>,
     pub keymaps: [Option<Keymap>; MAX_HOTSPOTS],
     pub hotspots: [Option<Hotspot>; MAX_HOTSPOTS],
     pub hitmask: Option<Hitmask>,
-    pub mouse_pos: Option<(i32, i32)>,
+    cursor_pos: Option<(i32, i32)>,
 }
 
 impl InputManager {
     pub fn new() -> Self {
         Self {
             focused: None,
+            button: None,
             default_key_map: None,
             keymaps: [const { None }; MAX_HOTSPOTS],
             hotspots: [const { None }; MAX_HOTSPOTS],
             hitmask: None,
-            mouse_pos: None,
+            cursor_pos: None,
         }
     }
 
-    pub fn get_selected(&self, check_count: u8) -> i32 {
-        if let Some(focused) = self.focused {
-            return focused as i32;
+    pub(crate) fn cursor_left(&mut self) {
+        self.cursor_pos = None;
+    }
+
+    pub(crate) fn set_cursor_position(&mut self, x: i32, y: i32) {
+        self.cursor_pos = Some((x, y));
+    }
+
+    pub(crate) fn set_button_state(&mut self, button: Button, down: bool) {
+        self.button = Some(ButtonState { button, down });
+    }
+
+    pub fn get_selected(&self, vm_ctx: &VmContext, check_count: u8) -> i32 {
+        if let Some(focused_id) = self.focused {
+            return focused_id as i32;
         }
 
-        let Some((x, y)) = self.mouse_pos else {
+        let Some((x, y)) = self.cursor_pos else {
             return -2;
         };
 
@@ -43,11 +67,28 @@ impl InputManager {
             };
 
             if hotspot.is_hovered(x, y) || hovered_id == Some(hotspot.id) {
-                return hotspot.id as i32;
+                if hotspot.is_enabled(vm_ctx) {
+                    return hotspot.id as i32;
+                }
+                break;
             }
         }
 
         -1
+    }
+
+    pub fn get_button_state(&self) -> i32 {
+        if let Some(state) = &self.button
+            && state.down
+        {
+            // is this correct what about the other? enter key?
+            return match state.button {
+                Button::Left => 2,
+                Button::Right => -1,
+            };
+        };
+
+        return 0;
     }
 }
 
@@ -117,12 +158,14 @@ impl Hitmask {
             return None;
         }
 
-        let index = (x + y * self.image.width) as usize * PIXEL_STRIDE;
+        let index = (x + y * self.image.width) as usize;
 
         self.image
             .data
+            .as_chunks::<PIXEL_STRIDE>()
+            .0
             .get(index)
-            .copied()
+            .map(|it| it[0])
             .filter(|&id| id < MAX_HOTSPOTS as u8)
     }
 }

@@ -46,6 +46,7 @@ impl Runtime {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum State {
     Exit,
     Run,

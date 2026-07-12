@@ -1,3 +1,6 @@
+mod event;
+pub use event::WindowEvent;
+
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
@@ -122,5 +125,21 @@ impl Vm {
         }
 
         Ok(())
+    }
+
+    pub fn should_exit(&self) -> bool {
+        self.runtime.state == State::Exit
+    }
+
+    pub fn handle_window_event(&mut self, event: WindowEvent) {
+        match event {
+            WindowEvent::Close => self.runtime.state.exit(),
+            WindowEvent::CursorMove { x, y } => {
+                // TODO: interact with choice
+                self.input.set_cursor_position(x, y);
+            }
+            WindowEvent::CursorLeave => self.input.cursor_left(),
+            WindowEvent::Button { button, down } => self.input.set_button_state(button, down),
+        }
     }
 }

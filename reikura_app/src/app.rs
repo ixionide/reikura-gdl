@@ -2,7 +2,7 @@ use std::{ops::DerefMut, path::PathBuf, sync::Arc};
 
 use anyhow::anyhow;
 use reikura_gdl::{
-    Manifest, Vm,
+    Manifest, Vm, WindowEvent as VmWindowEvent,
     graphic::{self},
 };
 use winit::{
@@ -119,8 +119,12 @@ impl ApplicationHandler for ReikuraApp {
         }
 
         match event {
-            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::CloseRequested => vm.handle_window_event(VmWindowEvent::Close),
             WindowEvent::RedrawRequested => {
+                if vm.should_exit() {
+                    event_loop.exit();
+                }
+
                 if vm.gfx.request_redraw || self.request_redraw {
                     let surface = framebuffer.get_surface().unwrap();
                     let mut surface_buffer = surface.buffer_mut().unwrap();
@@ -145,7 +149,7 @@ impl ApplicationHandler for ReikuraApp {
                 window.request_redraw();
             }
             WindowEvent::SurfaceResized(size) => {
-                if size.width == 0 || size.height == 0 {
+                if size.width <= 0 || size.height <= 0 {
                     return;
                 }
 
@@ -154,14 +158,46 @@ impl ApplicationHandler for ReikuraApp {
                 self.request_redraw = true;
                 window.request_redraw();
             }
-            WindowEvent::PointerMoved { position, .. } => {
-                let mouse_pos = self
+            WindowEvent::PointerButton {
+                state,
+                position,
+                button,
+                ..
+            } => {
+                let (x, y) = self
                     .viewport
                     .map_position(self.manifest.view_size, position.into());
-                vm.input.mouse_pos = Some(mouse_pos);
+                vm.handle_window_event(VmWindowEvent::CursorMove { x, y });
+
+                match button {
+                    winit::event::ButtonSource::Mouse(mouse_button) => {
+                        use reikura_gdl::Button as VmButton;
+                        use winit::event::MouseButton::*;
+
+                        let down = state.is_pressed();
+                        let button = match mouse_button {
+                            Left => VmButton::Left,
+                            Right => VmButton::Right,
+                            _ => return,
+                        };
+
+                        vm.handle_window_event(VmWindowEvent::Button { button, down });
+                    }
+
+                    // TODO
+                    // winit::event::ButtonSource::Touch { finger_id, force } => todo!(),
+                    _ => (),
+                };
+            }
+            WindowEvent::PointerEntered { position, .. }
+            | WindowEvent::PointerMoved { position, .. } => {
+                let (x, y) = self
+                    .viewport
+                    .map_position(self.manifest.view_size, position.into());
+                vm.handle_window_event(VmWindowEvent::CursorMove { x, y });
             }
             WindowEvent::PointerLeft { .. } | WindowEvent::Focused(false) => {
-                vm.input.mouse_pos = None;
+                vm.handle_window_event(VmWindowEvent::CursorLeave);
             }
             _ => (),
         }
