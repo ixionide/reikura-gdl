@@ -2,6 +2,12 @@ mod _const;
 mod _param;
 mod _trait;
 
+pub use self::{
+    _const::INSTRUCTIONS,
+    _param::*,
+    _trait::{Evaluate, Instruction, Parameters, ReadParam},
+};
+
 mod ed;
 pub use ed::Ed;
 mod ls;
@@ -142,7 +148,3 @@ mod timerend;
 pub use timerend::Timerend;
 mod timerget;
 pub use timerget::Timerget;
-
-pub use _const::INSTRUCTIONS;
-pub use _param::*;
-pub use _trait::{Evaluate, Instruction, Parameters, ReadParam};
