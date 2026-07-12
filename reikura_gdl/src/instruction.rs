@@ -116,6 +116,8 @@ pub use ses::Ses;
 //
 mod ih;
 pub use ih::Ih;
+mod ig;
+pub use ig::Ig;
 //
 mod ihk;
 pub use ihk::Ihk;
