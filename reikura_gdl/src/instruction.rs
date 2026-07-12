@@ -28,7 +28,7 @@ inst! {
     //
     ml, mp, mf, ms, ser, sep, sed, pcmon, pcml, pcms, pcmend, ses,
     //
-    ih, /* ig, */ ihk, ihkdef, ihgl, ihgc,
+    ih, ig, ihk, ihkdef, ihgl, ihgc,
     //
     /* dae, */ dap, das, setinsidevol,
     //
@@ -162,7 +162,7 @@ pub const INSTRUCTION_SET: [Instruction; 256] = const {
     insts[0x82] = stub("IMS");
     insts[0x83] = stub("IXY"); // move mouse cursor
     insts[0x84] = Inst::new("IH", ih);
-    insts[0x85] = stub("IG");
+    insts[0x85] = Inst::new("IG", ig);
     insts[0x86] = Inst::new_skipped("IGINIT");
     insts[0x87] = Inst::new_skipped("IGRELEASE");
     insts[0x88] = Inst::new("IHK", ihk);
