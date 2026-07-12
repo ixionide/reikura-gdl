@@ -5,9 +5,11 @@ use reikura_gfx::backend::BlitParam;
 
 use crate::instruction::{Evaluate, Instruction, ReadParam, Rect, Value};
 
-const CMD_BLIT_COPY: u8 = 0;
-const CMD_BLIT_BLEND: u8 = 1;
-const CMD_BLIT_FADE: u8 = 19;
+reikura_util::const_iota! {
+    u8 = iota,
+    BLIT_COPY,
+    BLIT_BLEND,
+}
 
 pub struct Gp;
 
@@ -34,19 +36,19 @@ impl Instruction for Gp {
         };
 
         match cmd {
-            CMD_BLIT_COPY => {
+            BLIT_COPY => {
                 param.dst_id = dst_id as u8;
                 vm.gfx.blit_copy_image(param)?;
             }
-            CMD_BLIT_BLEND => {
+            BLIT_BLEND => {
                 param.dst_id = dst_id as u8;
                 vm.gfx.blit_blend_image(param)?;
             }
-            CMD_BLIT_FADE => {
-                let _fade_duration = Duration::from_millis(dst_id as u64);
+            // TODO: another gp cmd
+            _ if cmd < 30 => {
+                let _duration = Duration::from_millis(dst_id as u64);
                 vm.gfx.blit_blend_image(param)?;
             }
-            // TODO
             _ => bail!("invalid or unsupported GP cmd: {cmd}"),
         }
 

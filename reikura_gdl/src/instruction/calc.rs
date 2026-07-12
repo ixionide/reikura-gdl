@@ -3,12 +3,15 @@ use reikura_util::io::ReadExt;
 
 use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
 
-const ADD: u8 = 0;
-const MIN: u8 = 1;
-const MUL: u8 = 2;
-const DIV: u8 = 3;
-const MOD: u8 = 4;
-const END: u8 = 5;
+reikura_util::const_iota! {
+    u8 = iota,
+    ADD,
+    MIN,
+    MUL,
+    DIV,
+    MOD,
+    END,
+}
 
 pub struct Calc;
 
