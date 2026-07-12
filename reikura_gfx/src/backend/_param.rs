@@ -17,6 +17,6 @@ impl BlitParam {
     }
 
     pub fn dst_rect(&self) -> Rect {
-        Rect::from_xywh(self.src_x, self.src_y, self.width, self.height)
+        Rect::from_xywh(self.dst_x, self.dst_y, self.width, self.height)
     }
 }
