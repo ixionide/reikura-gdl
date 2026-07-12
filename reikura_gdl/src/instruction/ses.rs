@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
+use crate::{
+    audio::MAX_SFX_SLOT,
+    instruction::{Evaluate, Instruction, ReadParam, Value},
+};
 
 pub struct Ses;
 
@@ -10,7 +13,7 @@ impl Instruction for Ses {
         let ms = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
         let fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
 
-        vm.audio.stop_sfx(slot, fade);
+        vm.audio.stop_sfx(slot % MAX_SFX_SLOT, fade);
 
         Ok(())
     }
