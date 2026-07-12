@@ -5,16 +5,22 @@ use crate::{
     instruction::{Evaluate, Instruction, ReadParam, Value},
 };
 
-const OP_EQ: u8 = 0;
-const OP_LT: u8 = 1;
-const OP_LE: u8 = 2;
-const OP_GT: u8 = 3;
-const OP_GE: u8 = 4;
-const OP_NE: u8 = 5;
+reikura_util::const_iota! {
+    u8 = iota,
+    EQ,
+    LT,
+    LE,
+    GT,
+    GE,
+    NE,
+}
 
-const CMD_JUMP_SUB: u8 = 0;
-const CMD_SET_VAR: u8 = 1;
-const CMD_CONTINUE: u8 = 2;
+reikura_util::const_iota! {
+    u8 = iota,
+    JUMP_SUB,
+    SET_VAR,
+    CONTINUE,
+}
 
 pub struct If;
 
@@ -28,7 +34,7 @@ impl Instruction for If {
             let op: u8 = scene.param()?;
             let rhs: Value = scene.param()?;
 
-            if ![OP_EQ, OP_LT, OP_LE, OP_GT, OP_GE, OP_NE].contains(&op) {
+            if ![EQ, LT, LE, GT, GE, NE].contains(&op) {
                 bail!("unknown IF operator: {op}");
             }
 
@@ -38,12 +44,12 @@ impl Instruction for If {
         let check_cond = |&(lhs, op, rhs): &(Value, u8, Value)| {
             let ctx = &vm.ctx;
             match op {
-                OP_EQ => lhs.evaluate(ctx) == rhs.evaluate(ctx),
-                OP_LT => lhs.evaluate(ctx) < rhs.evaluate(ctx),
-                OP_LE => lhs.evaluate(ctx) <= rhs.evaluate(ctx),
-                OP_GT => lhs.evaluate(ctx) > rhs.evaluate(ctx),
-                OP_GE => lhs.evaluate(ctx) >= rhs.evaluate(ctx),
-                OP_NE => lhs.evaluate(ctx) != rhs.evaluate(ctx),
+                EQ => lhs.evaluate(ctx) == rhs.evaluate(ctx),
+                LT => lhs.evaluate(ctx) < rhs.evaluate(ctx),
+                LE => lhs.evaluate(ctx) <= rhs.evaluate(ctx),
+                GT => lhs.evaluate(ctx) > rhs.evaluate(ctx),
+                GE => lhs.evaluate(ctx) >= rhs.evaluate(ctx),
+                NE => lhs.evaluate(ctx) != rhs.evaluate(ctx),
                 _ => unreachable!(),
             }
         };
@@ -53,7 +59,7 @@ impl Instruction for If {
             let cmd = vm.scene.param()?;
 
             match cmd {
-                CMD_JUMP_SUB => {
+                JUMP_SUB => {
                     let sub_index: u16 = vm.scene.param()?;
                     end = vm.scene.param()?;
 
@@ -61,7 +67,7 @@ impl Instruction for If {
                         vm.scene.jump_sub(sub_index)?;
                     }
                 }
-                CMD_SET_VAR => {
+                SET_VAR => {
                     let var_index = vm.scene.param::<u16>()? as usize;
                     let var_value: Value = vm.scene.param()?;
                     end = vm.scene.param()?;
@@ -71,7 +77,7 @@ impl Instruction for If {
                         vm.ctx.variables.set(var_index, var_value);
                     }
                 }
-                CMD_CONTINUE => continue,
+                CONTINUE => continue,
                 _ => bail!("unknown IF command: {cmd}"),
             }
 

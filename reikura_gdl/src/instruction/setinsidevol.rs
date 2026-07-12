@@ -2,8 +2,11 @@ use anyhow::bail;
 
 use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
 
-const TRACK_VOICE: u8 = 0;
-const TRACK_BGM: u8 = 1;
+reikura_util::const_iota! {
+    u8 = iota,
+    VOICE,
+    BGM,
+}
 
 pub struct Setinsidevol;
 
@@ -14,8 +17,8 @@ impl Instruction for Setinsidevol {
 
         let (audio, track) = {
             match track {
-                TRACK_VOICE => (vm.audio.voice.as_mut(), "voice"),
-                TRACK_BGM => (vm.audio.bgm.as_mut(), "bgm"),
+                VOICE => (vm.audio.voice.as_mut(), "voice"),
+                BGM => (vm.audio.bgm.as_mut(), "bgm"),
                 _ => bail!("invalid SETINSIDEVOL track: {track}"),
             }
         };

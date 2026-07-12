@@ -4,8 +4,11 @@ use anyhow::bail;
 
 use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
 
-const COPY_FLAG: u8 = 0;
-const COPY_VARIABLE: u8 = 1;
+reikura_util::const_iota! {
+    u8 = iota,
+    COPY_FLAG,
+    COPY_VARIABLE,
+}
 
 pub struct Exs;
 

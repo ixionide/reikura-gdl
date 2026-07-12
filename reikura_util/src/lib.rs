@@ -4,5 +4,6 @@ pub mod image;
 pub mod index_vec;
 pub mod io;
 pub mod lzss;
+mod macros;
 pub mod rect;
 pub mod variable;

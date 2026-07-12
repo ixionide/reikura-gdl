@@ -2,9 +2,12 @@ use anyhow::bail;
 
 use crate::instruction::{Instruction, ReadParam};
 
-const CMD_UNSET: u8 = 0;
-const CMD_SET: u8 = 1;
-const CMD_TOGGLE: u8 = 2;
+reikura_util::const_iota! {
+    u8 = iota,
+    UNSET,
+    SET,
+    TOGGLE,
+}
 
 pub struct Sks;
 
@@ -17,17 +20,17 @@ impl Instruction for Sks {
         let range = start..end.min(bound_end);
 
         match value {
-            CMD_UNSET => {
+            UNSET => {
                 for i in range {
                     vm.ctx.flags.set(i, false);
                 }
             }
-            CMD_SET => {
+            SET => {
                 for i in range {
                     vm.ctx.flags.set(i, true);
                 }
             }
-            CMD_TOGGLE => {
+            TOGGLE => {
                 for i in range {
                     vm.ctx.flags.toggle(i);
                 }

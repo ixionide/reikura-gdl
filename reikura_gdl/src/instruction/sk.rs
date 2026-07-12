@@ -2,9 +2,12 @@ use anyhow::bail;
 
 use crate::instruction::{Instruction, ReadParam};
 
-const CMD_UNSET: u8 = 0;
-const CMD_SET: u8 = 1;
-const CMD_TOGGLE: u8 = 2;
+reikura_util::const_iota! {
+    u8 = iota,
+    UNSET,
+    SET,
+    TOGGLE,
+}
 
 pub struct Sk;
 
@@ -14,9 +17,9 @@ impl Instruction for Sk {
         let flag_cmd: u8 = vm.scene.param()?;
 
         match flag_cmd {
-            CMD_UNSET => vm.ctx.flags.set(flag_index, false),
-            CMD_SET => vm.ctx.flags.set(flag_index, true),
-            CMD_TOGGLE => vm.ctx.flags.toggle(flag_index),
+            UNSET => vm.ctx.flags.set(flag_index, false),
+            SET => vm.ctx.flags.set(flag_index, true),
+            TOGGLE => vm.ctx.flags.toggle(flag_index),
             unk => bail!("unrecognized flag value: {unk}"),
         };
 
