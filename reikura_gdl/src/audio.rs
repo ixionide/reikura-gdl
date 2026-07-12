@@ -184,7 +184,7 @@ type SoundHandle = StreamingSoundHandle<FromFileError>;
 
 pub struct Track<const SLOT: usize> {
     track_handle: TrackHandle,
-    slots: [Option<SoundHandle>; SLOT],
+    handle_slots: [Option<SoundHandle>; SLOT],
 }
 
 impl<const SLOT: usize> Track<SLOT> {
@@ -192,7 +192,7 @@ impl<const SLOT: usize> Track<SLOT> {
         let handle = kira_manager.add_sub_track(TrackBuilder::new().volume(volume.modulator()))?;
         Ok(Self {
             track_handle: handle,
-            slots: [const { None }; SLOT],
+            handle_slots: [const { None }; SLOT],
         })
     }
 
@@ -203,12 +203,12 @@ impl<const SLOT: usize> Track<SLOT> {
     pub fn play_audio_at_slot(&mut self, slot: usize, sound_data: SoundData) -> Result<()> {
         let index = slot % SLOT;
 
-        if let Some(old_handle) = &mut self.slots[index] {
+        if let Some(old_handle) = &mut self.handle_slots[index] {
             old_handle.stop(DEFAULT_TWEEN);
         }
 
         let new_handle = self.track_handle.play(sound_data)?;
-        self.slots[index] = Some(new_handle);
+        self.handle_slots[index] = Some(new_handle);
 
         Ok(())
     }
@@ -220,7 +220,7 @@ impl<const SLOT: usize> Track<SLOT> {
     pub fn stop_audio_at_slot(&mut self, slot: usize, fade_duration: Option<Tween>) {
         let index = slot % SLOT;
 
-        if let Some(mut handle) = self.slots[index].take() {
+        if let Some(mut handle) = self.handle_slots[index].take() {
             handle.stop(fade_duration.unwrap_or(DEFAULT_TWEEN));
         }
     }
@@ -232,7 +232,7 @@ impl<const SLOT: usize> Track<SLOT> {
     pub fn is_audio_at_slot_finished(&self, slot: usize) -> bool {
         let index = slot % SLOT;
 
-        self.slots[index]
+        self.handle_slots[index]
             .as_ref()
             .map(SoundHandle::state)
             .is_none_or(|state| !state.is_advancing())
