@@ -1,7 +1,3 @@
-// pub trait Cache {
-//     fn mem_size(&self) -> usize;
-// }
-
 use std::num::NonZeroUsize;
 
 use lru::LruCache;
@@ -15,6 +11,7 @@ pub struct CacheManager {
     pub voice: LruCache<String, Audio>,
     pub sfx: LruCache<String, Audio>,
     pub bgm: LruCache<String, Audio>,
+    pub cdda: Option<LruCache<u8, Audio>>,
 }
 
 impl CacheManager {
@@ -26,6 +23,7 @@ impl CacheManager {
             sfx: LruCache::new(NonZeroUsize::new(32).unwrap()),
             bgm: LruCache::new(NonZeroUsize::new(16).unwrap()),
             voice: LruCache::new(NonZeroUsize::new(96).unwrap()),
+            cdda: None,
         }
     }
 }
