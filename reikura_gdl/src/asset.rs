@@ -2,10 +2,12 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{Read, Seek, SeekFrom},
-    path::Path,
+    num::NonZeroUsize,
+    path::{Path, PathBuf},
 };
 
 use anyhow::{Context, Result, anyhow};
+use lru::LruCache;
 
 use crate::{Audio, CacheManager, Image, Scenario, format::sm2mpx10::Sm2mpx10};
 
@@ -27,21 +29,33 @@ pub struct AssetManager {
     bgm: Archive,
     bgm_midi: Option<Archive>,
     cache: CacheManager,
+    fakecdda: HashMap<u8, PathBuf>,
 }
 
 impl AssetManager {
     pub fn new(base_path: impl AsRef<Path>) -> Result<Self> {
         let read_dir = std::fs::read_dir(base_path)?;
         let entries = read_dir.filter_map(std::io::Result::ok);
+        let mut fakecdda = HashMap::new();
 
         let mut archives = HashMap::with_capacity(ARCHIVE_NAMES.len());
         for entry in entries {
-            let filename = entry.file_name();
+            let entry_path = entry.path();
+            let entry_file_name = entry.file_name();
 
-            for &name in ARCHIVE_NAMES.iter() {
-                if filename.eq_ignore_ascii_case(name) {
-                    let archive = Archive::load(entry.path())?;
-                    archives.insert(name, archive);
+            if entry_path.is_dir() {
+                continue;
+            }
+
+            if let Some(track_num) = cdda_track(&entry_path) {
+                fakecdda.insert(track_num, entry_path);
+                continue;
+            }
+
+            for arc_name in ARCHIVE_NAMES {
+                if entry_file_name.eq_ignore_ascii_case(arc_name) {
+                    let archive = Archive::load(&entry_path)?;
+                    archives.insert(arc_name, archive);
                     break;
                 }
             }
@@ -62,6 +76,7 @@ impl AssetManager {
             voice: get_archive(VOICE)?,
             bgm_midi: archives.remove(MIDI),
             cache: CacheManager::new(),
+            fakecdda,
         })
     }
 
@@ -145,6 +160,28 @@ impl AssetManager {
 
         Ok(audio)
     }
+
+    pub fn load_cdda(&mut self, track_num: u8) -> Result<Audio> {
+        let cdda_cache = self.cache.cdda.get_or_insert_with(|| {
+            let cap = NonZeroUsize::new(self.fakecdda.len().clamp(1, 12)).unwrap();
+            LruCache::new(cap)
+        });
+
+        if let Some(data) = cdda_cache.get(&track_num) {
+            return Ok(data.clone());
+        }
+
+        let path = self
+            .fakecdda
+            .get(&track_num)
+            .ok_or_else(|| anyhow!("can't find track_num {track_num} in fakecdda"))?;
+
+        let data = std::fs::read(path)?;
+        let audio = Audio::load(&path.to_string_lossy(), data)?;
+        cdda_cache.put(track_num, audio.clone());
+
+        Ok(audio)
+    }
 }
 
 pub(crate) struct ArchiveEntry {
@@ -156,7 +193,6 @@ pub(crate) struct ArchiveEntry {
 pub struct Archive {
     file: File,
     index: HashMap<String, ArchiveEntry>,
-    // some title has extra archive eg. (se & se1), (ggd & ggd1), and so on
     extra: Vec<Archive>,
 }
 
@@ -234,4 +270,22 @@ fn remove_extension(name: &mut String) {
     if let Some(dot_pos) = name.rfind('.') {
         name.truncate(dot_pos);
     }
+}
+
+fn cdda_track(path: &Path) -> Option<u8> {
+    let file_name = path.file_name()?.to_string_lossy();
+
+    let tk = file_name
+        .get(0..2)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("TK"));
+
+    let mp3 = path
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("mp3"));
+
+    if !(tk && mp3) {
+        return None;
+    }
+
+    file_name.get(2..)?.parse().ok()
 }
