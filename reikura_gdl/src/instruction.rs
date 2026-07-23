@@ -5,7 +5,7 @@ mod _trait;
 pub use self::{
     _const::INSTRUCTIONS,
     _param::*,
-    _trait::{Evaluate, Instruction, Parameters, ReadParam},
+    _trait::{Evaluate, Instruction, Parameters},
 };
 
 mod ed;

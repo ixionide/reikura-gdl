@@ -2,12 +2,12 @@ use std::num::NonZeroUsize;
 
 use lru::LruCache;
 
-use crate::{Audio, Image, ScenarioCache};
+use crate::{Audio, Image, Scenario};
 
 pub struct CacheManager {
     pub image: LruCache<String, Image>,
     pub wipe_image: LruCache<String, Image>,
-    pub scene: LruCache<String, ScenarioCache>,
+    pub scene: LruCache<String, Scenario>,
     pub voice: LruCache<String, Audio>,
     pub sfx: LruCache<String, Audio>,
     pub bgm: LruCache<String, Audio>,

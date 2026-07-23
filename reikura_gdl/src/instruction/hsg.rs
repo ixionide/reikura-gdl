@@ -1,12 +1,12 @@
-use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
+use crate::instruction::{Evaluate, Instruction, Value};
 
 pub struct Hsg;
 
 impl Instruction for Hsg {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let start = vm.scene.param::<u16>()? as usize;
-        let end = vm.scene.param::<u16>()? as usize;
-        let var_value: Value = vm.scene.param()?;
+        let start = vm.parser.read_param::<u16>()? as usize;
+        let end = vm.parser.read_param::<u16>()? as usize;
+        let var_value: Value = vm.parser.read_param()?;
         let bound_end = vm.ctx.variables.len() - 1;
         let range = start..=end.min(bound_end);
 

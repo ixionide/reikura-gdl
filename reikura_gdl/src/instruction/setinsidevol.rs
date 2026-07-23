@@ -1,6 +1,6 @@
 use anyhow::bail;
 
-use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
+use crate::instruction::{Evaluate, Instruction, Value};
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -12,8 +12,12 @@ pub struct Setinsidevol;
 
 impl Instruction for Setinsidevol {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let track: u8 = vm.scene.param()?;
-        let volume: u8 = vm.scene.param::<Value>()?.evaluate(&vm.ctx).try_into()?;
+        let track: u8 = vm.parser.read_param()?;
+        let volume: u8 = vm
+            .parser
+            .read_param::<Value>()?
+            .evaluate(&vm.ctx)
+            .try_into()?;
 
         let (audio, track) = {
             match track {

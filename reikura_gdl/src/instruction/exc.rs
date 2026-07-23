@@ -2,7 +2,7 @@ use std::cmp::min;
 
 use anyhow::bail;
 
-use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
+use crate::instruction::{Evaluate, Instruction, Value};
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -19,11 +19,11 @@ impl Instruction for Exc {
             bail!("EXC: save is not initialized yet");
         };
 
-        let dst = vm.scene.param::<Value>()?.evaluate(ctx) as usize;
-        let src = vm.scene.param::<Value>()?.evaluate(ctx) as usize;
-        let count = vm.scene.param::<Value>()?.evaluate(ctx) as usize;
+        let dst = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
+        let src = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
+        let count = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
 
-        match vm.scene.param::<u8>()? {
+        match vm.parser.read_param::<u8>()? {
             COPY_FLAG => {
                 let bound_count = min(save.flags.len() - src, ctx.flags.len() - dst);
 

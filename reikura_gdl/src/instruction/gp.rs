@@ -3,7 +3,7 @@ use std::time::Duration;
 use anyhow::bail;
 use reikura_gfx::backend::BlitParam;
 
-use crate::instruction::{Evaluate, Instruction, ReadParam, Rect, Value};
+use crate::instruction::{Evaluate, Instruction, Rect, Value};
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -15,14 +15,22 @@ pub struct Gp;
 
 impl Instruction for Gp {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let cmd: u8 = vm.scene.param()?;
+        let cmd: u8 = vm.parser.read_param()?;
 
-        let src_id = vm.scene.param::<Value>()?.evaluate(&vm.ctx).try_into()?;
-        let rect: [_; _] = vm.scene.param::<Rect<Value>>()?.evaluate(&vm.ctx).into();
+        let src_id = vm
+            .parser
+            .read_param::<Value>()?
+            .evaluate(&vm.ctx)
+            .try_into()?;
+        let rect: [_; _] = vm
+            .parser
+            .read_param::<Rect<Value>>()?
+            .evaluate(&vm.ctx)
+            .into();
         let [src_x, src_y, width, height] = rect.map(|it| it as u32);
-        let dst_id = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
-        let dst_x = vm.scene.param::<Value>()?.evaluate(&vm.ctx) as u32;
-        let dst_y = vm.scene.param::<Value>()?.evaluate(&vm.ctx) as u32;
+        let dst_id = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+        let dst_x = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
+        let dst_y = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
 
         let mut param = BlitParam {
             src_id,
