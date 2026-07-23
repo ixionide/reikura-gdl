@@ -8,7 +8,7 @@ use anyhow::{Result, bail};
 use crate::{Scenario, instruction::Parameters};
 
 const MAX_STATE_CALL_STACK: usize = 1024;
-const MAX_PARSER_CALL_STACK: usize = 1024;
+const MAX_PARSER_CALL_STACK: usize = 256;
 
 pub struct Parser {
     pub state: ExecutionState,
