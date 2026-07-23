@@ -1,13 +1,13 @@
 use anyhow::bail;
 
-use crate::instruction::{Instruction, ReadParam};
+use crate::instruction::Instruction;
 
 pub struct Hp;
 
 impl Instruction for Hp {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let group_index: u8 = vm.scene.param()?;
-        let sub_index: u16 = vm.scene.param()?;
+        let group_index: u8 = vm.parser.read_param()?;
+        let sub_index: u16 = vm.parser.read_param()?;
 
         let check_flag = |index: &usize| vm.ctx.flags.get(*index).unwrap_or(false);
 
@@ -17,7 +17,7 @@ impl Instruction for Hp {
         };
 
         if jump {
-            vm.scene.jump_sub(sub_index)?;
+            vm.parser.jump_sub(sub_index)?;
         }
 
         Ok(())

@@ -3,7 +3,7 @@ use std::io::Seek;
 use anyhow::Result;
 use reikura_util::io::{ReadEndian, ReadExt};
 
-use crate::{Scenario, Vm, instruction::InstructionInfo, vm::VmContext};
+use crate::{Vm, instruction::InstructionInfo, parser::Parser, vm::VmContext};
 
 pub trait Instruction {
     fn execute(vm: &mut Vm, _info: InstructionInfo) -> Result<()> {
@@ -13,7 +13,7 @@ pub trait Instruction {
 
     // we used this for unsupported instruction
     fn skip(vm: &mut Vm, info: InstructionInfo) -> Result<()> {
-        vm.scene.seek_relative(info.param_length() as i64)?;
+        vm.parser.seek_relative(info.param_length() as i64)?;
         Ok(())
     }
 }
@@ -24,22 +24,12 @@ pub trait Evaluate {
 }
 
 pub trait Parameters: Sized {
-    fn deserialize(scene: &mut Scenario) -> anyhow::Result<Self>;
+    fn deserialize(scene: &mut Parser) -> anyhow::Result<Self>;
 }
 
 impl<T: ReadEndian> Parameters for T {
-    fn deserialize(scene: &mut Scenario) -> anyhow::Result<Self> {
+    fn deserialize(scene: &mut Parser) -> anyhow::Result<Self> {
         let param = scene.read_le::<T>()?;
         Ok(param)
-    }
-}
-
-pub trait ReadParam {
-    fn param<P: Parameters>(&mut self) -> anyhow::Result<P>;
-}
-
-impl ReadParam for Scenario {
-    fn param<P: Parameters>(&mut self) -> anyhow::Result<P> {
-        Parameters::deserialize(self)
     }
 }

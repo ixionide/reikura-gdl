@@ -1,10 +1,10 @@
-use crate::instruction::{Instruction, ReadParam};
+use crate::instruction::Instruction;
 
 pub struct Hln;
 
 impl Instruction for Hln {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let var_count: u16 = vm.scene.param()?;
+        let var_count: u16 = vm.parser.read_param()?;
 
         vm.ctx.variables.resize(var_count as usize);
 

@@ -1,6 +1,6 @@
 use anyhow::bail;
 
-use crate::instruction::{Instruction, ReadParam};
+use crate::instruction::Instruction;
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -13,8 +13,8 @@ pub struct Sk;
 
 impl Instruction for Sk {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let flag_index = vm.scene.param::<u16>()? as usize;
-        let flag_cmd: u8 = vm.scene.param()?;
+        let flag_index = vm.parser.read_param::<u16>()? as usize;
+        let flag_cmd: u8 = vm.parser.read_param()?;
 
         match flag_cmd {
             UNSET => vm.ctx.flags.set(flag_index, false),

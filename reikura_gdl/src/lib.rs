@@ -7,17 +7,21 @@ mod image;
 mod input;
 pub mod instruction;
 mod manifest;
+mod parser;
 mod save;
 mod scenario;
 mod vm;
 
-pub use asset::{Archive, AssetManager};
-pub use audio::{Audio, AudioManager};
-pub use cache::CacheManager;
-pub use config::Config;
-pub use image::{Image, ImageDecoder};
-pub use input::{HitMask, HotSpot, InputManager, KeyMap};
-pub use manifest::Manifest;
-pub use save::SaveManager;
-pub use scenario::{Scenario, ScenarioCache};
-pub use vm::Vm;
+pub use self::{
+    asset::{Archive, AssetManager},
+    audio::{Audio, AudioManager},
+    cache::CacheManager,
+    config::Config,
+    image::{Image, ImageDecoder},
+    input::{HitMask, HotSpot, InputManager, KeyMap},
+    manifest::Manifest,
+    parser::Parser,
+    save::SaveManager,
+    scenario::Scenario,
+    vm::Vm,
+};
