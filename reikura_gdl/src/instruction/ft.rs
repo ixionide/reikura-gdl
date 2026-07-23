@@ -1,14 +1,14 @@
 use anyhow::bail;
 
-use crate::instruction::{Instruction, ReadParam};
+use crate::instruction::Instruction;
 
 pub struct Ft;
 
 impl Instruction for Ft {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let src = vm.scene.param::<u16>()? as usize;
-        let dst = vm.scene.param::<u16>()? as usize;
-        let count = vm.scene.param::<u16>()? as usize;
+        let src = vm.parser.read_param::<u16>()? as usize;
+        let dst = vm.parser.read_param::<u16>()? as usize;
+        let count = vm.parser.read_param::<u16>()? as usize;
         let bound_count = vm.ctx.flags.len() - src.max(dst);
         let range = 0..count.min(bound_count);
 

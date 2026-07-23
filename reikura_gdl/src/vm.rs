@@ -8,8 +8,8 @@ use reikura_gfx::GraphicEngine;
 use reikura_util::{bitset::BitSet, variable::Variables};
 
 use crate::{
-    AssetManager, AudioManager, Config, InputManager, Manifest, SaveManager, Scenario,
-    instruction::{INSTRUCTIONS, InstructionInfo, ReadParam},
+    AssetManager, AudioManager, Config, InputManager, Manifest, Parser, SaveManager,
+    instruction::{INSTRUCTIONS, InstructionInfo},
 };
 
 pub const FRAME_DURATION: Duration = Duration::from_millis(16);
@@ -40,8 +40,8 @@ impl VmContext {
 pub struct Vm {
     pub manifest: Manifest,
     pub assets: AssetManager,
+    pub parser: Parser,
     pub audio: AudioManager,
-    pub scene: Scenario,
     pub gfx: GraphicEngine,
     pub ctx: VmContext,
     pub save: Option<SaveManager>,
@@ -54,7 +54,7 @@ impl Vm {
     pub fn new(manifest: Manifest, gfx: GraphicEngine) -> anyhow::Result<Self> {
         let game_path = manifest.game_path().to_owned();
         let mut assets = AssetManager::new(&game_path)?;
-        let scene = assets
+        let start_scene = assets
             .load_scene("START")
             .context("failed to load start script")?;
         let input = InputManager::new(manifest.view_size);
@@ -62,8 +62,8 @@ impl Vm {
         Ok(Self {
             manifest,
             assets,
+            parser: Parser::new(start_scene),
             audio: AudioManager::new(1.0, 1.0, 1.0)?,
-            scene,
             gfx,
             ctx: VmContext::new(),
             save: None,
@@ -77,16 +77,16 @@ impl Vm {
         match self.state {
             State::Exit => todo!(),
             State::Running => {
-                let op = self.scene.read_opcode()?;
+                let op = self.parser.read_opcode()?;
                 let inst = INSTRUCTIONS[op as usize];
-                let info = self.scene.param::<InstructionInfo>()?;
+                let info = self.parser.read_param::<InstructionInfo>()?;
 
                 #[cfg(debug_assertions)]
                 {
-                    let next_ip = self.scene.ip + info.param_length();
+                    let next_ip = self.parser.state.ip + info.param_length();
                     if let Err(err) = inst(self, info) {
                         dbg!(err);
-                        self.scene.ip = next_ip
+                        self.parser.state.ip = next_ip
                     }
                 }
 
@@ -94,7 +94,7 @@ impl Vm {
                 inst(self, info)?;
 
                 if info.end_of_scenario() {
-                    self.scene.seek(SeekFrom::End(0))?;
+                    self.parser.seek(SeekFrom::End(0))?;
                 }
             }
             State::Wait { start, duration } => {
