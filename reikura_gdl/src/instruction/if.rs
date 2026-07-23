@@ -1,8 +1,8 @@
 use anyhow::{bail, ensure};
 
 use crate::{
-    Scenario,
-    instruction::{Evaluate, Instruction, ReadParam, Value},
+    Parser,
+    instruction::{Evaluate, Instruction, Value},
 };
 
 reikura_util::const_iota! {
@@ -29,10 +29,10 @@ impl Instruction for If {
         let mut conds = Vec::with_capacity(10);
         let end: u8;
 
-        fn read_param_cond(scene: &mut Scenario) -> anyhow::Result<(Value, u8, Value)> {
-            let lhs: Value = scene.param()?;
-            let op: u8 = scene.param()?;
-            let rhs: Value = scene.param()?;
+        fn read_param_cond(parser: &mut Parser) -> anyhow::Result<(Value, u8, Value)> {
+            let lhs: Value = parser.read_param()?;
+            let op: u8 = parser.read_param()?;
+            let rhs: Value = parser.read_param()?;
 
             if ![EQ, LT, LE, GT, GE, NE].contains(&op) {
                 bail!("unknown IF operator: {op}");
@@ -55,22 +55,22 @@ impl Instruction for If {
         };
 
         loop {
-            conds.push(read_param_cond(&mut vm.scene)?);
-            let cmd = vm.scene.param()?;
+            conds.push(read_param_cond(&mut vm.parser)?);
+            let cmd = vm.parser.read_param()?;
 
             match cmd {
                 JUMP_SUB => {
-                    let sub_index: u16 = vm.scene.param()?;
-                    end = vm.scene.param()?;
+                    let sub_index: u16 = vm.parser.read_param()?;
+                    end = vm.parser.read_param()?;
 
                     if conds.iter().all(check_cond) {
-                        vm.scene.jump_sub(sub_index)?;
+                        vm.parser.jump_sub(sub_index)?;
                     }
                 }
                 SET_VAR => {
-                    let var_index = vm.scene.param::<u16>()? as usize;
-                    let var_value: Value = vm.scene.param()?;
-                    end = vm.scene.param()?;
+                    let var_index = vm.parser.read_param::<u16>()? as usize;
+                    let var_value: Value = vm.parser.read_param()?;
+                    end = vm.parser.read_param()?;
 
                     if conds.iter().all(check_cond) {
                         let var_value = var_value.evaluate(&vm.ctx);

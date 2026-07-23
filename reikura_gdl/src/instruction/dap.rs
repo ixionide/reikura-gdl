@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use anyhow::bail;
 
-use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
+use crate::instruction::{Evaluate, Instruction, Value};
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -14,8 +14,8 @@ pub struct Dap;
 
 impl Instruction for Dap {
     fn execute(vm: &mut crate::Vm, info: super::InstructionInfo) -> anyhow::Result<()> {
-        let track_num = vm.scene.param::<Value>()?.evaluate(&vm.ctx) as u8;
-        let cmd: u8 = vm.scene.param()?;
+        let track_num = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u8;
+        let cmd: u8 = vm.parser.read_param()?;
         let mut fade = None;
 
         if track_num == 0 {
@@ -29,7 +29,7 @@ impl Instruction for Dap {
         };
 
         if info.param_length() == 11 {
-            let ms = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
+            let ms = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
             fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
         }
 

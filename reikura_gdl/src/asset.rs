@@ -106,12 +106,12 @@ impl AssetManager {
 
     pub fn load_scene(&mut self, name: &str) -> Result<Scenario> {
         if let Some(scene) = self.cache.scene.get(name) {
-            return Ok(scene.into());
+            return Ok(scene.clone());
         }
 
         let data = self.scene.get_asset(name)?;
         let scene = Scenario::load(name, data)?;
-        self.cache.scene.put(name.to_string(), scene.to_cache());
+        self.cache.scene.put(name.to_string(), scene.clone());
 
         Ok(scene)
     }

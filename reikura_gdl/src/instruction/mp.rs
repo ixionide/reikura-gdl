@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use anyhow::bail;
 
-use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
+use crate::instruction::{Evaluate, Instruction, Value};
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -14,11 +14,11 @@ pub struct Mp;
 
 impl Instruction for Mp {
     fn execute(vm: &mut crate::Vm, info: super::InstructionInfo) -> anyhow::Result<()> {
-        let cmd: u8 = vm.scene.param()?;
+        let cmd: u8 = vm.parser.read_param()?;
         let mut fade = None;
 
         if info.param_length() == 5 {
-            let ms = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
+            let ms = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
             fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
         }
 

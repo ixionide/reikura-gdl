@@ -2,8 +2,8 @@ use anyhow::Result;
 use reikura_util::{encoding::sjis_to_utf8, io::ReadExt};
 
 use crate::{
-    Scenario,
-    instruction::{Evaluate, Parameters, ReadParam},
+    Parser,
+    instruction::{Evaluate, Parameters},
     vm::VmContext,
 };
 
@@ -14,7 +14,7 @@ pub struct InstructionInfo {
 }
 
 impl Parameters for InstructionInfo {
-    fn deserialize(scene: &mut Scenario) -> anyhow::Result<Self> {
+    fn deserialize(scene: &mut Parser) -> anyhow::Result<Self> {
         let val1 = scene.read_le()?;
         let mut val2 = None;
 
@@ -70,7 +70,7 @@ impl Value {
 }
 
 impl Parameters for Value {
-    fn deserialize(scene: &mut Scenario) -> Result<Self> {
+    fn deserialize(scene: &mut Parser) -> Result<Self> {
         let value: i32 = scene.read_le()?;
         let mut val = value & Self::MASK;
 
@@ -124,7 +124,7 @@ impl<const CAP: usize> ParamString<CAP> {
 }
 
 impl<const CAP: usize> Parameters for ParamString<CAP> {
-    fn deserialize(scene: &mut Scenario) -> Result<Self> {
+    fn deserialize(scene: &mut Parser) -> Result<Self> {
         let mut buffer = Vec::with_capacity(CAP);
 
         for _ in 0..CAP {
@@ -149,12 +149,12 @@ pub struct Rect<T> {
 }
 
 impl<T: Parameters> Parameters for Rect<T> {
-    fn deserialize(scene: &mut Scenario) -> anyhow::Result<Self> {
+    fn deserialize(scene: &mut Parser) -> anyhow::Result<Self> {
         Ok(Self {
-            x: scene.param()?,
-            y: scene.param()?,
-            w: scene.param()?,
-            h: scene.param()?,
+            x: scene.read_param()?,
+            y: scene.read_param()?,
+            w: scene.read_param()?,
+            h: scene.read_param()?,
         })
     }
 }

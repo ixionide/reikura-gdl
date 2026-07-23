@@ -1,7 +1,6 @@
 use anyhow::bail;
-use reikura_util::io::ReadExt;
 
-use crate::instruction::{Evaluate, Instruction, ReadParam, Value};
+use crate::instruction::{Evaluate, Instruction, Value};
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -17,35 +16,35 @@ pub struct Calc;
 
 impl Instruction for Calc {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let var_index: u16 = vm.scene.param()?;
+        let var_index: u16 = vm.parser.read_param()?;
         let mut result = 0;
         let mut tmp = None;
 
         loop {
-            match vm.scene.read_le::<u8>()? {
+            match vm.parser.read_param::<u8>()? {
                 ADD => {
-                    let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
+                    let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(num) = tmp.replace(rhs) {
                         result += num;
                     }
                 }
                 MIN => {
-                    let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
+                    let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(num) = tmp.replace(-rhs) {
                         result += num;
                     }
                 }
                 MUL => {
-                    let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
+                    let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(lhs) = &mut tmp {
                         *lhs *= rhs
                     }
                 }
                 DIV => {
-                    let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
+                    let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(lhs) = &mut tmp
                         && rhs != 0
@@ -54,7 +53,7 @@ impl Instruction for Calc {
                     }
                 }
                 MOD => {
-                    let rhs = vm.scene.param::<Value>()?.evaluate(&vm.ctx);
+                    let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
 
                     if let Some(lhs) = &mut tmp
                         && rhs != 0

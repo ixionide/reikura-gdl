@@ -10,7 +10,7 @@ pub struct Sp;
 impl Instruction for Sp {
     fn execute(vm: &mut crate::Vm, info: super::InstructionInfo) -> anyhow::Result<()> {
         let mut buf_params = vec![0; info.param_length()];
-        vm.scene.read_exact(&mut buf_params)?;
+        vm.parser.read_exact(&mut buf_params)?;
 
         match buf_params.pop() {
             Some(end) => assert_eq!(end, 0xFF),
