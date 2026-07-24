@@ -12,11 +12,11 @@ impl Display for InvalidSJIS {
 impl std::error::Error for InvalidSJIS {}
 
 #[inline]
-pub fn sjis_to_utf8(bytes: Vec<u8>) -> Result<String, InvalidSJIS> {
-    let (cow, _, err) = encoding_rs::SHIFT_JIS.decode(&bytes);
+pub fn sjis_to_utf8(bytes: &[u8]) -> Result<String, InvalidSJIS> {
+    let (cow, _, err) = encoding_rs::SHIFT_JIS.decode(bytes);
 
     if err {
-        return Err(InvalidSJIS(bytes));
+        return Err(InvalidSJIS(bytes.to_vec()));
     }
 
     Ok(cow.to_string())

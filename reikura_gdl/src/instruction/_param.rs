@@ -1,3 +1,5 @@
+use std::{fmt::Display, hash::Hash};
+
 use anyhow::Result;
 use reikura_util::{encoding::sjis_to_utf8, io::ReadExt};
 
@@ -110,24 +112,128 @@ impl Evaluate for Value {
     }
 }
 
-pub type AssetName = ParamString<12>;
+pub const MAX_ASSETNAME_LEN: usize = 12;
 
-pub struct ParamString<const CAP: usize = 32> {
+#[derive(Debug, Clone, Copy)]
+pub struct AssetName {
+    buffer: [u8; MAX_ASSETNAME_LEN],
+    len: usize,
+}
+
+impl AssetName {
+    pub const fn from_str(name: &'static str) -> Self {
+        let len = if name.len() < MAX_ASSETNAME_LEN {
+            name.len()
+        } else {
+            MAX_ASSETNAME_LEN
+        };
+
+        let mut buffer = [0; MAX_ASSETNAME_LEN];
+        let name_bytes = name.as_bytes();
+
+        let mut i = 0;
+        while i < len {
+            buffer[i] = name_bytes[i];
+            i += 1;
+        }
+
+        Self { buffer, len }
+    }
+
+    pub fn from_buffer(buffer: [u8; MAX_ASSETNAME_LEN]) -> Self {
+        let mut end = MAX_ASSETNAME_LEN;
+        let mut ext = None;
+
+        for (i, &b) in buffer.iter().enumerate() {
+            if b == 0 || b == 13 {
+                end = i;
+                break;
+            }
+
+            if b == b'.' {
+                ext = Some(i);
+            }
+        }
+
+        Self {
+            buffer,
+            len: ext.unwrap_or(end),
+        }
+    }
+
+    #[inline]
+    fn buffer(&self) -> &[u8] {
+        &self.buffer[..self.len]
+    }
+}
+
+impl Parameters for AssetName {
+    fn deserialize(scene: &mut Parser) -> Result<Self> {
+        let mut buffer = [0; MAX_ASSETNAME_LEN];
+        let mut end = MAX_ASSETNAME_LEN;
+        let mut ext = None;
+
+        for (i, b) in buffer.iter_mut().enumerate() {
+            let byte: u8 = scene.read_le()?;
+
+            if !byte.is_ascii() || byte.is_ascii_control() {
+                end = i;
+                break;
+            }
+
+            if byte == b'.' {
+                ext = Some(i);
+            }
+
+            *b = byte;
+        }
+
+        Ok(Self {
+            buffer,
+            len: ext.unwrap_or(end),
+        })
+    }
+}
+
+impl Eq for AssetName {}
+impl PartialEq for AssetName {
+    fn eq(&self, other: &Self) -> bool {
+        let lhs = self.buffer().iter().map(u8::to_ascii_lowercase);
+        let rhs = other.buffer().iter().map(u8::to_ascii_lowercase);
+        lhs.eq(rhs)
+    }
+}
+
+impl Display for AssetName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&String::from_utf8_lossy(self.buffer()))
+    }
+}
+
+impl Hash for AssetName {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        for b in self.buffer() {
+            state.write_u8(b.to_ascii_lowercase());
+        }
+    }
+}
+
+pub struct ParamString {
     buffer: Vec<u8>,
 }
 
-impl<const CAP: usize> ParamString<CAP> {
-    pub fn decode(self) -> Result<String> {
-        let string = sjis_to_utf8(self.buffer)?;
+impl ParamString {
+    pub fn decode_sjis(self) -> Result<String> {
+        let string = sjis_to_utf8(&self.buffer)?;
         Ok(string)
     }
 }
 
-impl<const CAP: usize> Parameters for ParamString<CAP> {
+impl Parameters for ParamString {
     fn deserialize(scene: &mut Parser) -> Result<Self> {
-        let mut buffer = Vec::with_capacity(CAP);
+        let mut buffer = Vec::with_capacity(32);
 
-        for _ in 0..CAP {
+        loop {
             let byte: u8 = scene.read_le()?;
 
             if byte == 0 || byte == 13 {

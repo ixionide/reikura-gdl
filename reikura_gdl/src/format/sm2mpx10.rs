@@ -9,9 +9,7 @@ use reikura_util::{
     io::ReadExt,
 };
 
-use crate::asset::ArchiveEntry;
-
-const MAX_NAME_LENGTH: usize = 12;
+use crate::{asset::ArchiveEntry, instruction::MAX_ASSETNAME_LEN};
 
 pub struct Sm2mpx10 {
     pub entries: Vec<Sm2mpx10Entry>,
@@ -65,9 +63,9 @@ impl TryFrom<Sm2mpx10Entry> for ArchiveEntry {
             .filename
             .iter()
             .position(|b| *b == 0)
-            .unwrap_or(MAX_NAME_LENGTH);
+            .unwrap_or(MAX_ASSETNAME_LEN);
 
-        let filename = sjis_to_utf8(entry.filename[..end].to_vec())?;
+        let filename = sjis_to_utf8(&entry.filename[..end])?;
 
         Ok(Self {
             filename,

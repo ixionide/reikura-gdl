@@ -40,7 +40,7 @@ pub struct Manifest {
 impl Manifest {
     pub fn parse(suf_path: impl AsRef<Path>) -> Result<Self> {
         let bytes = std::fs::read(&suf_path)?;
-        let content = sjis_to_utf8(bytes)?;
+        let content = sjis_to_utf8(&bytes)?;
 
         let mut root_section = HashMap::new();
         let mut startup_info_section = HashMap::new();

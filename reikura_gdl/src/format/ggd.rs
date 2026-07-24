@@ -7,7 +7,7 @@ use reikura_util::{
     lzss,
 };
 
-use crate::{Image, ImageDecoder};
+use crate::ImageDecoder;
 
 pub struct GgdFull;
 
@@ -29,7 +29,7 @@ impl ImageDecoder for GgdFull {
         })
     }
 
-    fn decode(md: Self::Metadata, name: &str, data: &[u8]) -> Result<Image> {
+    fn decode(md: Self::Metadata, data: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
         debug_assert_eq!(md.magic, Self::MAGIC);
 
         let size = md.width as usize * md.height as usize * PIXEL_STRIDE;
@@ -78,12 +78,7 @@ impl ImageDecoder for GgdFull {
             }
         }
 
-        Ok(Image {
-            width: md.width as _,
-            height: md.height as _,
-            name: name.to_owned().into(),
-            data: pixels.into(),
-        })
+        Ok((md.width as _, md.height as _, pixels))
     }
 }
 
@@ -115,7 +110,7 @@ impl ImageDecoder for Ggd256g {
         })
     }
 
-    fn decode(md: Self::Metadata, name: &str, data: &[u8]) -> Result<Image> {
+    fn decode(md: Self::Metadata, data: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
         debug_assert_eq!(md.magic, Self::MAGIC);
 
         let size = md.width as usize * md.height as usize * PIXEL_STRIDE;
@@ -140,12 +135,7 @@ impl ImageDecoder for Ggd256g {
             pixels.extend_from_slice(&palette[index as usize]);
         }
 
-        Ok(Image {
-            width: md.width,
-            height: md.height,
-            name: name.to_owned().into(),
-            data: pixels.into(),
-        })
+        Ok((md.width, md.height, pixels))
     }
 }
 

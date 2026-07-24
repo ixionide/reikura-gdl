@@ -19,7 +19,7 @@ pub struct Scenario {
 }
 
 impl Scenario {
-    pub fn load(name: &str, mut data: Vec<u8>) -> Result<Self> {
+    pub fn load(name: String, mut data: Vec<u8>) -> Result<Self> {
         let isf = IsfMetadata::parse(&data)?;
 
         let code_offset = isf.bytecode_offset as usize;
@@ -44,8 +44,8 @@ impl Scenario {
         }
 
         Ok(Self {
-            name: Rc::from(name.to_owned()),
-            code: Rc::from(data.split_off(code_offset)),
+            name: name.into(),
+            code: data.split_off(code_offset).into(),
             code_offset,
             subroutines: Rc::from(jump_table),
         })

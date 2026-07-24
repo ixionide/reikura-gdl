@@ -1,6 +1,6 @@
 use reikura_util::io::ReadExt;
 
-use crate::{Image, ImageDecoder};
+use crate::ImageDecoder;
 
 pub struct Bin;
 
@@ -14,16 +14,11 @@ impl ImageDecoder for Bin {
         Ok(magic)
     }
 
-    fn decode(magic: Self::Metadata, name: &str, data: &[u8]) -> anyhow::Result<crate::Image> {
+    fn decode(magic: Self::Metadata, data: &[u8]) -> anyhow::Result<(u32, u32, Vec<u8>)> {
         debug_assert_eq!(magic, Self::MAGIC);
 
         let image = image::load_from_memory_with_format(data, image::ImageFormat::Bmp)?;
 
-        Ok(Image {
-            width: image.width(),
-            height: image.height(),
-            name: name.to_owned().into(),
-            data: image.to_rgba8().into_vec().into(),
-        })
+        Ok((image.width(), image.height(), image.to_rgba8().into_vec()))
     }
 }

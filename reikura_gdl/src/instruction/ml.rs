@@ -14,7 +14,7 @@ impl Instruction for Ml {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
         let name: AssetName = vm.parser.read_param()?;
         let cmd: u8 = vm.parser.read_param()?;
-        let bgm = vm.assets.load_bgm(name.decode()?.as_str())?;
+        let bgm = vm.assets.load_bgm(name)?;
 
         vm.audio.bgm = Some(bgm);
 
