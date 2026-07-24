@@ -12,7 +12,7 @@ impl Instruction for Setgameinfo {
             bail!("save is not initialized yet");
         };
 
-        save.game_info = game_info.decode()?.into();
+        save.game_info = game_info.decode_sjis()?.into();
 
         Ok(())
     }

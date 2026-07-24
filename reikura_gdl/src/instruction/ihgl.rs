@@ -10,7 +10,7 @@ impl Instruction for Ihgl {
         let image_name: AssetName = vm.parser.read_param()?;
         let x = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
         let y = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
-        let image = vm.assets.load_image(image_name.decode()?.as_str())?;
+        let image = vm.assets.load_image(image_name)?;
 
         vm.input.hit_mask = Some(HitMask { x, y, image });
 

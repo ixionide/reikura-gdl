@@ -13,7 +13,7 @@ impl Instruction for Cns {
         let index: u8 = vm.parser.read_param()?;
         let mut name_buf = vec![0; info.param_length() - 2];
         vm.parser.read_exact(&mut name_buf)?;
-        let name = sjis_to_utf8(name_buf)?;
+        let name = sjis_to_utf8(&name_buf)?;
 
         vm.ctx.char_names[index as usize] = Some(name);
 

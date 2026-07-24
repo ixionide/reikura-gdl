@@ -9,8 +9,8 @@ impl Instruction for Gl {
             .read_param::<Value>()?
             .evaluate(&vm.ctx)
             .try_into()?;
-        let image_name = vm.parser.read_param::<AssetName>()?.decode()?;
-        let image = vm.assets.load_image(&image_name)?;
+        let image_name = vm.parser.read_param::<AssetName>()?;
+        let image = vm.assets.load_image(image_name)?;
 
         vm.gfx
             .load_image(id, image.width, image.height, &image.data)?;

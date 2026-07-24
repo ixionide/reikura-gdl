@@ -9,6 +9,6 @@ impl Instruction for Cnf {
         let _: u8 = vm.parser.read_param()?;
         let name: AssetName = vm.parser.read_param()?;
 
-        Err(anyhow!("CNF is called: {}", name.decode()?))
+        Err(anyhow!("CNF is called with asset: {name}"))
     }
 }

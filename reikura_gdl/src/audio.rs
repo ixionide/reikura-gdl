@@ -35,9 +35,9 @@ pub struct Audio {
 }
 
 impl Audio {
-    pub fn load(name: &str, data: Vec<u8>) -> Result<Self> {
+    pub fn load(name: String, data: Vec<u8>) -> Result<Self> {
         Ok(Self {
-            name: name.to_owned().into(),
+            name: name.into(),
             data: data.into(),
             midi: false,
             volume: None,

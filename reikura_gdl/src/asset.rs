@@ -9,7 +9,9 @@ use std::{
 use anyhow::{Context, Result, anyhow};
 use lru::LruCache;
 
-use crate::{Audio, CacheManager, Image, Scenario, format::sm2mpx10::Sm2mpx10};
+use crate::{
+    Audio, CacheManager, Image, Scenario, format::sm2mpx10::Sm2mpx10, instruction::AssetName,
+};
 
 const DATA: &str = "data";
 const GGD: &str = "ggd";
@@ -80,83 +82,83 @@ impl AssetManager {
         })
     }
 
-    pub fn load_image(&mut self, name: &str) -> Result<Image> {
-        if let Some(image) = self.cache.image.get(name) {
+    pub fn load_image(&mut self, asset_name: AssetName) -> Result<Image> {
+        if let Some(image) = self.cache.image.get(&asset_name) {
             return Ok(image.clone());
         }
 
-        let data = self.image.get_asset(name)?;
-        let image = Image::load(name, &data)?;
-        self.cache.image.put(name.to_string(), image.clone());
+        let (name, data) = self.image.get_asset(&asset_name)?;
+        let image = Image::load(name, data)?;
+        self.cache.image.put(asset_name, image.clone());
 
         Ok(image)
     }
 
-    pub fn load_wipe_image(&mut self, name: &str) -> Result<Image> {
-        if let Some(image) = self.cache.wipe_image.get(name) {
+    pub fn load_wipe_image(&mut self, asset_name: AssetName) -> Result<Image> {
+        if let Some(image) = self.cache.wipe_image.get(&asset_name) {
             return Ok(image.clone());
         }
 
-        let data = self.data.get_asset(name)?;
-        let image = Image::load(name, &data)?;
-        self.cache.wipe_image.put(name.to_string(), image.clone());
+        let (name, data) = self.data.get_asset(&asset_name)?;
+        let image = Image::load(name, data)?;
+        self.cache.wipe_image.put(asset_name, image.clone());
 
         Ok(image)
     }
 
-    pub fn load_scene(&mut self, name: &str) -> Result<Scenario> {
-        if let Some(scene) = self.cache.scene.get(name) {
+    pub fn load_scene(&mut self, asset_name: AssetName) -> Result<Scenario> {
+        if let Some(scene) = self.cache.scene.get(&asset_name) {
             return Ok(scene.clone());
         }
 
-        let data = self.scene.get_asset(name)?;
+        let (name, data) = self.scene.get_asset(&asset_name)?;
         let scene = Scenario::load(name, data)?;
-        self.cache.scene.put(name.to_string(), scene.clone());
+        self.cache.scene.put(asset_name, scene.clone());
 
         Ok(scene)
     }
 
-    pub fn load_sfx(&mut self, name: &str) -> Result<Audio> {
-        if let Some(data) = self.cache.sfx.get(name) {
+    pub fn load_sfx(&mut self, asset_name: AssetName) -> Result<Audio> {
+        if let Some(data) = self.cache.sfx.get(&asset_name) {
             return Ok(data.clone());
         }
 
-        let data = self.sfx.get_asset(name)?;
+        let (name, data) = self.sfx.get_asset(&asset_name)?;
         let audio = Audio::load(name, data)?;
-        self.cache.sfx.put(name.to_string(), audio.clone());
+        self.cache.sfx.put(asset_name, audio.clone());
 
         Ok(audio)
     }
 
-    pub fn load_bgm(&mut self, name: &str) -> Result<Audio> {
-        if let Some(data) = self.cache.bgm.get(name) {
+    pub fn load_bgm(&mut self, asset_name: AssetName) -> Result<Audio> {
+        if let Some(data) = self.cache.bgm.get(&asset_name) {
             return Ok(data.clone());
         }
 
         let audio = match &mut self.bgm_midi {
             Some(arc) => {
-                let _data = arc.get_asset(name)?;
+                let (_name, _data) = arc.get_asset(&asset_name)?;
                 todo!(); // Audio::load_midi
             }
             None => {
-                let data = self.bgm.get_asset(name)?;
+                let (name, data) = self.bgm.get_asset(&asset_name)?;
                 Audio::load(name, data)?
             }
         };
 
-        self.cache.bgm.put(name.to_string(), audio.clone());
+        self.cache.bgm.put(asset_name, audio.clone());
 
         Ok(audio)
     }
 
-    pub fn load_voice(&mut self, name: &str) -> Result<Audio> {
-        if let Some(data) = self.cache.voice.get(name) {
+    pub fn load_voice(&mut self, asset_name: AssetName) -> Result<Audio> {
+        if let Some(data) = self.cache.voice.get(&asset_name) {
             return Ok(data.clone());
         }
 
-        let data = self.voice.get_asset(name)?;
+        let (name, data) = self.voice.get_asset(&asset_name)?;
         let audio = Audio::load(name, data)?;
-        self.cache.voice.put(name.to_string(), audio.clone());
+        self.cache.voice.put(asset_name, audio.clone());
 
         Ok(audio)
     }
@@ -177,7 +179,12 @@ impl AssetManager {
             .ok_or_else(|| anyhow!("can't find track_num {track_num} in fakecdda"))?;
 
         let data = std::fs::read(path)?;
-        let audio = Audio::load(&path.to_string_lossy(), data)?;
+        let name = path
+            .file_name()
+            .map(|name| name.to_string_lossy().into())
+            .unwrap_or_default();
+
+        let audio = Audio::load(name, data)?;
         cdda_cache.put(track_num, audio.clone());
 
         Ok(audio)
@@ -192,7 +199,7 @@ pub(crate) struct ArchiveEntry {
 
 pub struct Archive {
     file: File,
-    index: HashMap<String, ArchiveEntry>,
+    index: HashMap<AssetName, ArchiveEntry>,
     extra: Vec<Archive>,
 }
 
@@ -221,9 +228,9 @@ impl Archive {
         let mut index = HashMap::with_capacity(archive.entries.len());
 
         for entry in archive.entries {
+            let key = AssetName::from_buffer(entry.filename);
             let entry: ArchiveEntry = entry.try_into().with_context(err_ctx)?;
-            let mut key = entry.filename.to_ascii_lowercase();
-            remove_extension(&mut key);
+
             index.insert(key, entry);
         }
 
@@ -234,22 +241,19 @@ impl Archive {
         })
     }
 
-    fn asset_exist(&self, name: &str) -> bool {
+    fn asset_exist(&self, name: &AssetName) -> bool {
         self.index.contains_key(name)
     }
 
-    pub fn get_asset(&mut self, name: &str) -> Result<Vec<u8>> {
-        let mut name = name.to_ascii_lowercase();
-        remove_extension(&mut name);
-
-        let extra_arc = self.extra.iter_mut().find(|arc| arc.asset_exist(&name));
+    pub fn get_asset(&mut self, name: &AssetName) -> Result<(String, Vec<u8>)> {
+        let extra_arc = self.extra.iter_mut().find(|arc| arc.asset_exist(name));
 
         match extra_arc {
-            Some(arc) => arc.get_asset(&name),
+            Some(arc) => arc.get_asset(name),
             None => {
                 let entry = self
                     .index
-                    .get(&name)
+                    .get(name)
                     .with_context(|| format!("asset {name} not found"))?;
 
                 let pos = SeekFrom::Start(entry.offset as u64);
@@ -260,30 +264,18 @@ impl Archive {
                 self.file.seek(pos)?;
                 self.file.read_exact(&mut buffer)?;
 
-                Ok(buffer)
+                Ok((entry.filename.clone(), buffer))
             }
         }
     }
 }
 
-fn remove_extension(name: &mut String) {
-    if let Some(dot_pos) = name.rfind('.') {
-        name.truncate(dot_pos);
-    }
-}
-
 fn cdda_track(path: &Path) -> Option<u8> {
     let file_name = path.file_name()?.to_string_lossy();
+    let prefix = file_name.get(..2)?;
+    let ext = path.extension()?;
 
-    let tk = file_name
-        .get(0..2)
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("TK"));
-
-    let mp3 = path
-        .extension()
-        .is_some_and(|ext| ext.eq_ignore_ascii_case("mp3"));
-
-    if !(tk && mp3) {
+    if !(prefix.eq_ignore_ascii_case("tk") && ext.eq_ignore_ascii_case("mp3")) {
         return None;
     }
 

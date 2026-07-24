@@ -18,7 +18,7 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn load(name: &str, data: &[u8]) -> Result<Self> {
+    pub fn load(name: String, data: Vec<u8>) -> Result<Self> {
         let magic = &data[0..8];
 
         match magic {
@@ -37,9 +37,16 @@ pub trait ImageDecoder {
     type Metadata;
 
     fn parse(data: &[u8]) -> Result<Self::Metadata>;
-    fn decode(md: Self::Metadata, name: &str, data: &[u8]) -> Result<Image>;
-    fn load(name: &str, data: &[u8]) -> Result<Image> {
-        let md = Self::parse(data)?;
-        Self::decode(md, name, data)
+    fn decode(md: Self::Metadata, data: &[u8]) -> Result<(u32, u32, Vec<u8>)>;
+    fn load(name: String, data: Vec<u8>) -> Result<Image> {
+        let md = Self::parse(&data)?;
+        let (width, height, data) = Self::decode(md, &data)?;
+
+        Ok(Image {
+            width,
+            height,
+            name: name.into(),
+            data: data.into(),
+        })
     }
 }

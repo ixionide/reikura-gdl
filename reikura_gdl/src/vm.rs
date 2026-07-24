@@ -9,10 +9,11 @@ use reikura_util::{bitset::BitSet, variable::Variables};
 
 use crate::{
     AssetManager, AudioManager, Config, InputManager, Manifest, Parser, SaveManager,
-    instruction::{INSTRUCTIONS, InstructionInfo},
+    instruction::{AssetName, INSTRUCTIONS, InstructionInfo},
 };
 
 pub const FRAME_DURATION: Duration = Duration::from_millis(16);
+const START_SCENE: AssetName = AssetName::from_str("START");
 
 pub struct VmContext {
     pub flags: BitSet,
@@ -54,10 +55,10 @@ impl Vm {
     pub fn new(manifest: Manifest, gfx: GraphicEngine) -> anyhow::Result<Self> {
         let game_path = manifest.game_path().to_owned();
         let mut assets = AssetManager::new(&game_path)?;
-        let start_scene = assets
-            .load_scene("START")
-            .context("failed to load start script")?;
         let input = InputManager::new(manifest.view_size);
+        let start_scene = assets
+            .load_scene(START_SCENE)
+            .context("failed to load start script")?;
 
         Ok(Self {
             manifest,

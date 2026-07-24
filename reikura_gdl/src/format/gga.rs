@@ -6,7 +6,7 @@ use reikura_util::{
     io::ReadExt,
 };
 
-use crate::{Image, image::ImageDecoder};
+use crate::image::ImageDecoder;
 
 pub struct Gga;
 
@@ -38,7 +38,7 @@ impl ImageDecoder for Gga {
         })
     }
 
-    fn decode(md: Self::Metadata, name: &str, data: &[u8]) -> Result<Image> {
+    fn decode(md: Self::Metadata, data: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
         debug_assert_eq!(md.magic, Self::MAGIC);
         debug_assert_eq!(md.bpp, 32);
 
@@ -127,11 +127,6 @@ impl ImageDecoder for Gga {
             }
         }
 
-        Ok(Image {
-            width: md.width as _,
-            height: md.height as _,
-            name: name.to_owned().into(),
-            data: pixels.into(),
-        })
+        Ok((md.width as _, md.height as _, pixels))
     }
 }

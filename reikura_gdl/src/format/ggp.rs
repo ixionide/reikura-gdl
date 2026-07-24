@@ -1,6 +1,6 @@
 use reikura_util::io::ReadExt;
 
-use crate::{Image, ImageDecoder};
+use crate::ImageDecoder;
 
 pub struct GgpFaike;
 
@@ -27,7 +27,7 @@ impl ImageDecoder for GgpFaike {
         })
     }
 
-    fn decode(mut md: Self::Metadata, name: &str, data: &[u8]) -> anyhow::Result<crate::Image> {
+    fn decode(mut md: Self::Metadata, data: &[u8]) -> anyhow::Result<(u32, u32, Vec<u8>)> {
         debug_assert_eq!(md.magic, Self::MAGIC);
 
         let offset = md.offset as usize;
@@ -46,11 +46,6 @@ impl ImageDecoder for GgpFaike {
 
         let image = image::load_from_memory_with_format(&png_data, image::ImageFormat::Png)?;
 
-        Ok(Image {
-            width: image.width(),
-            height: image.height(),
-            name: name.to_owned().into(),
-            data: image.to_rgba8().into_vec().into(),
-        })
+        Ok((image.width(), image.height(), image.to_rgba8().into_vec()))
     }
 }

@@ -2,15 +2,15 @@ use std::num::NonZeroUsize;
 
 use lru::LruCache;
 
-use crate::{Audio, Image, Scenario};
+use crate::{Audio, Image, Scenario, instruction::AssetName};
 
 pub struct CacheManager {
-    pub image: LruCache<String, Image>,
-    pub wipe_image: LruCache<String, Image>,
-    pub scene: LruCache<String, Scenario>,
-    pub voice: LruCache<String, Audio>,
-    pub sfx: LruCache<String, Audio>,
-    pub bgm: LruCache<String, Audio>,
+    pub image: LruCache<AssetName, Image>,
+    pub wipe_image: LruCache<AssetName, Image>,
+    pub scene: LruCache<AssetName, Scenario>,
+    pub voice: LruCache<AssetName, Audio>,
+    pub sfx: LruCache<AssetName, Audio>,
+    pub bgm: LruCache<AssetName, Audio>,
     pub cdda: Option<LruCache<u8, Audio>>,
 }
 
