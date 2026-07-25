@@ -97,7 +97,7 @@ impl TryFrom<DrsArcEntry> for ArchiveEntry {
         let filename = sjis_to_utf8(&entry.filename[..end])?;
 
         Ok(Self {
-            filename: filename.to_owned(),
+            filename,
             offset: entry.offset as usize,
             length: entry.length as usize,
         })
