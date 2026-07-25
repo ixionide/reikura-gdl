@@ -2,7 +2,7 @@ use std::num::NonZeroUsize;
 
 use lru::LruCache;
 
-use crate::{Audio, Image, Scenario, instruction::AssetName};
+use crate::{AssetName, Audio, Image, Scenario};
 
 pub struct CacheManager {
     pub image: LruCache<AssetName, Image>,
