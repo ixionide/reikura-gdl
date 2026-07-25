@@ -6,10 +6,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result, anyhow, bail};
 use lru::LruCache;
+use reikura_util::io::ReadExt;
 
-use crate::{Audio, CacheManager, Image, Scenario, format::sm2mpx10::Sm2mpx10};
+use crate::{
+    Audio, CacheManager, Image, Scenario,
+    format::{drs::DrsArc, sm2mpx10::Sm2mpx10},
+};
 
 const DATA: &str = "data";
 const GGD: &str = "ggd";
@@ -225,17 +229,22 @@ impl Archive {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref();
         let err_ctx = || format!("failed to load archive: {}", path.display());
-
         let mut file = File::open(path).with_context(err_ctx)?;
-        let archive = Sm2mpx10::parse(&mut file).with_context(err_ctx)?;
-        let mut index = HashMap::with_capacity(archive.entries.len());
 
-        for entry in archive.entries {
-            let key = AssetName::from_buffer(entry.filename);
-            let entry: ArchiveEntry = entry.try_into().with_context(err_ctx)?;
+        let index = {
+            let magic = file.read_bytes::<8>()?;
+            file.rewind()?;
 
-            index.insert(key, entry);
-        }
+            match &magic {
+                b"SM2MPX10" => Sm2mpx10::parse(&mut file)
+                    .with_context(err_ctx)?
+                    .entries_index()?,
+                b"SM2MPX20" => bail!("sm2mpx20 archive is not yet supported"),
+                _ => DrsArc::parse(&mut file)
+                    .with_context(err_ctx)?
+                    .entries_index()?,
+            }
+        };
 
         Ok(Self {
             file,
