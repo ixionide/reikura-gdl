@@ -1,10 +1,6 @@
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{Read, Seek},
-};
+use std::{collections::HashMap, fs::File, io::Read};
 
-use anyhow::Result;
+use anyhow::bail;
 use reikura_util::{
     encoding::{InvalidSJIS, sjis_to_utf8},
     io::ReadExt,
@@ -15,32 +11,45 @@ use crate::{
     asset::{ArchiveEntry, MAX_ASSETNAME_LEN},
 };
 
-pub struct Sm2mpx10 {
-    pub entries: Vec<Sm2mpx10Entry>,
+pub struct DrsArc {
+    pub entries: Vec<DrsArcEntry>,
 }
 
-impl Sm2mpx10 {
-    const MAGIC: &[u8] = b"SM2MPX10";
+const ENTRY_CHUNK_LEN: usize = 16;
 
-    pub fn parse(file: &mut File) -> Result<Self> {
-        let magic: [u8; 8] = file.read_le()?;
+impl DrsArc {
+    pub fn parse(file: &mut File) -> anyhow::Result<Self> {
+        let entries_len = file.read_le::<u16>()? as usize;
+        let file_size = file.metadata()?.len() as usize;
 
-        debug_assert_eq!(magic, Self::MAGIC);
-
-        let count: u32 = file.read_le()?;
-        file.seek(std::io::SeekFrom::Start(32))?;
+        if !entries_len.is_multiple_of(ENTRY_CHUNK_LEN) || entries_len > file_size {
+            bail!("invalid Digital Romance System Archive");
+        }
 
         let entries_chunk = {
-            let mut buf = vec![0; size_of::<Sm2mpx10Entry>() * count as usize];
+            let mut buf = vec![0; entries_len];
             file.read_exact(&mut buf)?;
             buf
         };
-        let mut entries = Vec::with_capacity(count as usize);
 
-        for chunk in entries_chunk.chunks_exact(size_of::<Sm2mpx10Entry>()) {
-            let entry = Sm2mpx10Entry::parse(chunk)?;
+        let mut entries: Vec<DrsArcEntry> = {
+            let count = entries_len / ENTRY_CHUNK_LEN;
+            Vec::with_capacity(count)
+        };
+
+        for chunk in entries_chunk.chunks_exact(ENTRY_CHUNK_LEN) {
+            let entry = DrsArcEntry::parse(chunk)?;
+
+            if let Some(prev) = entries.last_mut() {
+                prev.length = entry.offset;
+            }
+
             entries.push(entry);
         }
+
+        if let Some(terminator) = entries.pop() {
+            debug_assert_eq!(file_size, terminator.offset as _);
+        };
 
         Ok(Self { entries })
     }
@@ -59,26 +68,26 @@ impl Sm2mpx10 {
     }
 }
 
-pub struct Sm2mpx10Entry {
+pub struct DrsArcEntry {
     pub filename: [u8; 12],
     pub offset: u32,
     pub length: u32,
 }
 
-impl Sm2mpx10Entry {
+impl DrsArcEntry {
     pub fn parse(mut chunk: &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             filename: chunk.read_le()?,
             offset: chunk.read_le()?,
-            length: chunk.read_le()?,
+            length: 0,
         })
     }
 }
 
-impl TryFrom<Sm2mpx10Entry> for ArchiveEntry {
+impl TryFrom<DrsArcEntry> for ArchiveEntry {
     type Error = InvalidSJIS;
 
-    fn try_from(entry: Sm2mpx10Entry) -> Result<Self, Self::Error> {
+    fn try_from(entry: DrsArcEntry) -> Result<Self, Self::Error> {
         let end = entry
             .filename
             .iter()
