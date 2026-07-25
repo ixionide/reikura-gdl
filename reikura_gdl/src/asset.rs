@@ -9,9 +9,7 @@ use std::{
 use anyhow::{Context, Result, anyhow};
 use lru::LruCache;
 
-use crate::{
-    Audio, CacheManager, Image, Scenario, format::sm2mpx10::Sm2mpx10, instruction::AssetName,
-};
+use crate::{Audio, CacheManager, Image, Scenario, format::sm2mpx10::Sm2mpx10};
 
 const DATA: &str = "data";
 const GGD: &str = "ggd";
@@ -21,6 +19,11 @@ const VOICE: &str = "voice";
 const WMSC: &str = "wmsc";
 const MIDI: &str = "midi";
 const ARCHIVE_NAMES: [&str; 7] = [DATA, GGD, ISF, SE, VOICE, WMSC, MIDI];
+pub const MAX_ASSETNAME_LEN: usize = 12;
+pub const START_SCENE: AssetName = AssetName {
+    buffer: *b"START\0\0\0\0\0\0\0",
+    len: 5,
+};
 
 pub struct AssetManager {
     data: Archive,
@@ -181,7 +184,7 @@ impl AssetManager {
         let data = std::fs::read(path)?;
         let name = path
             .file_name()
-            .map(|name| name.to_string_lossy().into())
+            .map(|name| name.to_string_lossy().into_owned())
             .unwrap_or_default();
 
         let audio = Audio::load(name, data)?;
@@ -266,6 +269,91 @@ impl Archive {
 
                 Ok((entry.filename.clone(), buffer))
             }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct AssetName {
+    buffer: [u8; MAX_ASSETNAME_LEN],
+    len: usize,
+}
+
+impl AssetName {
+    pub fn from_buffer(buffer: [u8; MAX_ASSETNAME_LEN]) -> Self {
+        let mut end = MAX_ASSETNAME_LEN;
+        let mut ext = None;
+
+        for (i, &b) in buffer.iter().enumerate() {
+            if !b.is_ascii() || b.is_ascii_control() {
+                end = i;
+                break;
+            }
+
+            if b == b'.' {
+                ext = Some(i);
+            }
+        }
+
+        Self {
+            buffer,
+            len: ext.unwrap_or(end),
+        }
+    }
+
+    #[inline]
+    fn buffer(&self) -> &[u8] {
+        &self.buffer[..self.len]
+    }
+}
+
+impl crate::instruction::Parameters for AssetName {
+    fn deserialize(scene: &mut crate::Parser) -> Result<Self> {
+        let mut buffer = [0; MAX_ASSETNAME_LEN];
+        let mut end = MAX_ASSETNAME_LEN;
+        let mut ext = None;
+
+        for (i, b) in buffer.iter_mut().enumerate() {
+            let byte: u8 = scene.read_param()?;
+
+            if !byte.is_ascii() || byte.is_ascii_control() {
+                end = i;
+                break;
+            }
+
+            if byte == b'.' {
+                ext = Some(i);
+            }
+
+            *b = byte;
+        }
+
+        Ok(Self {
+            buffer,
+            len: ext.unwrap_or(end),
+        })
+    }
+}
+
+impl Eq for AssetName {}
+impl PartialEq for AssetName {
+    fn eq(&self, other: &Self) -> bool {
+        let lhs = self.buffer().iter().map(u8::to_ascii_lowercase);
+        let rhs = other.buffer().iter().map(u8::to_ascii_lowercase);
+        lhs.eq(rhs)
+    }
+}
+
+impl std::fmt::Display for AssetName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&String::from_utf8_lossy(self.buffer()))
+    }
+}
+
+impl std::hash::Hash for AssetName {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        for b in self.buffer() {
+            state.write_u8(b.to_ascii_lowercase());
         }
     }
 }

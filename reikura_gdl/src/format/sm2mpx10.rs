@@ -9,7 +9,7 @@ use reikura_util::{
     io::ReadExt,
 };
 
-use crate::{asset::ArchiveEntry, instruction::MAX_ASSETNAME_LEN};
+use crate::asset::{ArchiveEntry, MAX_ASSETNAME_LEN};
 
 pub struct Sm2mpx10 {
     pub entries: Vec<Sm2mpx10Entry>,

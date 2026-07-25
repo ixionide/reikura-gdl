@@ -19,5 +19,5 @@ pub fn sjis_to_utf8(bytes: &[u8]) -> Result<String, InvalidSJIS> {
         return Err(InvalidSJIS(bytes.to_vec()));
     }
 
-    Ok(cow.to_string())
+    Ok(cow.into_owned())
 }

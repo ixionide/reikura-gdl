@@ -13,7 +13,7 @@ mod scenario;
 mod vm;
 
 pub use self::{
-    asset::{Archive, AssetManager},
+    asset::{Archive, AssetManager, AssetName},
     audio::{Audio, AudioManager},
     cache::CacheManager,
     config::Config,
