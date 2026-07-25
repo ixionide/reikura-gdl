@@ -368,13 +368,22 @@ impl std::hash::Hash for AssetName {
 }
 
 fn cdda_track(path: &Path) -> Option<u8> {
+    use std::ffi::OsStr;
+
     let file_name = path.file_name()?.to_string_lossy();
     let prefix = file_name.get(..2)?;
     let ext = path.extension()?;
 
-    if !(prefix.eq_ignore_ascii_case("tk") && ext.eq_ignore_ascii_case("mp3")) {
+    let is_audio = |ext: &OsStr| {
+        ["mp3", "ogg", "wav"]
+            .iter()
+            .any(|it| ext.eq_ignore_ascii_case(it))
+    };
+
+    if !(prefix.eq_ignore_ascii_case("tk") && is_audio(ext)) {
         return None;
     }
 
-    file_name.get(2..)?.parse().ok()
+    let track_num: u8 = file_name.get(2..)?.parse().ok()?;
+    track_num.checked_sub(1)
 }
