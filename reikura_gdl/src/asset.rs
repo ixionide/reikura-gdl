@@ -294,7 +294,7 @@ impl AssetName {
         let mut ext = None;
 
         for (i, &b) in buffer.iter().enumerate() {
-            if !b.is_ascii() || b.is_ascii_control() {
+            if b == 0 || b == 13 {
                 end = i;
                 break;
             }
@@ -325,7 +325,7 @@ impl crate::instruction::Parameters for AssetName {
         for (i, b) in buffer.iter_mut().enumerate() {
             let byte: u8 = scene.read_param()?;
 
-            if !byte.is_ascii() || byte.is_ascii_control() {
+            if byte == 0 || byte == 13 {
                 end = i;
                 break;
             }
