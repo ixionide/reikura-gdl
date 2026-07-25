@@ -41,7 +41,7 @@ impl DrsArc {
             let entry = DrsArcEntry::parse(chunk)?;
 
             if let Some(prev) = entries.last_mut() {
-                prev.length = entry.offset;
+                prev.length = entry.offset - prev.offset;
             }
 
             entries.push(entry);
