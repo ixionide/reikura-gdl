@@ -7,8 +7,8 @@ use anyhow::{Result, bail};
 
 use crate::{Scenario, instruction::Parameters};
 
-const MAX_STATE_CALL_STACK: usize = 1024;
-const MAX_PARSER_CALL_STACK: usize = 256;
+const SUB_CALL_STACK: usize = 1024;
+const SCENE_CALL_STACK: usize = 256;
 
 pub struct Parser {
     pub state: ExecutionState,
@@ -19,7 +19,7 @@ impl Parser {
     pub fn new(start_scene: Scenario) -> Self {
         Self {
             state: ExecutionState::new(start_scene),
-            stack: Vec::with_capacity(MAX_PARSER_CALL_STACK),
+            stack: Vec::with_capacity(SCENE_CALL_STACK),
         }
     }
 
@@ -30,7 +30,7 @@ impl Parser {
     pub fn call_scene(&mut self, scenario: Scenario) -> Result<()> {
         let caller = mem::replace(&mut self.state, ExecutionState::new(scenario));
 
-        if self.stack.len() < MAX_PARSER_CALL_STACK {
+        if self.stack.len() < SCENE_CALL_STACK {
             self.stack.push(caller);
         } else {
             bail!("parser call stack overflow");
@@ -61,7 +61,7 @@ impl Parser {
         let caller_ip = self.state.ip;
         self.jump_sub(index)?;
 
-        if self.state.stack.len() < MAX_STATE_CALL_STACK {
+        if self.state.stack.len() < SUB_CALL_STACK {
             self.state.stack.push(caller_ip);
         } else {
             bail!("state call stack overflow")
@@ -103,7 +103,7 @@ impl ExecutionState {
     pub fn new(scenario: Scenario) -> Self {
         Self {
             ip: 0,
-            stack: Vec::with_capacity(MAX_STATE_CALL_STACK),
+            stack: Vec::with_capacity(SUB_CALL_STACK),
             scenario,
         }
     }

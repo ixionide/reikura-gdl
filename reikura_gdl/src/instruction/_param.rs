@@ -16,12 +16,12 @@ pub struct InstructionInfo {
 }
 
 impl Parameters for InstructionInfo {
-    fn deserialize(scene: &mut Parser) -> anyhow::Result<Self> {
-        let val1 = scene.read_le()?;
+    fn deserialize(parser: &mut Parser) -> anyhow::Result<Self> {
+        let val1 = parser.read_le()?;
         let mut val2 = None;
 
         if val1 & 0x80 != 0 {
-            val2 = Some(scene.read_le()?);
+            val2 = Some(parser.read_le()?);
         }
 
         Ok(Self { val1, val2 })
@@ -61,10 +61,11 @@ pub enum Value {
 }
 
 impl Value {
-    const VAR_BIT: i32 = 1 << 31;
-    const RAND_BIT: i32 = 1 << 30;
-    const MIN_BIT: i32 = 1 << 29;
-    const MASK: i32 = !(Self::VAR_BIT | Self::RAND_BIT); // signed 30bit integer
+    const BIT_MASK: i32 = (1 << 30) - 1; // signed 30bit integer
+    const MIN_MASK: i32 = !Self::BIT_MASK;
+    const VAR_FLAG: i32 = 1 << 31;
+    const RNG_FLAG: i32 = 1 << 30;
+    const MIN_FLAG: i32 = 1 << 29;
 
     pub fn is_random(&self) -> bool {
         matches!(self, Value::Random(_))
@@ -72,18 +73,18 @@ impl Value {
 }
 
 impl Parameters for Value {
-    fn deserialize(scene: &mut Parser) -> Result<Self> {
-        let value: i32 = scene.read_le()?;
-        let mut val = value & Self::MASK;
+    fn deserialize(parser: &mut Parser) -> Result<Self> {
+        let value: i32 = parser.read_le()?;
+        let mut val = value & Self::BIT_MASK;
 
-        if value & Self::MIN_BIT != 0 {
-            val |= !Self::MASK;
+        if value & Self::MIN_FLAG != 0 {
+            val |= Self::MIN_MASK;
         }
 
         let result = {
-            if value & Self::VAR_BIT != 0 {
+            if value & Self::VAR_FLAG != 0 {
                 Self::Variable(val)
-            } else if value & Self::RAND_BIT != 0 {
+            } else if value & Self::RNG_FLAG != 0 {
                 Self::Random(val)
             } else {
                 Self::Literal(val)
@@ -105,7 +106,11 @@ impl Evaluate for Value {
                 Err(_) => 0,
             },
             Value::Random(modulo) => {
-                let random_number = fastrand::i32(0..modulo.abs().max(1));
+                if modulo == 0 {
+                    return 0;
+                }
+
+                let random_number = fastrand::i32(0..modulo.abs());
                 random_number * modulo.signum()
             }
         }
@@ -124,11 +129,11 @@ impl ParamString {
 }
 
 impl Parameters for ParamString {
-    fn deserialize(scene: &mut Parser) -> Result<Self> {
+    fn deserialize(parser: &mut Parser) -> Result<Self> {
         let mut buffer = Vec::with_capacity(32);
 
         loop {
-            let byte: u8 = scene.read_le()?;
+            let byte: u8 = parser.read_le()?;
 
             if byte == 0 || byte == 13 {
                 break;
@@ -149,12 +154,12 @@ pub struct Rect<T> {
 }
 
 impl<T: Parameters> Parameters for Rect<T> {
-    fn deserialize(scene: &mut Parser) -> anyhow::Result<Self> {
+    fn deserialize(parser: &mut Parser) -> anyhow::Result<Self> {
         Ok(Self {
-            x: scene.read_param()?,
-            y: scene.read_param()?,
-            w: scene.read_param()?,
-            h: scene.read_param()?,
+            x: parser.read_param()?,
+            y: parser.read_param()?,
+            w: parser.read_param()?,
+            h: parser.read_param()?,
         })
     }
 }

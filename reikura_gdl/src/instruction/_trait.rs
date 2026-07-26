@@ -24,12 +24,12 @@ pub trait Evaluate {
 }
 
 pub trait Parameters: Sized {
-    fn deserialize(scene: &mut Parser) -> anyhow::Result<Self>;
+    fn deserialize(parser: &mut Parser) -> anyhow::Result<Self>;
 }
 
 impl<T: ReadEndian> Parameters for T {
-    fn deserialize(scene: &mut Parser) -> anyhow::Result<Self> {
-        let param = scene.read_le::<T>()?;
+    fn deserialize(parser: &mut Parser) -> anyhow::Result<Self> {
+        let param = parser.read_le::<T>()?;
         Ok(param)
     }
 }
