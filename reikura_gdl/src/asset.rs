@@ -23,11 +23,6 @@ const VOICE: &str = "voice";
 const WMSC: &str = "wmsc";
 const MIDI: &str = "midi";
 const ARCHIVE_NAMES: [&str; 7] = [DATA, GGD, ISF, SE, VOICE, WMSC, MIDI];
-pub const MAX_ASSETNAME_LEN: usize = 12;
-pub const START_SCENE: AssetName = AssetName {
-    buffer: *b"START\0\0\0\0\0\0\0",
-    len: 5,
-};
 
 pub struct AssetManager {
     data: Archive,
@@ -37,8 +32,8 @@ pub struct AssetManager {
     sfx: Archive,
     bgm: Archive,
     bgm_midi: Option<Archive>,
-    cache: CacheManager,
     fakecdda: HashMap<u8, PathBuf>,
+    cache: CacheManager,
 }
 
 impl AssetManager {
@@ -84,8 +79,8 @@ impl AssetManager {
             bgm: get_archive(WMSC)?,
             voice: get_archive(VOICE)?,
             bgm_midi: archives.remove(MIDI),
-            cache: CacheManager::new(),
             fakecdda,
+            cache: CacheManager::new(),
         })
     }
 
@@ -284,13 +279,20 @@ impl Archive {
 
 #[derive(Debug, Clone, Copy)]
 pub struct AssetName {
-    buffer: [u8; MAX_ASSETNAME_LEN],
+    buffer: [u8; Self::LEN],
     len: usize,
 }
 
 impl AssetName {
-    pub fn from_buffer(buffer: [u8; MAX_ASSETNAME_LEN]) -> Self {
-        let mut end = MAX_ASSETNAME_LEN;
+    pub const LEN: usize = 12;
+
+    pub const START: Self = Self {
+        buffer: *b"START\0\0\0\0\0\0\0",
+        len: 5,
+    };
+
+    pub fn from_buffer(buffer: [u8; Self::LEN]) -> Self {
+        let mut end = Self::LEN;
         let mut ext = None;
 
         for (i, &b) in buffer.iter().enumerate() {
@@ -318,8 +320,8 @@ impl AssetName {
 
 impl crate::instruction::Parameters for AssetName {
     fn deserialize(scene: &mut crate::Parser) -> Result<Self> {
-        let mut buffer = [0; MAX_ASSETNAME_LEN];
-        let mut end = MAX_ASSETNAME_LEN;
+        let mut buffer = [0; Self::LEN];
+        let mut end = Self::LEN;
         let mut ext = None;
 
         for (i, b) in buffer.iter_mut().enumerate() {

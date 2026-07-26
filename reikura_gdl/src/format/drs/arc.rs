@@ -6,10 +6,7 @@ use reikura_util::{
     io::ReadExt,
 };
 
-use crate::{
-    AssetName,
-    asset::{ArchiveEntry, MAX_ASSETNAME_LEN},
-};
+use crate::{AssetName, asset::ArchiveEntry};
 
 pub struct DrsArc {
     pub entries: Vec<DrsArcEntry>,
@@ -92,7 +89,7 @@ impl TryFrom<DrsArcEntry> for ArchiveEntry {
             .filename
             .iter()
             .position(|b| *b == 0)
-            .unwrap_or(MAX_ASSETNAME_LEN);
+            .unwrap_or(AssetName::LEN);
 
         let filename = sjis_to_utf8(&entry.filename[..end])?;
 

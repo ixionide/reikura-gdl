@@ -1,5 +1,5 @@
 use crate::{
-    audio::MAX_SFX_SLOT,
+    audio::SFX_SLOT,
     instruction::{AssetName, Evaluate, Instruction, Value},
 };
 
@@ -11,7 +11,7 @@ impl Instruction for Ser {
         let slot = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as usize;
         let sfx = vm.assets.load_sfx(name)?;
 
-        vm.audio.sfx[slot % MAX_SFX_SLOT] = Some(sfx);
+        vm.audio.sfx[slot % SFX_SLOT] = Some(sfx);
 
         Ok(())
     }

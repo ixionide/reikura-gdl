@@ -11,7 +11,7 @@ use kira::{
     track::{TrackBuilder, TrackHandle},
 };
 
-pub const MAX_SFX_SLOT: usize = 32;
+pub const SFX_SLOT: usize = 32;
 
 const DEFAULT_TWEEN: Tween = Tween {
     start_time: StartTime::Immediate,
@@ -58,7 +58,7 @@ pub struct AudioManager {
     _manager: kira::AudioManager,
     pub track: AllTrack,
     pub bgm: Option<Audio>,
-    pub sfx: [Option<Audio>; MAX_SFX_SLOT],
+    pub sfx: [Option<Audio>; SFX_SLOT],
     pub voice: Option<Audio>,
 }
 
@@ -72,7 +72,7 @@ impl AudioManager {
             _manager: kira_manager,
             track,
             bgm: None,
-            sfx: [const { None }; MAX_SFX_SLOT],
+            sfx: [const { None }; SFX_SLOT],
             voice: None,
         })
     }
@@ -159,7 +159,7 @@ impl AudioManager {
 
 pub struct AllTrack {
     pub bgm: Track<1>,
-    pub sfx: Track<MAX_SFX_SLOT>,
+    pub sfx: Track<SFX_SLOT>,
     pub voice: Track<1>,
     pub volume: AllVolume,
 }

@@ -8,7 +8,7 @@ use reikura_gfx::GraphicEngine;
 use reikura_util::{bitset::BitSet, variable::Variables};
 
 use crate::{
-    AssetManager, AudioManager, Config, InputManager, Manifest, Parser, SaveManager,
+    AssetManager, AssetName, AudioManager, Config, InputManager, Manifest, Parser, SaveManager,
     instruction::{INSTRUCTIONS, InstructionInfo},
 };
 
@@ -56,7 +56,7 @@ impl Vm {
         let mut assets = AssetManager::new(&game_path)?;
         let input = InputManager::new(manifest.view_size);
         let start_scene = assets
-            .load_scene(crate::asset::START_SCENE)
+            .load_scene(AssetName::START)
             .context("failed to load start script")?;
 
         Ok(Self {
