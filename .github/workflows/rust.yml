@@ -22,10 +22,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libasound2-dev
-      - name: Checks
+      - name: Check
         run: |
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
+      - name: Test
+        run: cargo test
 
   build-win:
     runs-on: windows-latest
