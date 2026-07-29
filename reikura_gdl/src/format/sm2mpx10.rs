@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     fs::File,
     io::{Read, Seek},
 };
@@ -10,10 +9,10 @@ use reikura_util::{
     io::ReadExt,
 };
 
-use crate::{AssetName, asset::ArchiveEntry};
+use crate::{ArchiveEntry, ArchiveIndex, AssetName};
 
 pub struct Sm2mpx10 {
-    pub entries: Vec<Sm2mpx10Entry>,
+    entries: Vec<Sm2mpx10Entry>,
 }
 
 impl Sm2mpx10 {
@@ -41,18 +40,20 @@ impl Sm2mpx10 {
 
         Ok(Self { entries })
     }
+}
 
-    pub(crate) fn entries_index(self) -> anyhow::Result<HashMap<AssetName, ArchiveEntry>> {
-        let mut entries = HashMap::with_capacity(self.entries.len());
+impl ArchiveIndex for Sm2mpx10 {
+    fn entries_len(&self) -> usize {
+        self.entries.len()
+    }
 
-        for entry in self.entries {
+    fn entries(self) -> impl Iterator<Item = (AssetName, Result<ArchiveEntry, InvalidSJIS>)> {
+        self.entries.into_iter().map(|entry| {
             let key = AssetName::from_buffer(entry.filename);
-            let value = ArchiveEntry::try_from(entry)?;
+            let value = ArchiveEntry::try_from(entry);
 
-            entries.insert(key, value);
-        }
-
-        Ok(entries)
+            (key, value)
+        })
     }
 }
 
