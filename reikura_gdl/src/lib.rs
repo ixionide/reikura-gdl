@@ -1,3 +1,4 @@
+mod archive;
 mod asset;
 mod audio;
 mod cache;
@@ -13,7 +14,8 @@ mod scenario;
 mod vm;
 
 pub use self::{
-    asset::{Archive, AssetManager, AssetName},
+    archive::{Archive, ArchiveEntry, ArchiveIndex},
+    asset::{AssetManager, AssetName},
     audio::{Audio, AudioManager},
     cache::CacheManager,
     config::Config,
