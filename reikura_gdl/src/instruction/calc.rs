@@ -16,7 +16,7 @@ pub struct Calc;
 
 impl Instruction for Calc {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let var_index: u16 = vm.parser.read_param()?;
+        let reg_index: u16 = vm.parser.read_param()?;
         let mut result = 0;
         let mut tmp = None;
 
@@ -66,7 +66,7 @@ impl Instruction for Calc {
                         result += rhs;
                     }
 
-                    vm.ctx.variables.set(var_index as usize, result);
+                    vm.ctx.registers.set(reg_index as usize, result);
                     break;
                 }
                 unk => bail!("unknown CALC operator: {unk}"),

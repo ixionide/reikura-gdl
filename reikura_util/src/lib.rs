@@ -6,4 +6,4 @@ pub mod io;
 mod iota;
 pub mod lzss;
 pub mod rect;
-pub mod variable;
+pub mod register;
