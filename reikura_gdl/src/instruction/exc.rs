@@ -19,8 +19,8 @@ impl Instruction for Exc {
             bail!("EXC: save is not initialized yet");
         };
 
-        let dst = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
         let src = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
+        let dst = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
         let count = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
 
         match vm.parser.read_param::<u8>()? {
