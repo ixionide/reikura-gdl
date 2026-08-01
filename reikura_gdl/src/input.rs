@@ -50,7 +50,7 @@ impl InputManager {
                 continue;
             };
 
-            if hot_spot.is_hovered(x, y) || hot_spot.is_equal(hovered_id) {
+            if hot_spot.is_hovered(x, y) || hot_spot.is_id_equal(hovered_id) {
                 return hot_spot.id as i32;
             }
         }
@@ -85,7 +85,7 @@ impl HotSpot {
         if self.flag {
             ctx.flags.get(self.state_index).unwrap_or(false)
         } else {
-            ctx.variables.get(self.state_index).unwrap_or(0) != 0
+            ctx.registers.get(self.state_index).unwrap_or(0) != 0
         }
     }
 
@@ -94,7 +94,7 @@ impl HotSpot {
         x >= left && x <= right && y >= top && y <= bottom
     }
 
-    pub fn is_equal(&self, id: Option<u8>) -> bool {
+    pub fn is_id_equal(&self, id: Option<u8>) -> bool {
         id.is_some_and(|id| self.id == id)
     }
 }

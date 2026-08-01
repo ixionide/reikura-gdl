@@ -18,7 +18,7 @@ reikura_util::const_iota! {
 reikura_util::const_iota! {
     u8 = iota,
     JUMP_SUB,
-    SET_VAR,
+    SET_REG,
     CONTINUE,
 }
 
@@ -67,14 +67,14 @@ impl Instruction for If {
                         vm.parser.jump_sub(sub_index)?;
                     }
                 }
-                SET_VAR => {
-                    let var_index = vm.parser.read_param::<u16>()? as usize;
-                    let var_value: Value = vm.parser.read_param()?;
+                SET_REG => {
+                    let reg_index = vm.parser.read_param::<u16>()? as usize;
+                    let reg_value: Value = vm.parser.read_param()?;
                     end = vm.parser.read_param()?;
 
                     if conds.iter().all(check_cond) {
-                        let var_value = var_value.evaluate(&vm.ctx);
-                        vm.ctx.variables.set(var_index, var_value);
+                        let reg_value = reg_value.evaluate(&vm.ctx);
+                        vm.ctx.registers.set(reg_index, reg_value);
                     }
                 }
                 CONTINUE => continue,

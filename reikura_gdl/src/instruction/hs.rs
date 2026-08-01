@@ -4,11 +4,11 @@ pub struct Hs;
 
 impl Instruction for Hs {
     fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let var_index = vm.parser.read_param::<u16>()? as usize;
-        let var_value: Value = vm.parser.read_param()?;
-        let value = var_value.evaluate(&vm.ctx);
+        let reg_index = vm.parser.read_param::<u16>()? as usize;
+        let reg_value: Value = vm.parser.read_param()?;
+        let value = reg_value.evaluate(&vm.ctx);
 
-        vm.ctx.variables.set(var_index, value);
+        vm.ctx.registers.set(reg_index, value);
 
         Ok(())
     }
