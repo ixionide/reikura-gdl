@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Context;
 use reikura_gfx::GraphicEngine;
-use reikura_util::{bitset::BitSet, variable::Variables};
+use reikura_util::{bitset::BitSet, register::Register};
 
 use crate::{
     AssetManager, AssetName, AudioManager, Config, InputManager, Manifest, Parser, SaveManager,
@@ -16,7 +16,7 @@ pub const FRAME_DURATION: Duration = Duration::from_millis(16);
 
 pub struct VmContext {
     pub flags: BitSet,
-    pub variables: Variables,
+    pub registers: Register,
     pub wait_duration: Option<Duration>,
     pub timer: Option<Timer>,
     // TODO: this make much more sense stored in the text renderer struct
@@ -28,7 +28,7 @@ impl VmContext {
     pub fn new() -> Self {
         Self {
             flags: BitSet::new(2048),
-            variables: Variables::new(2048),
+            registers: Register::new(2048),
             wait_duration: None,
             timer: None,
             char_names: [const { None }; 256],

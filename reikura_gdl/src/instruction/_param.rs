@@ -56,14 +56,14 @@ impl InstructionInfo {
 #[derive(Clone, Copy)]
 pub enum Value {
     Literal(i32),
-    Variable(i32),
+    Register(i32),
     Random(i32),
 }
 
 impl Value {
     const BIT_MASK: i32 = (1 << 30) - 1; // signed 30bit integer
     const MIN_MASK: i32 = !Self::BIT_MASK;
-    const VAR_FLAG: i32 = 1 << 31;
+    const REG_FLAG: i32 = 1 << 31;
     const RNG_FLAG: i32 = 1 << 30;
     const MIN_FLAG: i32 = 1 << 29;
 
@@ -82,8 +82,8 @@ impl Parameters for Value {
         }
 
         let result = {
-            if value & Self::VAR_FLAG != 0 {
-                Self::Variable(val)
+            if value & Self::REG_FLAG != 0 {
+                Self::Register(val)
             } else if value & Self::RNG_FLAG != 0 {
                 Self::Random(val)
             } else {
@@ -101,8 +101,8 @@ impl Evaluate for Value {
     fn evaluate(&self, ctx: &VmContext) -> Self::Evaluated {
         match *self {
             Value::Literal(value) => value,
-            Value::Variable(index) => match index.try_into() {
-                Ok(index) => ctx.variables.get(index).unwrap_or(0),
+            Value::Register(index) => match index.try_into() {
+                Ok(index) => ctx.registers.get(index).unwrap_or(0),
                 Err(_) => 0,
             },
             Value::Random(modulo) => {

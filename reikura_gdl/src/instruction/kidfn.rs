@@ -9,7 +9,7 @@ impl Instruction for Kidfn {
         let count: u32 = vm.parser.read_param()?;
 
         match &mut vm.save {
-            Some(save) => save.init_read_flags(count as usize),
+            Some(save) => save.init_message_flags(count as usize),
             None => bail!("save is not initialized yet"),
         }
     }

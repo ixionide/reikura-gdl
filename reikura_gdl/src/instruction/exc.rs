@@ -7,7 +7,7 @@ use crate::instruction::{Evaluate, Instruction, Value};
 reikura_util::const_iota! {
     u8 = iota,
     COPY_FLAG,
-    COPY_VARIABLE,
+    COPY_REGISTER,
 }
 
 pub struct Exc;
@@ -32,12 +32,12 @@ impl Instruction for Exc {
                     ctx.flags.set(dst + i, flag);
                 }
             }
-            COPY_VARIABLE => {
-                let bound_count = min(save.variables.len() - src, ctx.variables.len() - dst);
+            COPY_REGISTER => {
+                let bound_count = min(save.registers.len() - src, ctx.registers.len() - dst);
 
                 for i in 0..count.min(bound_count) {
-                    let value = save.variables.get(src + i).unwrap_or(0);
-                    ctx.variables.set(dst + i, value);
+                    let value = save.registers.get(src + i).unwrap_or(0);
+                    ctx.registers.set(dst + i, value);
                 }
             }
             _ => bail!("invalid EXC copy param"),
