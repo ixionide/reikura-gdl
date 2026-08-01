@@ -4,6 +4,7 @@ mod audio;
 mod cache;
 mod config;
 pub mod format;
+pub mod graphic;
 mod image;
 mod input;
 pub mod instruction;
@@ -19,6 +20,7 @@ pub use self::{
     audio::{Audio, AudioManager},
     cache::CacheManager,
     config::Config,
+    graphic::GraphicManager,
     image::{Image, ImageDecoder},
     input::{HitMask, HotSpot, InputManager, KeyMap},
     manifest::Manifest,

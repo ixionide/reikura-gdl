@@ -18,15 +18,15 @@ pub const fn mul_div_255(lhs: u8, rhs: u8) -> u8 {
 }
 
 #[inline]
-pub const fn blend_color(bg: u32, fg: u32) -> u32 {
-    let [mut fg_r, mut fg_g, mut fg_b, fg_a] = fg.to_le_bytes();
-    let [bg_r, bg_g, bg_b, bg_a] = bg.to_le_bytes();
+pub fn mul_alpha(color: u32, alpha: u8) -> u32 {
+    let [r, g, b, a] = color.to_le_bytes();
+    u32::from_le_bytes([r, g, b, mul_div_255(a, alpha)])
+}
 
-    if fg_a < 255 {
-        fg_r = mul_div_255(fg_a, fg_r);
-        fg_g = mul_div_255(fg_a, fg_g);
-        fg_b = mul_div_255(fg_a, fg_b);
-    }
+#[inline]
+pub const fn blend_color(bg: u32, fg: u32) -> u32 {
+    let [fg_r, fg_g, fg_b, fg_a] = premultiply_color(fg).to_le_bytes();
+    let [bg_r, bg_g, bg_b, bg_a] = bg.to_le_bytes();
 
     u32::from_le_bytes([
         mul_div_255(255 - fg_a, bg_r) + fg_r,
@@ -53,7 +53,7 @@ pub const fn blend_premultiplied_color(bg: u32, fg: u32) -> u32 {
 pub const fn premultiply_color(color: u32) -> u32 {
     let [r, g, b, a] = color.to_le_bytes();
 
-    if a == 255 {
+    if a == 0xFF {
         return color;
     }
 
