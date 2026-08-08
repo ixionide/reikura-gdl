@@ -1,1 +1,4 @@
+*.isf
+*.snr
+
 /target
