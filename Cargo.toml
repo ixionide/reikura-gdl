@@ -1,5 +1,6 @@
 [workspace]
-members = ["reikura_app", "reikura_gdl", "reikura_gfx", "reikura_util"]
+members = ["reikura_app", "reikura_gdl", "reikura_gfx", "reikura_tools", "reikura_util"]
+default_members = ["reikura_gdl", "reikura_gfx", "reikura_util"]
 resolver = "3"
 
 [workspace.dependencies]
@@ -7,6 +8,7 @@ reikura_app = { path = "reikura_app" }
 reikura_gdl = { path = "reikura_gdl" }
 reikura_gfx = { path = "reikura_gfx" }
 reikura_util = { path = "reikura_util" }
+reikura_tools = { path = "reikura_tools" }
 
 anyhow = "1.0"
 memmap2 = "0.9.10"
