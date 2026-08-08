@@ -1,6 +1,5 @@
 [workspace]
 members = ["reikura_app", "reikura_gdl", "reikura_gfx", "reikura_tools", "reikura_util"]
-default_members = ["reikura_gdl", "reikura_gfx", "reikura_util"]
 resolver = "3"
 
 [workspace.dependencies]
