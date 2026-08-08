@@ -2,7 +2,7 @@ use anyhow::{bail, ensure};
 
 use crate::{
     Parser,
-    instruction::{Evaluate, Instruction, Value},
+    instruction::{Instruction, Value},
 };
 
 reikura_util::const_iota! {

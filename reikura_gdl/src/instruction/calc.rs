@@ -1,6 +1,6 @@
 use anyhow::bail;
 
-use crate::instruction::{Evaluate, Instruction, Value};
+use crate::instruction::{Instruction, Value};
 
 reikura_util::const_iota! {
     u8 = iota,

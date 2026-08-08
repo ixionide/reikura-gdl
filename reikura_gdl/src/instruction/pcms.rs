@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::instruction::{Evaluate, Instruction, Value};
+use crate::instruction::{Instruction, Value};
 
 pub struct Pcms;
 

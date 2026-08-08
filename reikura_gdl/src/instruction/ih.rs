@@ -1,7 +1,7 @@
 use crate::{
     HotSpot,
     input::MAX_HOTSPOTS,
-    instruction::{Evaluate, Instruction, Rect, Value},
+    instruction::{Instruction, Rect, Value},
 };
 
 pub struct Ih;

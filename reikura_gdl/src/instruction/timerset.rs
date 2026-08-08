@@ -1,5 +1,5 @@
 use crate::{
-    instruction::{Evaluate, Instruction, Value},
+    instruction::{Instruction, Value},
     vm::Timer,
 };
 

@@ -3,7 +3,7 @@ use std::time::Duration;
 use anyhow::bail;
 use reikura_gfx::backend::BlitParam;
 
-use crate::instruction::{Evaluate, Instruction, Rect, Value};
+use crate::instruction::{Instruction, Rect, Value};
 
 reikura_util::const_iota! {
     u8 = iota,
