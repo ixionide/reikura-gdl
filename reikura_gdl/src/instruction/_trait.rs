@@ -3,7 +3,7 @@ use std::io::Seek;
 use anyhow::Result;
 use reikura_util::io::{ReadEndian, ReadExt};
 
-use crate::{Vm, instruction::InstructionInfo, parser::Parser, vm::VmContext};
+use crate::{Parser, Vm, instruction::InstructionInfo};
 
 pub trait Instruction {
     fn execute(vm: &mut Vm, _info: InstructionInfo) -> Result<()> {
@@ -11,16 +11,10 @@ pub trait Instruction {
         Ok(())
     }
 
-    // we used this for unsupported instruction
     fn skip(vm: &mut Vm, info: InstructionInfo) -> Result<()> {
         vm.parser.seek_relative(info.param_length() as i64)?;
         Ok(())
     }
-}
-
-pub trait Evaluate {
-    type Evaluated;
-    fn evaluate(&self, ctx: &VmContext) -> Self::Evaluated;
 }
 
 pub trait Parameters: Sized {

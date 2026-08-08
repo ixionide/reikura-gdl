@@ -1,7 +1,7 @@
 use crate::{
     KeyMap,
     input::MAX_HOTSPOTS,
-    instruction::{Evaluate, Instruction, Rect, Value},
+    instruction::{Instruction, Rect, Value},
 };
 
 pub struct Ihk;

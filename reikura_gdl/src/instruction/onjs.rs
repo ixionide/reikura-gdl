@@ -1,6 +1,6 @@
 use reikura_util::index_vec::IndexVec;
 
-use crate::instruction::{Evaluate, Instruction, InstructionInfo, Value};
+use crate::instruction::{Instruction, InstructionInfo, Value};
 
 pub struct Onjs;
 

@@ -1,4 +1,4 @@
-use crate::instruction::{AssetName, Evaluate, Instruction, Value};
+use crate::instruction::{AssetName, Instruction, Value};
 
 pub struct Gl;
 

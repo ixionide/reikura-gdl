@@ -1,11 +1,7 @@
 use anyhow::Result;
 use reikura_util::{encoding::sjis_to_utf8, io::ReadExt};
 
-use crate::{
-    Parser,
-    instruction::{Evaluate, Parameters},
-    vm::VmContext,
-};
+use crate::{Parser, instruction::Parameters, vm::VmContext};
 
 pub use crate::AssetName;
 
@@ -70,6 +66,24 @@ impl Value {
     pub fn is_random(&self) -> bool {
         matches!(self, Value::Random(_))
     }
+
+    pub fn evaluate(&self, ctx: &VmContext) -> i32 {
+        match *self {
+            Value::Literal(value) => value,
+            Value::Register(index) => match index.try_into() {
+                Ok(index) => ctx.registers.get(index).unwrap_or(0),
+                Err(_) => 0,
+            },
+            Value::Random(modulo) => {
+                if modulo == 0 {
+                    return 0;
+                }
+
+                let random_number = fastrand::i32(0..modulo.abs());
+                random_number * modulo.signum()
+            }
+        }
+    }
 }
 
 impl Parameters for Value {
@@ -92,28 +106,6 @@ impl Parameters for Value {
         };
 
         Ok(result)
-    }
-}
-
-impl Evaluate for Value {
-    type Evaluated = i32;
-
-    fn evaluate(&self, ctx: &VmContext) -> Self::Evaluated {
-        match *self {
-            Value::Literal(value) => value,
-            Value::Register(index) => match index.try_into() {
-                Ok(index) => ctx.registers.get(index).unwrap_or(0),
-                Err(_) => 0,
-            },
-            Value::Random(modulo) => {
-                if modulo == 0 {
-                    return 0;
-                }
-
-                let random_number = fastrand::i32(0..modulo.abs());
-                random_number * modulo.signum()
-            }
-        }
     }
 }
 
@@ -153,6 +145,17 @@ pub struct Rect<T> {
     pub h: T,
 }
 
+impl Rect<Value> {
+    pub fn evaluate(&self, ctx: &VmContext) -> Rect<i32> {
+        Rect {
+            x: self.x.evaluate(ctx),
+            y: self.y.evaluate(ctx),
+            w: self.w.evaluate(ctx),
+            h: self.h.evaluate(ctx),
+        }
+    }
+}
+
 impl<T: Parameters> Parameters for Rect<T> {
     fn deserialize(parser: &mut Parser) -> anyhow::Result<Self> {
         Ok(Self {
@@ -167,18 +170,5 @@ impl<T: Parameters> Parameters for Rect<T> {
 impl<T> From<Rect<T>> for [T; 4] {
     fn from(rect: Rect<T>) -> Self {
         [rect.x, rect.y, rect.w, rect.h]
-    }
-}
-
-impl<T: Evaluate> Evaluate for Rect<T> {
-    type Evaluated = Rect<T::Evaluated>;
-
-    fn evaluate(&self, ctx: &VmContext) -> Self::Evaluated {
-        Self::Evaluated {
-            x: self.x.evaluate(ctx),
-            y: self.y.evaluate(ctx),
-            w: self.w.evaluate(ctx),
-            h: self.h.evaluate(ctx),
-        }
     }
 }

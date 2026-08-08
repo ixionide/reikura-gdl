@@ -1,6 +1,6 @@
 use crate::{
     audio::SFX_SLOT,
-    instruction::{AssetName, Evaluate, Instruction, Value},
+    instruction::{AssetName, Instruction, Value},
 };
 
 pub struct Ser;

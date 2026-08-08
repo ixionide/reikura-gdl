@@ -1,6 +1,6 @@
 use crate::{
     HitMask,
-    instruction::{AssetName, Evaluate, Instruction, Value},
+    instruction::{AssetName, Instruction, Value},
 };
 
 pub struct Ihgl;
