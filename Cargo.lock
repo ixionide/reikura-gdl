@@ -1277,6 +1277,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "reikura_tools"
+version = "0.1.0"
+dependencies = [
+ "reikura_gdl",
+]
+
+[[package]]
 name = "reikura_util"
 version = "0.1.0"
 dependencies = [
