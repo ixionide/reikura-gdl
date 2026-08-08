@@ -9,7 +9,7 @@ use reikura_util::{
 use crate::{ArchiveEntry, ArchiveIndex, AssetName};
 
 pub struct DrsArc {
-    entries: Vec<DrsArcEntry>,
+    pub entries: Vec<DrsArcEntry>,
 }
 
 impl DrsArc {

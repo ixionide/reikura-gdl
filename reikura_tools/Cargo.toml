@@ -1,0 +1,10 @@
+[package]
+name = "reikura_tools"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reikura_gdl = { workspace = true }
+
+[lints]
+workspace = true

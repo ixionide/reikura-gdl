@@ -12,7 +12,7 @@ use reikura_util::{
 use crate::{ArchiveEntry, ArchiveIndex, AssetName};
 
 pub struct Sm2mpx10 {
-    entries: Vec<Sm2mpx10Entry>,
+    pub entries: Vec<Sm2mpx10Entry>,
 }
 
 impl Sm2mpx10 {
