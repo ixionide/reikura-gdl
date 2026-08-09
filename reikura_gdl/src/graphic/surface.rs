@@ -1,8 +1,13 @@
 use anyhow::bail;
 use reikura_util::{
-    image::{blend_color, mul_alpha},
+    image::{blend_color, blend_premultiplied_color, mul_alpha, premultiply_color},
     rect::Rect,
 };
+
+#[inline]
+fn alpha_channel(color: u32) -> u8 {
+    (color >> 24) as u8
+}
 
 pub struct Surface<P = Vec<u32>> {
     pub width: u32,
@@ -61,10 +66,12 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         })
     }
 
+    #[inline]
     pub fn clear(&mut self, color: u32) {
         self.pixels.as_mut().fill(color);
     }
 
+    #[inline]
     pub fn clear_rect(&mut self, x: u32, y: u32, w: u32, h: u32, color: u32) {
         let pixels = self.pixels.as_mut();
         let rows = pixels
@@ -75,6 +82,31 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
 
         for row in rows {
             row.fill(color);
+        }
+    }
+
+    #[inline]
+    pub fn draw_rect(&mut self, x: u32, y: u32, w: u32, h: u32, mut color: u32) {
+        match alpha_channel(color) {
+            0x00 => return,
+            0xFF => {
+                self.clear_rect(x, y, w, h, color);
+                return;
+            }
+            _ => color = premultiply_color(color),
+        }
+
+        let pixels = self.pixels.as_mut();
+        let rows = pixels
+            .chunks_exact_mut(self.width as usize)
+            .skip(y as usize)
+            .take(h as usize)
+            .map(|row| &mut row[x as usize..][..w as usize]);
+
+        for row in rows {
+            for dst_color in row {
+                *dst_color = blend_premultiplied_color(*dst_color, color);
+            }
         }
     }
 
@@ -142,10 +174,10 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
             let dst_row = dst_row.iter_mut();
 
             for (dst_color, src_color) in dst_row.zip(src_row) {
-                if src_color >> 24 == 0xFF {
-                    *dst_color = src_color;
-                } else {
-                    *dst_color = blend_color(*dst_color, src_color);
+                match alpha_channel(src_color) {
+                    0x00 => continue,
+                    0xFF => *dst_color = src_color,
+                    _ => *dst_color = blend_color(*dst_color, src_color),
                 }
             }
         }
@@ -153,7 +185,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
 
     #[inline]
     #[allow(clippy::too_many_arguments)]
-    pub fn blit_alpha<T: AsRef<[u32]>>(
+    pub fn blit_blend_alpha<T: AsRef<[u32]>>(
         &mut self,
         src_x: u32,
         src_y: u32,
@@ -188,8 +220,13 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
             let dst_row = dst_row.iter_mut();
 
             for (dst_color, src_color) in dst_row.zip(src_row) {
-                let src_color = mul_alpha(src_color, alpha);
-                *dst_color = blend_color(*dst_color, src_color);
+                match alpha_channel(src_color) {
+                    0x00 => continue,
+                    _ => {
+                        let src_color = mul_alpha(src_color, alpha);
+                        *dst_color = blend_color(*dst_color, src_color);
+                    }
+                }
             }
         }
     }
@@ -297,7 +334,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
                 let src_color = src_pixels[src_row * src_stride + src_start_x + srcx];
 
                 // if transparent
-                if src_color >> 24 == 0 {
+                if alpha_channel(src_color) == 0x00 {
                     posx += incx;
                     continue;
                 }
@@ -326,7 +363,7 @@ mod tests {
     const BLACK_50: u32 = 0x7F_00_00_00;
     const WHITE: u32 = 0xFF_FF_FF_FF;
     const GRAY: u32 = blend_color(WHITE, BLACK_50);
-    // const NAVY: u32 = blend_color(BLUE, BLACK_50);
+    const NAVY: u32 = blend_color(BLUE, BLACK_50);
 
     fn create_test_surface(width: u32, height: u32, color: u32) -> Surface {
         let mut surface = Surface::new(width, height);
@@ -351,23 +388,22 @@ mod tests {
         assert_eq!(dst.pixels, expected);
     }
 
-    // #[test]
-    // fn test_clear_rect_2() {
-    //     let mut dst = create_test_surface(4, 4, BLUE);
+    #[test]
+    fn test_draw_rect() {
+        let mut dst = create_test_surface(4, 4, BLUE);
 
-    //     let rect = Rect::from_xywh(1, 1, 2, 2);
-    //     dst.fill_rect_blend(rect, BLACK_50).unwrap();
+        dst.draw_rect(1, 1, 2, 2, BLACK_50);
 
-    //     #[rustfmt::skip]
-    //     let expected = [
-    //         BLUE, BLUE, BLUE, BLUE,
-    //         BLUE, NAVY, NAVY, BLUE,
-    //         BLUE, NAVY, NAVY, BLUE,
-    //         BLUE, BLUE, BLUE, BLUE,
-    //     ];
+        #[rustfmt::skip]
+        let expected = [
+            BLUE, BLUE, BLUE, BLUE,
+            BLUE, NAVY, NAVY, BLUE,
+            BLUE, NAVY, NAVY, BLUE,
+            BLUE, BLUE, BLUE, BLUE,
+        ];
 
-    //     assert_eq!(dst.pixels, expected);
-    // }
+        assert_eq!(dst.pixels, expected);
+    }
 
     #[test]
     fn test_blit_copy() {
@@ -423,6 +459,10 @@ mod tests {
 
         assert_eq!(dst.pixels, expected);
     }
+
+    // #[test]
+    // fn test_blit_blend_alpha() {
+    // }
 
     #[test]
     fn test_blit_scale_copy() {
