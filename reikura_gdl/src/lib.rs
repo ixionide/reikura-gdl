@@ -11,6 +11,7 @@ mod manifest;
 mod parser;
 mod save;
 mod scenario;
+pub mod secretfilter;
 mod vm;
 
 pub use self::{
