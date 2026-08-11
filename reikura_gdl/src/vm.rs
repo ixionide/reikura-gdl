@@ -52,9 +52,9 @@ pub struct Vm {
 
 impl Vm {
     pub fn new(manifest: Manifest, gfx: GraphicEngine) -> anyhow::Result<Self> {
-        let game_path = manifest.game_path().to_owned();
-        let mut assets = AssetManager::new(&game_path)?;
+        let mut assets = AssetManager::new(&manifest)?;
         let input = InputManager::new(manifest.view_size);
+        let config_path = manifest.game_path().join("user_setup");
         let start_scene = assets
             .load_scene(AssetName::START)
             .context("failed to load start script")?;
@@ -67,7 +67,7 @@ impl Vm {
             gfx,
             ctx: VmContext::new(),
             save: None,
-            config: Config::open(game_path.join("user_setup"))?,
+            config: Config::open(config_path)?,
             input,
             state: State::Running,
         })

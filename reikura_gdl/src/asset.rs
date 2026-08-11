@@ -6,8 +6,12 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use lru::LruCache;
+use reikura_util::lazy_result::LazyResult;
 
-use crate::{Archive, Audio, CacheManager, Image, Scenario};
+use crate::{
+    Archive, Audio, CacheManager, Image, Manifest, Scenario,
+    secretfilter::{Deobfuscator, filters::get_known_filter},
+};
 
 const DATA: &str = "data";
 const GGD: &str = "ggd";
@@ -28,15 +32,17 @@ pub struct AssetManager {
     bgm_midi: Option<Archive>,
     fakecdda: HashMap<u8, PathBuf>,
     cache: CacheManager,
+    deobfuscator: LazyResult<Deobfuscator, &'static str>,
 }
 
 impl AssetManager {
-    pub fn new(base_path: impl AsRef<Path>) -> Result<Self> {
-        let read_dir = std::fs::read_dir(base_path)?;
+    pub fn new(manifest: &Manifest) -> Result<Self> {
+        let read_dir = std::fs::read_dir(manifest.game_path())?;
         let entries = read_dir.filter_map(std::io::Result::ok);
-        let mut fakecdda = HashMap::new();
 
         let mut archives = HashMap::with_capacity(ARCHIVE_NAMES.len());
+        let mut fakecdda = HashMap::new();
+        let mut exe_path = None;
         for entry in entries {
             let entry_path = entry.path();
             let entry_file_name = entry.file_name();
@@ -47,6 +53,13 @@ impl AssetManager {
 
             if let Some(track_num) = cdda_track(&entry_path) {
                 fakecdda.insert(track_num, entry_path);
+                continue;
+            }
+
+            if exe_path.is_none()
+                && let Some(exe) = executable(&entry_path)
+            {
+                exe_path = Some(exe);
                 continue;
             }
 
@@ -65,6 +78,19 @@ impl AssetManager {
                 .ok_or_else(|| anyhow!("missing {name} archive"))
         };
 
+        let deobfuscator = {
+            let title_id = manifest.key.clone();
+            LazyResult::new(move || {
+                if let Some(filter) = get_known_filter(&title_id) {
+                    Ok(Deobfuscator::new(filter))
+                } else {
+                    // TODO: search for filter in the executable
+                    let _exepath = exe_path;
+                    Err("unknown deobfuscator key")
+                }
+            })
+        };
+
         Ok(Self {
             data: get_archive(DATA)?,
             image: get_archive(GGD)?,
@@ -75,6 +101,7 @@ impl AssetManager {
             bgm_midi: archives.remove(MIDI),
             fakecdda,
             cache: CacheManager::new(),
+            deobfuscator,
         })
     }
 
@@ -107,7 +134,29 @@ impl AssetManager {
             return Ok(scene.clone());
         }
 
-        let (name, data) = self.scene.get_asset(&asset_name)?;
+        let (name, mut data) = self.scene.get_asset(&asset_name)?;
+
+        // deobfuscate scene
+        {
+            fn split(data: &mut [u8]) -> Option<&mut [u8]> {
+                use crate::secretfilter::SIGNATURE;
+
+                let mid = data.len().checked_sub(SIGNATURE.len())?;
+                let (data, end) = data.split_at_mut_checked(mid)?;
+
+                if end == SIGNATURE {
+                    return Some(data);
+                }
+
+                None
+            }
+
+            if let Some(data) = split(&mut data) {
+                let deobfuscator = self.deobfuscator.get().map_err(|err| anyhow!("{err}"))?;
+                deobfuscator.deobfuscate(data);
+            }
+        }
+
         let scene = Scenario::load(name, data)?;
         self.cache.scene.put(asset_name, scene.clone());
 
@@ -286,16 +335,38 @@ fn cdda_track(path: &Path) -> Option<u8> {
     let prefix = file_name.get(..2)?;
     let ext = path.extension()?;
 
+    let is_track = |prefix: &str| prefix.eq_ignore_ascii_case("tk");
     let is_audio = |ext: &OsStr| {
         ["mp3", "ogg", "wav"]
             .iter()
             .any(|it| ext.eq_ignore_ascii_case(it))
     };
 
-    if !(prefix.eq_ignore_ascii_case("tk") && is_audio(ext)) {
+    if !is_track(prefix) && !is_audio(ext) {
         return None;
     }
 
     let track_num: u8 = file_name.get(2..)?.parse().ok()?;
     track_num.checked_sub(1)
+}
+
+fn executable(path: &Path) -> Option<PathBuf> {
+    use std::ffi::OsStr;
+
+    let file_name = path.file_name()?.to_string_lossy();
+    let prefix = file_name.get(..6)?;
+    let ext = path.extension()?;
+
+    let is_other = |prefix: &str| {
+        ["uninst", "reikur"]
+            .iter()
+            .any(|it| prefix.eq_ignore_ascii_case(it))
+    };
+    let is_exe = |ext: &OsStr| ext.eq_ignore_ascii_case("exe");
+
+    if !is_exe(ext) || is_other(prefix) {
+        return None;
+    }
+
+    Some(path.to_owned())
 }
