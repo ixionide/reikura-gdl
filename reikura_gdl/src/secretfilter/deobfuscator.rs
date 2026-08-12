@@ -15,7 +15,7 @@ impl Deobfuscator {
         let mut key = self.key.clone();
         let key_len = key.len();
 
-        for (i, b) in &mut data.iter_mut().enumerate() {
+        for (i, b) in data.iter_mut().enumerate() {
             if i.is_multiple_of(key_len) {
                 update_key(&mut key, i, &self.filter);
             }
