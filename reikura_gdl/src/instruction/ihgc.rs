@@ -1,11 +1,7 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Ihgc;
+pub fn ihgc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    vm.input.hit_mask = None;
 
-impl Instruction for Ihgc {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        vm.input.hit_mask = None;
-
-        Ok(())
-    }
+    Ok(())
 }

@@ -9,7 +9,7 @@ pub const MAX_HOTSPOTS: usize = 0x40;
 
 pub struct InputManager {
     // inputs: HashMap<Input, InputState>,
-    selected: Option<u8>,
+    focused: Option<u8>,
     pub default_key_map: Option<u8>,
     pub key_maps: [Option<KeyMap>; MAX_HOTSPOTS],
     pub hot_spots: [Option<HotSpot>; MAX_HOTSPOTS],
@@ -23,7 +23,7 @@ pub struct InputManager {
 impl InputManager {
     pub fn new(view_size: (u32, u32)) -> Self {
         Self {
-            selected: None,
+            focused: None,
             default_key_map: None,
             key_maps: [const { None }; MAX_HOTSPOTS],
             hot_spots: [const { None }; MAX_HOTSPOTS],
@@ -35,8 +35,8 @@ impl InputManager {
     }
 
     pub fn get_selected(&self, check_count: u8) -> i32 {
-        if let Some(selected) = self.selected {
-            return selected as i32;
+        if let Some(focused) = self.focused {
+            return focused as i32;
         }
 
         let Some((x, y)) = self.mouse_pos else {
@@ -64,7 +64,7 @@ impl InputManager {
         let (view_w, view_h) = (self.view_size.0 as f32, self.view_size.1 as f32);
 
         self.mouse_pos = Some(((x * view_w) as i32, (y * view_h) as i32));
-        self.selected = None;
+        self.focused = None;
     }
 
     pub fn _resized(&mut self, window_size: (u32, u32)) {

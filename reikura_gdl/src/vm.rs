@@ -1,7 +1,4 @@
-use std::{
-    io::{Seek, SeekFrom},
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use reikura_gfx::GraphicEngine;
@@ -9,7 +6,7 @@ use reikura_util::{bitset::BitSet, register::Register};
 
 use crate::{
     AssetManager, AssetName, AudioManager, Config, InputManager, Manifest, Parser, SaveManager,
-    instruction::{INSTRUCTIONS, InstructionInfo},
+    instruction::INSTRUCTIONS,
 };
 
 pub const FRAME_DURATION: Duration = Duration::from_millis(16);
@@ -79,23 +76,20 @@ impl Vm {
             State::Running => {
                 let op = self.parser.read_opcode()?;
                 let inst = INSTRUCTIONS[op as usize];
-                let info = self.parser.read_param::<InstructionInfo>()?;
+                inst.execute(self)?;
+                // let info = self.parser.read_param::<InstructionInfo>()?;
 
-                #[cfg(debug_assertions)]
-                {
-                    let next_ip = self.parser.state.ip + info.param_length();
-                    if let Err(err) = inst(self, info) {
-                        dbg!(err);
-                        self.parser.state.ip = next_ip
-                    }
-                }
+                // #[cfg(debug_assertions)]
+                // {
+                //     let next_ip = self.parser.state.ip + info.param_len;
+                //     if let Err(err) = inst(self, info) {
+                //         dbg!(err);
+                //         self.parser.state.ip = next_ip
+                //     }
+                // }
 
-                #[cfg(not(debug_assertions))]
-                inst(self, info)?;
-
-                if info.end_of_scenario() {
-                    self.parser.seek(SeekFrom::End(0))?;
-                }
+                // #[cfg(not(debug_assertions))]
+                // inst(self, info)?;
             }
             State::Wait { start, duration } => {
                 let elapsed = start.elapsed();

@@ -1,51 +1,21 @@
 use anyhow::Result;
-use reikura_util::{encoding::sjis_to_utf8, io::ReadExt};
+use reikura_util::{
+    encoding::sjis_to_utf8,
+    io::{ReadEndian, ReadExt},
+};
 
-use crate::{Parser, instruction::Parameters, vm::VmContext};
+use crate::{Parser, vm::VmContext};
 
 pub use crate::AssetName;
 
-#[derive(Clone, Copy)]
-pub struct InstructionInfo {
-    val1: u8,
-    val2: Option<u8>,
+pub trait Parameters: Sized {
+    fn deserialize(parser: &mut Parser) -> Result<Self>;
 }
 
-impl Parameters for InstructionInfo {
-    fn deserialize(parser: &mut Parser) -> anyhow::Result<Self> {
-        let val1 = parser.read_le()?;
-        let mut val2 = None;
-
-        if val1 & 0x80 != 0 {
-            val2 = Some(parser.read_le()?);
-        }
-
-        Ok(Self { val1, val2 })
-    }
-}
-
-impl InstructionInfo {
-    pub fn length(&self) -> usize {
-        let val1 = (self.val1 & 0x7F) as usize;
-        match self.val2 {
-            Some(val2) => (val1 << 8 | val2 as usize).max(3),
-            None => val1.max(2),
-        }
-    }
-
-    pub fn param_offset(&self) -> usize {
-        match self.val2 {
-            Some(_) => 3,
-            None => 2,
-        }
-    }
-
-    pub fn param_length(&self) -> usize {
-        self.length() - self.param_offset()
-    }
-
-    pub fn end_of_scenario(&self) -> bool {
-        self.val1 == 0 && self.val2.is_none()
+impl<T: ReadEndian> Parameters for T {
+    fn deserialize(parser: &mut Parser) -> Result<Self> {
+        let param = parser.read_le::<T>()?;
+        Ok(param)
     }
 }
 

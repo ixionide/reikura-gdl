@@ -1,19 +1,15 @@
 use crate::{
-    HitMask,
-    instruction::{AssetName, Instruction, Value},
+    HitMask, Vm,
+    instruction::{AssetName, InstructionInfo, Value},
 };
 
-pub struct Ihgl;
+pub fn ihgl(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let image_name: AssetName = vm.parser.read_param()?;
+    let x = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+    let y = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+    let image = vm.assets.load_image(image_name)?;
 
-impl Instruction for Ihgl {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let image_name: AssetName = vm.parser.read_param()?;
-        let x = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
-        let y = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
-        let image = vm.assets.load_image(image_name)?;
+    vm.input.hit_mask = Some(HitMask { x, y, image });
 
-        vm.input.hit_mask = Some(HitMask { x, y, image });
-
-        Ok(())
-    }
+    Ok(())
 }

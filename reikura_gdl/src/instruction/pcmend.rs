@@ -1,11 +1,7 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Pcmend;
+pub fn pcmend(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    vm.state.wait_voice();
 
-impl Instruction for Pcmend {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        vm.state.wait_voice();
-
-        Ok(())
-    }
+    Ok(())
 }

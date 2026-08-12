@@ -1,11 +1,7 @@
-use crate::instruction::{Instruction, InstructionInfo};
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Rt;
+pub fn rt(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    vm.parser.ret_sub()?;
 
-impl Instruction for Rt {
-    fn execute(vm: &mut crate::Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-        vm.parser.ret_sub()?;
-
-        Ok(())
-    }
+    Ok(())
 }

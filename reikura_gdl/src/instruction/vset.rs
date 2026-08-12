@@ -1,19 +1,18 @@
-use crate::instruction::{Instruction, Value};
+use crate::{
+    Vm,
+    instruction::{InstructionInfo, Value},
+};
 
-pub struct Vset;
+pub fn vset(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let id: u8 = vm
+        .parser
+        .read_param::<Value>()?
+        .evaluate(&vm.ctx)
+        .try_into()?;
+    let w: u32 = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
+    let h: u32 = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
 
-impl Instruction for Vset {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let id: u8 = vm
-            .parser
-            .read_param::<Value>()?
-            .evaluate(&vm.ctx)
-            .try_into()?;
-        let w: u32 = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
-        let h: u32 = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
+    vm.gfx.new_image(id, w, h)?;
 
-        vm.gfx.new_image(id, w, h)?;
-
-        Ok(())
-    }
+    Ok(())
 }

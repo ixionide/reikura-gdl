@@ -1,13 +1,9 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Hln;
+pub fn hln(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let reg_count: u16 = vm.parser.read_param()?;
 
-impl Instruction for Hln {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let reg_count: u16 = vm.parser.read_param()?;
+    vm.ctx.registers.resize(reg_count as usize);
 
-        vm.ctx.registers.resize(reg_count as usize);
-
-        Ok(())
-    }
+    Ok(())
 }
