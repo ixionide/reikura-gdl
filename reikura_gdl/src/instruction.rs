@@ -246,7 +246,7 @@ use crate::Vm;
 #[derive(Clone, Copy)]
 pub struct Instruction {
     pub name: &'static str,
-    opcode: u8,
+    pub opcode: u8,
     exec_fn: fn(&mut Vm, InstructionInfo) -> Result<()>,
 }
 
