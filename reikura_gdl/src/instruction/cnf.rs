@@ -1,14 +1,11 @@
-use anyhow::anyhow;
+use crate::{
+    Vm,
+    instruction::{AssetName, InstructionInfo},
+};
 
-use crate::instruction::{AssetName, Instruction};
+pub fn cnf(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let unknown: u8 = vm.parser.read_param()?;
+    let name: AssetName = vm.parser.read_param()?;
 
-pub struct Cnf;
-
-impl Instruction for Cnf {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let _: u8 = vm.parser.read_param()?;
-        let name: AssetName = vm.parser.read_param()?;
-
-        Err(anyhow!("CNF is called with asset: {name}"))
-    }
+    Err(anyhow::anyhow!("unknown: {unknown}, asset: {name}"))
 }

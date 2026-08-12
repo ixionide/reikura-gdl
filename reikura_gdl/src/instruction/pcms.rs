@@ -1,16 +1,15 @@
 use std::time::Duration;
 
-use crate::instruction::{Instruction, Value};
+use crate::{
+    Vm,
+    instruction::{InstructionInfo, Value},
+};
 
-pub struct Pcms;
+pub fn pcms(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let ms = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+    let fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
 
-impl Instruction for Pcms {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let ms = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
-        let fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
+    vm.audio.stop_voice(fade);
 
-        vm.audio.stop_voice(fade);
-
-        Ok(())
-    }
+    Ok(())
 }

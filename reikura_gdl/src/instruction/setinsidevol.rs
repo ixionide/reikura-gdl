@@ -1,6 +1,9 @@
 use anyhow::bail;
 
-use crate::instruction::{Instruction, Value};
+use crate::{
+    Vm,
+    instruction::{InstructionInfo, Value},
+};
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -8,31 +11,27 @@ reikura_util::const_iota! {
     BGM,
 }
 
-pub struct Setinsidevol;
+pub fn setinsidevol(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let track: u8 = vm.parser.read_param()?;
+    let volume: u8 = vm
+        .parser
+        .read_param::<Value>()?
+        .evaluate(&vm.ctx)
+        .try_into()?;
 
-impl Instruction for Setinsidevol {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let track: u8 = vm.parser.read_param()?;
-        let volume: u8 = vm
-            .parser
-            .read_param::<Value>()?
-            .evaluate(&vm.ctx)
-            .try_into()?;
+    let (audio, track) = {
+        match track {
+            VOICE => (vm.audio.voice.as_mut(), "voice"),
+            BGM => (vm.audio.bgm.as_mut(), "bgm"),
+            _ => bail!("invalid SETINSIDEVOL track: {track}"),
+        }
+    };
 
-        let (audio, track) = {
-            match track {
-                VOICE => (vm.audio.voice.as_mut(), "voice"),
-                BGM => (vm.audio.bgm.as_mut(), "bgm"),
-                _ => bail!("invalid SETINSIDEVOL track: {track}"),
-            }
-        };
+    let Some(audio) = audio else {
+        bail!("{track} isn't loaded yet");
+    };
 
-        let Some(audio) = audio else {
-            bail!("{track} isn't loaded yet");
-        };
+    audio.volume = Some(f32::from(volume) / f32::from(u8::MAX));
 
-        audio.volume = Some(f32::from(volume) / f32::from(u8::MAX));
-
-        Ok(())
-    }
+    Ok(())
 }

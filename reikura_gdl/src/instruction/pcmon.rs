@@ -1,13 +1,9 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Pcmon;
+pub fn pcmon(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let _unknown: u8 = vm.parser.read_param()?;
 
-impl Instruction for Pcmon {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let _unknown: u8 = vm.parser.read_param()?;
+    vm.audio.play_voice(None)?;
 
-        vm.audio.play_voice(None)?;
-
-        Ok(())
-    }
+    Ok(())
 }

@@ -1,13 +1,12 @@
-use crate::instruction::{Instruction, Value};
+use crate::{
+    Vm,
+    instruction::{InstructionInfo, Value},
+};
 
-pub struct Ihkdef;
+pub fn ihkdef(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let default = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
 
-impl Instruction for Ihkdef {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let default = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+    vm.input.default_key_map = Some(default.try_into()?);
 
-        vm.input.default_key_map = Some(default.try_into()?);
-
-        Ok(())
-    }
+    Ok(())
 }

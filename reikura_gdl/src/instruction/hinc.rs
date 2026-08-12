@@ -1,13 +1,9 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Hinc;
+pub fn hinc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let reg_index: u16 = vm.parser.read_param()?;
 
-impl Instruction for Hinc {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let reg_index: u16 = vm.parser.read_param()?;
+    vm.ctx.registers.inc(reg_index as usize);
 
-        vm.ctx.registers.inc(reg_index as usize);
-
-        Ok(())
-    }
+    Ok(())
 }

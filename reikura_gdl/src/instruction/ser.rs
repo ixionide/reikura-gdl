@@ -1,18 +1,15 @@
 use crate::{
+    Vm,
     audio::SFX_SLOT,
-    instruction::{AssetName, Instruction, Value},
+    instruction::{AssetName, InstructionInfo, Value},
 };
 
-pub struct Ser;
+pub fn ser(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let name: AssetName = vm.parser.read_param()?;
+    let slot = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as usize;
+    let sfx = vm.assets.load_sfx(name)?;
 
-impl Instruction for Ser {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let name: AssetName = vm.parser.read_param()?;
-        let slot = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as usize;
-        let sfx = vm.assets.load_sfx(name)?;
+    vm.audio.sfx[slot % SFX_SLOT] = Some(sfx);
 
-        vm.audio.sfx[slot % SFX_SLOT] = Some(sfx);
-
-        Ok(())
-    }
+    Ok(())
 }

@@ -1,15 +1,11 @@
-use crate::{SaveManager, instruction::Instruction};
+use crate::{SaveManager, Vm, instruction::InstructionInfo};
 
-pub struct Exa;
+pub fn exa(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let path = vm.manifest.game_path();
+    let flag_count = vm.parser.read_param::<u16>()? as usize;
+    let reg_count = vm.parser.read_param::<u16>()? as usize;
 
-impl Instruction for Exa {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let path = vm.manifest.game_path();
-        let flag_count = vm.parser.read_param::<u16>()? as usize;
-        let reg_count = vm.parser.read_param::<u16>()? as usize;
+    vm.save = Some(SaveManager::new(path, flag_count, reg_count)?);
 
-        vm.save = Some(SaveManager::new(path, flag_count, reg_count)?);
-
-        Ok(())
-    }
+    Ok(())
 }

@@ -1,11 +1,7 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Gf;
+pub fn gf(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    vm.gfx.unset_target();
 
-impl Instruction for Gf {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        vm.gfx.unset_target();
-
-        Ok(())
-    }
+    Ok(())
 }

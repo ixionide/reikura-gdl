@@ -1,11 +1,7 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Ed;
+pub fn ed(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    vm.state.exit();
 
-impl Instruction for Ed {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        vm.state.exit();
-
-        Ok(())
-    }
+    Ok(())
 }

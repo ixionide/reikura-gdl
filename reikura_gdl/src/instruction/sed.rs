@@ -1,16 +1,13 @@
 use crate::{
+    Vm,
     audio::SFX_SLOT,
-    instruction::{Instruction, Value},
+    instruction::{InstructionInfo, Value},
 };
 
-pub struct Sed;
+pub fn sed(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let slot = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as usize;
 
-impl Instruction for Sed {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let slot = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as usize;
+    vm.audio.stop_sfx(slot % SFX_SLOT, None);
 
-        vm.audio.stop_sfx(slot % SFX_SLOT, None);
-
-        Ok(())
-    }
+    Ok(())
 }

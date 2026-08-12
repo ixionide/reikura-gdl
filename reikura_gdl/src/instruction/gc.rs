@@ -1,18 +1,17 @@
-use crate::instruction::{Instruction, Value};
+use crate::{
+    Vm,
+    instruction::{InstructionInfo, Value},
+};
 
-pub struct Gc;
+pub fn gc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let id: u8 = vm
+        .parser
+        .read_param::<Value>()?
+        .evaluate(&vm.ctx)
+        .try_into()?;
+    let [r, g, b]: [u8; 3] = vm.parser.read_param()?;
 
-impl Instruction for Gc {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let id: u8 = vm
-            .parser
-            .read_param::<Value>()?
-            .evaluate(&vm.ctx)
-            .try_into()?;
-        let [r, g, b]: [u8; 3] = vm.parser.read_param()?;
+    vm.gfx.clear_image(id, (r, g, b))?;
 
-        vm.gfx.clear_image(id, (r, g, b))?;
-
-        Ok(())
-    }
+    Ok(())
 }

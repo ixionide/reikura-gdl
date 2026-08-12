@@ -1,18 +1,14 @@
 use anyhow::bail;
 
-use crate::{instruction::Instruction, vm::Timer};
+use crate::{instruction::InstructionInfo, vm::Timer};
 
-pub struct Timerget;
+pub fn timerget(vm: &mut crate::Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let reg_index: u16 = vm.parser.read_param()?;
 
-impl Instruction for Timerget {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let reg_index: u16 = vm.parser.read_param()?;
+    match vm.ctx.timer.as_ref().map(Timer::get) {
+        Some(reg_value) => vm.ctx.registers.set(reg_index as usize, reg_value),
+        None => bail!("timer is not set yet"),
+    };
 
-        match vm.ctx.timer.as_ref().map(Timer::get) {
-            Some(reg_value) => vm.ctx.registers.set(reg_index as usize, reg_value),
-            None => bail!("timer is not set yet"),
-        };
-
-        Ok(())
-    }
+    Ok(())
 }

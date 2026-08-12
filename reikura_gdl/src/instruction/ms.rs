@@ -1,11 +1,7 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Ms;
+pub fn ms(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    vm.audio.stop_bgm(None);
 
-impl Instruction for Ms {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        vm.audio.stop_bgm(None);
-
-        Ok(())
-    }
+    Ok(())
 }

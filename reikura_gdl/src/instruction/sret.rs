@@ -1,11 +1,7 @@
-use crate::instruction::{Instruction, InstructionInfo};
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Sret;
+pub fn sret(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    vm.parser.ret_scene()?;
 
-impl Instruction for Sret {
-    fn execute(vm: &mut crate::Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-        vm.parser.ret_scene()?;
-
-        Ok(())
-    }
+    Ok(())
 }

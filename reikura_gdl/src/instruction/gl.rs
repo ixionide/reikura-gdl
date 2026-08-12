@@ -1,20 +1,19 @@
-use crate::instruction::{AssetName, Instruction, Value};
+use crate::{
+    Vm,
+    instruction::{AssetName, InstructionInfo, Value},
+};
 
-pub struct Gl;
+pub fn gl(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let id: u8 = vm
+        .parser
+        .read_param::<Value>()?
+        .evaluate(&vm.ctx)
+        .try_into()?;
+    let image_name = vm.parser.read_param::<AssetName>()?;
+    let image = vm.assets.load_image(image_name)?;
 
-impl Instruction for Gl {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let id: u8 = vm
-            .parser
-            .read_param::<Value>()?
-            .evaluate(&vm.ctx)
-            .try_into()?;
-        let image_name = vm.parser.read_param::<AssetName>()?;
-        let image = vm.assets.load_image(image_name)?;
+    vm.gfx
+        .load_image(id, image.width, image.height, &image.data)?;
 
-        vm.gfx
-            .load_image(id, image.width, image.height, &image.data)?;
-
-        Ok(())
-    }
+    Ok(())
 }

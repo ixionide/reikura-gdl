@@ -1,14 +1,13 @@
-use crate::instruction::{AssetName, Instruction, InstructionInfo};
+use crate::{
+    Vm,
+    instruction::{AssetName, InstructionInfo},
+};
 
-pub struct Lsbs;
+pub fn lsbs(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let scene_name: AssetName = vm.parser.read_param()?;
+    let scene = vm.assets.load_scene(scene_name)?;
 
-impl Instruction for Lsbs {
-    fn execute(vm: &mut crate::Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-        let scene_name: AssetName = vm.parser.read_param()?;
-        let scene = vm.assets.load_scene(scene_name)?;
+    vm.parser.call_scene(scene)?;
 
-        vm.parser.call_scene(scene)?;
-
-        Ok(())
-    }
+    Ok(())
 }

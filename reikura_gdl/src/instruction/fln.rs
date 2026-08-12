@@ -1,13 +1,9 @@
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Fln;
+pub fn fln(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let flag_count: u16 = vm.parser.read_param()?;
 
-impl Instruction for Fln {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let flag_count: u16 = vm.parser.read_param()?;
+    vm.ctx.flags.resize(flag_count as usize);
 
-        vm.ctx.flags.resize(flag_count as usize);
-
-        Ok(())
-    }
+    Ok(())
 }

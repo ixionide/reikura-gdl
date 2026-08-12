@@ -1,6 +1,6 @@
 use anyhow::bail;
 
-use crate::instruction::Instruction;
+use crate::{Vm, instruction::InstructionInfo};
 
 reikura_util::const_iota! {
     u8 = iota,
@@ -9,20 +9,16 @@ reikura_util::const_iota! {
     TOGGLE,
 }
 
-pub struct Sk;
+pub fn sk(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let flag_index = vm.parser.read_param::<u16>()? as usize;
+    let flag_cmd: u8 = vm.parser.read_param()?;
 
-impl Instruction for Sk {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let flag_index = vm.parser.read_param::<u16>()? as usize;
-        let flag_cmd: u8 = vm.parser.read_param()?;
+    match flag_cmd {
+        UNSET => vm.ctx.flags.set(flag_index, false),
+        SET => vm.ctx.flags.set(flag_index, true),
+        TOGGLE => vm.ctx.flags.toggle(flag_index),
+        unk => bail!("unrecognized flag value: {unk}"),
+    };
 
-        match flag_cmd {
-            UNSET => vm.ctx.flags.set(flag_index, false),
-            SET => vm.ctx.flags.set(flag_index, true),
-            TOGGLE => vm.ctx.flags.toggle(flag_index),
-            unk => bail!("unrecognized flag value: {unk}"),
-        };
-
-        Ok(())
-    }
+    Ok(())
 }

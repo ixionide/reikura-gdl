@@ -1,14 +1,13 @@
-use crate::instruction::{AssetName, Instruction};
+use crate::{
+    Vm,
+    instruction::{AssetName, InstructionInfo},
+};
 
-pub struct Pcml;
+pub fn pcml(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let name: AssetName = vm.parser.read_param()?;
+    let voice = vm.assets.load_voice(name)?;
 
-impl Instruction for Pcml {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let name: AssetName = vm.parser.read_param()?;
-        let voice = vm.assets.load_voice(name)?;
+    vm.audio.voice = Some(voice);
 
-        vm.audio.voice = Some(voice);
-
-        Ok(())
-    }
+    Ok(())
 }

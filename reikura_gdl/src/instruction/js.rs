@@ -1,13 +1,9 @@
-use crate::instruction::{Instruction, InstructionInfo};
+use crate::{Vm, instruction::InstructionInfo};
 
-pub struct Js;
+pub fn js(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let sub_index: u16 = vm.parser.read_param()?;
 
-impl Instruction for Js {
-    fn execute(vm: &mut crate::Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-        let sub_index: u16 = vm.parser.read_param()?;
+    vm.parser.call_sub(sub_index)?;
 
-        vm.parser.call_sub(sub_index)?;
-
-        Ok(())
-    }
+    Ok(())
 }

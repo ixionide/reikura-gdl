@@ -1,19 +1,18 @@
 use anyhow::bail;
 
-use crate::instruction::{Instruction, ParamString};
+use crate::{
+    Vm,
+    instruction::{InstructionInfo, ParamString},
+};
 
-pub struct Setgameinfo;
+pub fn setgameinfo(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
+    let game_info: ParamString = vm.parser.read_param()?;
 
-impl Instruction for Setgameinfo {
-    fn execute(vm: &mut crate::Vm, _info: super::InstructionInfo) -> anyhow::Result<()> {
-        let game_info: ParamString = vm.parser.read_param()?;
+    let Some(save) = &mut vm.save else {
+        bail!("save is not initialized yet");
+    };
 
-        let Some(save) = &mut vm.save else {
-            bail!("save is not initialized yet");
-        };
+    save.game_info = game_info.decode_sjis()?.into();
 
-        save.game_info = game_info.decode_sjis()?.into();
-
-        Ok(())
-    }
+    Ok(())
 }
