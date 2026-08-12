@@ -142,7 +142,7 @@ impl AssetManager {
                 use crate::secretfilter::SIGNATURE;
 
                 let mid = data.len().checked_sub(SIGNATURE.len())?;
-                let (data, end) = data.split_at_mut_checked(mid)?;
+                let (data, end) = data.split_at_mut(mid);
 
                 if end == SIGNATURE {
                     return Some(data);
