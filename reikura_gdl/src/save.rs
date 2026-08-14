@@ -43,7 +43,7 @@ impl SaveManager {
             let len = flag_count.div_ceil(u8::BITS as _);
             let flag_save_file = opt
                 .open(flag_save_path)
-                .context("failed to create save flag file")?;
+                .context("failed to create save flag save file")?;
             flag_save_file.set_len(len as u64)?;
             let mmapmut = MmapMut::map_mut(&flag_save_file)?;
             BitSet::from_raw(mmapmut, flag_count)
@@ -53,7 +53,7 @@ impl SaveManager {
             let count = register_count * size_of::<i32>();
             let reg_save_file = opt
                 .open(reg_save_path)
-                .context("failed to create save register file")?;
+                .context("failed to create register save file")?;
             reg_save_file.set_len(count as u64)?;
             MmapReg::new(MmapMut::map_mut(&reg_save_file)?).into()
         };
@@ -68,17 +68,17 @@ impl SaveManager {
     }
 
     pub fn init_message_flags(&mut self, count: usize) -> Result<()> {
-        let read_flag_save_path = self.path.join(MSG_SAVE_NAME);
+        let msg_save_path = self.path.join(MSG_SAVE_NAME);
         let mut opt = std::fs::OpenOptions::new();
         opt.read(true).write(true).create(true);
 
         let flags = unsafe {
             let len = count.div_ceil(u8::BITS as _);
-            let read_flag_save_file = opt
-                .open(read_flag_save_path)
-                .context("failed to create save message-flag file")?;
-            read_flag_save_file.set_len(len as u64)?;
-            let mmapmut = MmapMut::map_mut(&read_flag_save_file)?;
+            let msg_save_file = opt
+                .open(msg_save_path)
+                .context("failed to create message save file")?;
+            msg_save_file.set_len(len as u64)?;
+            let mmapmut = MmapMut::map_mut(&msg_save_file)?;
             BitSet::from_raw(mmapmut, count)
         };
 

@@ -1,10 +1,10 @@
-pub enum LazyResult<T, E> {
+pub enum LazyResult<T, E: Clone> {
     Uninit(Box<dyn FnOnce() -> Result<T, E>>),
     Ok(T),
     Err(E),
 }
 
-impl<T, E> LazyResult<T, E> {
+impl<T, E: Clone> LazyResult<T, E> {
     pub fn new<F>(f: F) -> Self
     where
         F: FnOnce() -> Result<T, E> + 'static,
@@ -12,11 +12,11 @@ impl<T, E> LazyResult<T, E> {
         Self::Uninit(Box::new(f))
     }
 
-    pub fn get(&mut self) -> Result<&T, &E> {
+    pub fn get(&mut self) -> Result<&T, E> {
         let f = match self {
             Self::Uninit(f) => std::mem::replace(f, Box::new(|| unreachable!())),
             Self::Ok(ok) => return Ok(ok),
-            Self::Err(err) => return Err(err),
+            Self::Err(err) => return Err(err.clone()),
         };
 
         *self = match f() {

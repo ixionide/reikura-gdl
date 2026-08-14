@@ -40,8 +40,8 @@ inst! {
     timerset, timerend, timerget
 }
 
-pub const INSTRUCTIONS: [Instruction; 0xFF] = const {
-    let mut insts = [Instruction::INVALID; 0xFF];
+pub const INSTRUCTIONS: [Instruction; 256] = const {
+    let mut insts = [Instruction::INVALID; 256];
 
     insts[0x00] = Instruction::new("ED", ed);
     insts[0x01] = Instruction::new("LS", ls);
@@ -229,9 +229,9 @@ pub const INSTRUCTIONS: [Instruction; 0xFF] = const {
     // insts[0xFE] = BREAK;
     // insts[0xFF] = EXT;
 
-    let mut op: u8 = 0x00;
-    while op != 0xFF {
-        insts[op as usize].opcode = op;
+    let mut op = 0;
+    while op != 256 {
+        insts[op].opcode = op as u8;
         op += 1;
     }
 
@@ -256,7 +256,7 @@ impl Instruction {
             bail!("invalid instruction called")
         }
 
-        Self::new("UNKNOWN", invalid_fn)
+        Self::new("INVALID", invalid_fn)
     };
 
     pub(crate) const fn new(
