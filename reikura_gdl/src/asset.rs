@@ -82,12 +82,12 @@ impl AssetManager {
             let title_id = manifest.key.clone();
             LazyResult::new(move || {
                 if let Some(filter) = get_known_filter(&title_id) {
-                    Ok(Deobfuscator::new(filter))
-                } else {
-                    // TODO: search for filter in the executable
-                    let _exepath = exe_path;
-                    Err("unknown deobfuscator key")
+                    return Ok(Deobfuscator::new(filter));
                 }
+
+                // TODO: search for filter in the executable
+                let _exepath = exe_path;
+                Err("unknown deobfuscator key")
             })
         };
 
@@ -138,7 +138,7 @@ impl AssetManager {
 
         // deobfuscate scene
         {
-            fn split(data: &mut [u8]) -> Option<&mut [u8]> {
+            fn obfuscated(data: &mut [u8]) -> Option<&mut [u8]> {
                 use crate::secretfilter::SIGNATURE;
 
                 let mid = data.len().checked_sub(SIGNATURE.len())?;
@@ -151,9 +151,9 @@ impl AssetManager {
                 None
             }
 
-            if let Some(data) = split(&mut data) {
+            if let Some(obfuscated) = obfuscated(&mut data) {
                 let deobfuscator = self.deobfuscator.get().map_err(|err| anyhow!("{err}"))?;
-                deobfuscator.deobfuscate(data);
+                deobfuscator.deobfuscate(obfuscated);
             }
         }
 
@@ -239,15 +239,17 @@ impl AssetManager {
 #[derive(Debug, Clone, Copy)]
 pub struct AssetName {
     buffer: [u8; Self::LEN],
-    len: usize,
+    ext: Option<usize>,
+    end: usize,
 }
 
 impl AssetName {
     pub const LEN: usize = 12;
 
     pub const START: Self = Self {
-        buffer: *b"START\0\0\0\0\0\0\0",
-        len: 5,
+        buffer: *b"START.ISF\0\0\0",
+        ext: Some(5),
+        end: 9,
     };
 
     pub fn from_buffer(buffer: [u8; Self::LEN]) -> Self {
@@ -265,15 +267,18 @@ impl AssetName {
             }
         }
 
-        Self {
-            buffer,
-            len: ext.unwrap_or(end),
-        }
+        Self { buffer, ext, end }
     }
 
     #[inline]
-    fn buffer(&self) -> &[u8] {
-        &self.buffer[..self.len]
+    fn basename(&self) -> &[u8] {
+        let end = self.ext.unwrap_or(self.end);
+        &self.buffer[..end]
+    }
+
+    #[inline]
+    pub fn filename(&self) -> &[u8] {
+        &self.buffer[..self.end]
     }
 }
 
@@ -298,31 +303,33 @@ impl crate::instruction::Parameters for AssetName {
             *b = byte;
         }
 
-        Ok(Self {
-            buffer,
-            len: ext.unwrap_or(end),
-        })
+        Ok(Self { buffer, ext, end })
     }
 }
 
 impl Eq for AssetName {}
 impl PartialEq for AssetName {
     fn eq(&self, other: &Self) -> bool {
-        let lhs = self.buffer().iter().map(u8::to_ascii_lowercase);
-        let rhs = other.buffer().iter().map(u8::to_ascii_lowercase);
+        if self.end != other.end {
+            return false;
+        }
+
+        let lhs = self.basename().iter().map(u8::to_ascii_lowercase);
+        let rhs = other.basename().iter().map(u8::to_ascii_lowercase);
+
         lhs.eq(rhs)
     }
 }
 
 impl std::fmt::Display for AssetName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&String::from_utf8_lossy(self.buffer()))
+        f.write_str(&String::from_utf8_lossy(self.basename()))
     }
 }
 
 impl std::hash::Hash for AssetName {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        for b in self.buffer() {
+        for b in self.basename() {
             state.write_u8(b.to_ascii_lowercase());
         }
     }
