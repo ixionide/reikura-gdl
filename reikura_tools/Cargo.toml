@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 reikura_gdl = { workspace = true }
+reikura_util = { workspace = true }
 
 anyhow = { workspace = true }
 
