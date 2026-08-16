@@ -84,7 +84,7 @@ impl Formatter {
         let mut mnemonic = inst.name.to_owned();
 
         if mnemonic == "INVALID" {
-            mnemonic = format!("INVALID({:02X})", inst.opcode)
+            mnemonic = format!("<{:02X}>", inst.opcode)
         }
 
         // let result = write!(out, "{mnemonic:15}");
@@ -217,7 +217,17 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value)?);
                 }
-                // TODO: choicestring
+
+                let bytes = read_bytes(&mut parser, inst_info.param_len - 18)?;
+                let string = sjis_to_utf8(&bytes)?;
+
+                if let Some(c) = string.strip_prefix('"')
+                    && let Some(c) = c.strip_suffix('"')
+                {
+                    fmt.add_param(display_string(c)?);
+                } else {
+                    fmt.add_param(display_string(&string)?);
+                }
             }
             "CWO" => {
                 let par1: u8 = parser.read_param()?;
@@ -278,11 +288,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     fmt.add_param(par);
                 }
 
-                let mut buf = vec![0; inst_info.param_len - 2];
-                for b in buf.iter_mut() {
-                    *b = parser.read_param()?;
-                }
-                fmt.add_param(sjis_to_utf8(&buf)?);
+                let name = read_bytes(&mut parser, inst_info.param_len - 2)?;
+                fmt.add_param(display_bytes_as_string(&name)?);
             }
             "PF" | "PB" | "PJ" => {
                 let par: u8 = parser.read_param()?;
@@ -333,10 +340,152 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let par2: u16 = parser.read_param()?;
                 fmt.add_param(par1).add_param(par2);
             }
+            "STC" => {
+                for _ in 0..2 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                let label = parser.read_param()?;
+                fmt.add_param(display_label(label)?);
+            }
+            "HN" => {
+                let par: u16 = parser.read_param()?;
+                let label = parser.read_param()?;
+                fmt.add_param(par).add_param(display_label(label)?);
+            }
+            "HXP" => {
+                for _ in 0..2 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                let label = parser.read_param()?;
+                fmt.add_param(display_label(label)?);
+            }
+            "HLN" => {
+                let par: u16 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            "HS" => {
+                let par: u16 = parser.read_param()?;
+                let value = parser.read_param()?;
+                fmt.add_param(par).add_param(display_value(value)?);
+            }
+            "HINC" | "HDEC" => {
+                let par: u16 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            // "CALC"
+            "HSG" => {
+                for _ in 0..2 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value)?);
+            }
+            "HT" => {
+                for _ in 0..3 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+            }
+            // "IF"
+            "EXA" => {
+                for _ in 0..2 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+            }
+            "EXS" | "EXC" => {
+                for _ in 0..3 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value)?);
+                }
+
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            "SCP" | "SSP" => {
+                let par1: u16 = parser.read_param()?;
+                let par2: u8 = parser.read_param()?;
+                fmt.add_param(par1).add_param(par2);
+            }
+            "VSET" | "GN" => {
+                for _ in 0..3 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value)?);
+                }
+            }
+            "GF" | "GI" => (),
+            "GC" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value)?);
+                let r: u8 = parser.read_param()?;
+                let g: u8 = parser.read_param()?;
+                let b: u8 = parser.read_param()?;
+                fmt.add_param(r).add_param(g).add_param(b);
+            }
+            "GO" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value)?);
+                let r: u8 = parser.read_param()?;
+                let g: u8 = parser.read_param()?;
+                let b: u8 = parser.read_param()?;
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(r).add_param(g).add_param(b).add_param(par);
+            }
+            "GL" => {
+                let value = parser.read_param()?;
+                let asset = parser.read_param()?;
+                fmt.add_param(display_value(value)?)
+                    .add_param(display_assetname(asset)?);
+            }
+            // "GP"
+            "GB" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value)?);
+                let r: u8 = parser.read_param()?;
+                let g: u8 = parser.read_param()?;
+                let b: u8 = parser.read_param()?;
+                fmt.add_param(r).add_param(g).add_param(b);
+
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+                for _ in 0..4 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value)?);
+                }
+            }
+            "GPB" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value)?);
+            }
+            // "GPJ"
+            // "PR"
+            // "GASTART"
+            // "GASTOP"
+            // "GPI"
+            // "GPO"
+            "GGE" => {
+                for _ in 0..5 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value)?);
+                }
+
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+            }
+            // "GPE"
+            "GSCRL" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value)?);
+            }
             _ => {
-                let params = &parser.state.scenario.code[parser.state.ip..][..inst_info.param_len];
-                parser.state.ip += inst_info.param_len;
-                fmt.add_param(display_bytes(params)?);
+                let params = read_bytes(&mut parser, inst_info.param_len)?;
+                fmt.add_param(display_bytes(&params)?);
             }
         }
 
@@ -349,6 +498,16 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn read_bytes(parser: &mut Parser, len: usize) -> anyhow::Result<Vec<u8>> {
+    let mut bytes = vec![0; len];
+
+    for b in bytes.iter_mut() {
+        *b = parser.read_param()?;
+    }
+
+    Ok(bytes)
 }
 
 fn display_bytes(bytes: &[u8]) -> Result<String, std::fmt::Error> {
@@ -373,8 +532,14 @@ fn display_bytes(bytes: &[u8]) -> Result<String, std::fmt::Error> {
     Ok(display)
 }
 
+fn display_string(string: &str) -> Result<String, std::fmt::Error> {
+    let mut display = String::new();
+    write!(display, "'{string}'")?;
+    Ok(display)
+}
+
 fn display_value(value: Value) -> Result<String, std::fmt::Error> {
-    let mut display = String::with_capacity(16);
+    let mut display = String::new();
 
     match value {
         Value::Literal(value) => write!(display, "{value}")?,
@@ -385,12 +550,18 @@ fn display_value(value: Value) -> Result<String, std::fmt::Error> {
     Ok(display)
 }
 
-fn display_assetname(asset: AssetName) -> Result<String, reikura_util::encoding::InvalidSJIS> {
-    sjis_to_utf8(asset.filename())
+fn display_bytes_as_string(bytes: &[u8]) -> anyhow::Result<String> {
+    let string = sjis_to_utf8(bytes)?;
+    let display = display_string(&string)?;
+    Ok(display)
+}
+
+fn display_assetname(asset: AssetName) -> anyhow::Result<String> {
+    display_bytes_as_string(asset.name())
 }
 
 fn display_label(index: u16) -> Result<String, std::fmt::Error> {
-    let mut display = String::from("LABEL_");
-    write!(display, "{index:04}")?;
+    let mut display = String::new();
+    write!(display, "LABEL_{index:04}")?;
     Ok(display)
 }
