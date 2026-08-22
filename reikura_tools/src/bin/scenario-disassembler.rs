@@ -215,8 +215,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     fmt.add_param(display_value(value));
                 }
 
-                let bytes = read_bytes(&mut parser, inst_info.param_len - 18)?;
-                let string = sjis_to_utf8(&bytes)?;
+                let bytes = parser.read_bytes(inst_info.param_len - 18)?;
+                let string = sjis_to_utf8(bytes)?;
 
                 if let Some(c) = string.strip_circumfix('"', '"') {
                     fmt.add_param(display_string(c));
@@ -283,8 +283,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     fmt.add_param(par);
                 }
 
-                let name = read_bytes(&mut parser, inst_info.param_len - 2)?;
-                fmt.add_param(display_bytes_as_string(&name)?);
+                let name = parser.read_bytes(inst_info.param_len - 2)?;
+                fmt.add_param(display_bytes_as_string(name)?);
             }
             "PF" | "PB" | "PJ" => {
                 let par: u8 = parser.read_param()?;
@@ -479,8 +479,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(display_value(value));
             }
             _ => {
-                let params = read_bytes(&mut parser, inst_info.param_len)?;
-                fmt.add_param(display_bytes(&params)?);
+                let params = parser.read_bytes(inst_info.param_len)?;
+                fmt.add_param(display_bytes(params)?);
             }
         }
 
@@ -493,16 +493,6 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
     }
 
     Ok(())
-}
-
-fn read_bytes(parser: &mut Parser, len: usize) -> anyhow::Result<Vec<u8>> {
-    let mut bytes = vec![0; len];
-
-    for b in bytes.iter_mut() {
-        *b = parser.read_param()?;
-    }
-
-    Ok(bytes)
 }
 
 fn display_bytes(bytes: &[u8]) -> Result<String, std::fmt::Error> {
