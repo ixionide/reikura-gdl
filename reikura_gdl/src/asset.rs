@@ -1,12 +1,12 @@
 use std::{
+    cell::LazyCell,
     collections::HashMap,
     num::NonZeroUsize,
     path::{Path, PathBuf},
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 use lru::LruCache;
-use reikura_util::lazy_result::LazyResult;
 
 use crate::{
     Archive, Audio, CacheManager, Image, Manifest, Scenario,
@@ -22,6 +22,8 @@ const WMSC: &str = "wmsc";
 const MIDI: &str = "midi";
 const ARCHIVE_NAMES: [&str; 7] = [DATA, GGD, ISF, SE, VOICE, WMSC, MIDI];
 
+type Lazy<T> = LazyCell<T, Box<dyn FnOnce() -> T>>;
+
 pub struct AssetManager {
     data: Archive,
     image: Archive,
@@ -32,7 +34,7 @@ pub struct AssetManager {
     bgm_midi: Option<Archive>,
     fakecdda: HashMap<u8, PathBuf>,
     cache: CacheManager,
-    deobfuscator: LazyResult<Deobfuscator, &'static str>,
+    deobfuscator: Lazy<Option<Deobfuscator>>,
 }
 
 impl AssetManager {
@@ -78,17 +80,17 @@ impl AssetManager {
                 .ok_or_else(|| anyhow!("missing {name} archive"))
         };
 
-        let deobfuscator = {
+        let deobfuscator: Lazy<Option<Deobfuscator>> = {
             let title_id = manifest.key.clone();
-            LazyResult::new(move || {
-                if let Some(filter) = get_known_filter(&title_id) {
-                    return Ok(Deobfuscator::new(filter));
-                }
+            let closure = move || {
+                let deobfuscator = get_known_filter(&title_id).map(Deobfuscator::new);
+                deobfuscator.or_else(|| {
+                    let exe_data = std::fs::read(exe_path?).ok()?;
+                    Deobfuscator::try_filter_search(&exe_data)
+                })
+            };
 
-                // TODO: search for filter in the executable
-                let _exepath = exe_path;
-                Err("unknown deobfuscator key")
-            })
+            LazyCell::new(Box::new(closure))
         };
 
         Ok(Self {
@@ -152,7 +154,9 @@ impl AssetManager {
             }
 
             if let Some(obfuscated) = obfuscated(&mut data) {
-                let deobfuscator = self.deobfuscator.get().map_err(|err| anyhow!("{err}"))?;
+                let Some(deobfuscator) = self.deobfuscator.as_ref() else {
+                    bail!("unknown deobfuscator key");
+                };
                 deobfuscator.deobfuscate(obfuscated);
             }
         }

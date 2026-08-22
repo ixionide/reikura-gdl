@@ -11,6 +11,17 @@ impl Deobfuscator {
         Self { key, filter }
     }
 
+    pub fn try_filter_search(executable: &[u8]) -> Option<Self> {
+        let mut filter = [0; 2048];
+        let start = executable
+            .array_windows::<8>()
+            .position(|slice| slice == b"UOB0GMVM")?;
+        let end = start + 2048;
+        filter.copy_from_slice(executable.get(start..end)?);
+
+        Some(Self::new(filter))
+    }
+
     pub fn deobfuscate(&self, data: &mut [u8]) {
         let mut key = self.key.clone();
         let key_len = key.len();

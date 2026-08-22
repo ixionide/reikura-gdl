@@ -4,7 +4,6 @@ pub mod image;
 pub mod index_vec;
 pub mod io;
 mod iota;
-pub mod lazy_result;
 pub mod lzss;
 pub mod rect;
 pub mod register;
