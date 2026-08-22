@@ -31,8 +31,7 @@ fn main() {
         match arg.as_str() {
             "-k" => {
                 if let Some(title_id) = args.next() {
-                    deopfuscator =
-                        get_known_filter(&title_id).map(|filter| Deobfuscator::new(filter))
+                    deopfuscator = get_known_filter(&title_id).map(Deobfuscator::new)
                 }
             }
             "-e" => {
