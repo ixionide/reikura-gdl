@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use anyhow::{Result, bail};
-use reikura_util::io::ReadExt;
 
 use crate::format::isf::IsfMetadata;
 
@@ -38,8 +37,8 @@ impl Scenario {
         let table_count = (code_offset - table_start) / size_of::<u32>();
         let mut jump_table = Vec::with_capacity(table_count);
 
-        for mut chunk in data[table_start..code_offset].chunks_exact(size_of::<u32>()) {
-            let offset: u32 = chunk.read_le()?;
+        for chunk in data[table_start..code_offset].as_chunks().0 {
+            let offset = u32::from_le_bytes(*chunk);
             jump_table.push(offset as usize);
         }
 

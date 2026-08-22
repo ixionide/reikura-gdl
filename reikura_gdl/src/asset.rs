@@ -283,7 +283,7 @@ impl AssetName {
 }
 
 impl crate::instruction::Parameters for AssetName {
-    fn deserialize(scene: &mut crate::Parser) -> Result<Self> {
+    fn parse(scene: &mut crate::Parser) -> Result<Self> {
         let mut buffer = [0; Self::LEN];
         let mut end = Self::LEN;
         let mut ext = None;

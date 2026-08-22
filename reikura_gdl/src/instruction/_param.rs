@@ -9,12 +9,12 @@ use crate::{Parser, vm::VmContext};
 pub use crate::AssetName;
 
 pub trait Parameters: Sized {
-    fn deserialize(parser: &mut Parser) -> Result<Self>;
+    fn parse(parser: &mut Parser) -> Result<Self>;
 }
 
 impl<T: ReadEndian> Parameters for T {
-    fn deserialize(parser: &mut Parser) -> Result<Self> {
-        let param = parser.read_le::<T>()?;
+    fn parse(parser: &mut Parser) -> Result<Self> {
+        let param = parser.get_le::<T>()?;
         Ok(param)
     }
 }
@@ -57,8 +57,8 @@ impl Value {
 }
 
 impl Parameters for Value {
-    fn deserialize(parser: &mut Parser) -> Result<Self> {
-        let value: i32 = parser.read_le()?;
+    fn parse(parser: &mut Parser) -> Result<Self> {
+        let value: i32 = parser.get_le()?;
         let mut val = value & Self::BIT_MASK;
 
         if value & Self::MIN_FLAG != 0 {
@@ -91,11 +91,11 @@ impl ParamString {
 }
 
 impl Parameters for ParamString {
-    fn deserialize(parser: &mut Parser) -> Result<Self> {
+    fn parse(parser: &mut Parser) -> Result<Self> {
         let mut buffer = Vec::with_capacity(32);
 
         loop {
-            let byte: u8 = parser.read_le()?;
+            let byte: u8 = parser.get_le()?;
 
             if byte == 0 || byte == 13 {
                 break;
@@ -127,7 +127,7 @@ impl Rect<Value> {
 }
 
 impl<T: Parameters> Parameters for Rect<T> {
-    fn deserialize(parser: &mut Parser) -> anyhow::Result<Self> {
+    fn parse(parser: &mut Parser) -> anyhow::Result<Self> {
         Ok(Self {
             x: parser.read_param()?,
             y: parser.read_param()?,

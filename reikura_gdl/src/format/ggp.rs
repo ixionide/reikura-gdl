@@ -19,11 +19,11 @@ impl ImageDecoder for GgpFaike {
 
     fn parse(mut data: &[u8]) -> anyhow::Result<Self::Metadata> {
         Ok(GgpFaikeMetadata {
-            magic: data.read_le()?,
-            _unknown: data.read_le()?,
-            key: data.read_le()?,
-            offset: data.read_le()?,
-            length: data.read_le()?,
+            magic: data.get_le()?,
+            _unknown: data.get_le()?,
+            key: data.get_le()?,
+            offset: data.get_le()?,
+            length: data.get_le()?,
         })
     }
 

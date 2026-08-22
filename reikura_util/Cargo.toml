@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 encoding_rs = "0.8.35"
 memmap2 = { workspace = true }
+
+[lints]
+workspace = true

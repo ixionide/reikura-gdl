@@ -23,9 +23,9 @@ impl ImageDecoder for GgdFull {
 
     fn parse(mut data: &[u8]) -> Result<Self::Metadata> {
         Ok(GgdFullMetadata {
-            magic: data.read_le()?,
-            width: data.read_le()?,
-            height: data.read_le()?,
+            magic: data.get_le()?,
+            width: data.get_le()?,
+            height: data.get_le()?,
         })
     }
 
@@ -38,32 +38,32 @@ impl ImageDecoder for GgdFull {
         let mut buf = [0xFF; PIXEL_STRIDE];
 
         while pixels.len() < size {
-            let ctrl = reader.read_le::<u8>()?;
+            let ctrl = reader.get_le::<u8>()?;
 
             match ctrl {
                 0x0 => {
-                    let count = reader.read_le::<u8>()? as usize;
+                    let count = reader.get_le::<u8>()? as usize;
                     let pos = 1;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x1 => {
-                    let count = reader.read_le::<u8>()? as usize;
-                    let pos = reader.read_le::<u8>()? as usize;
+                    let count = reader.get_le::<u8>()? as usize;
+                    let pos = reader.get_le::<u8>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x2 => {
-                    let count = reader.read_le::<u8>()? as usize;
-                    let pos = reader.read_le::<u16>()? as usize;
+                    let count = reader.get_le::<u8>()? as usize;
+                    let pos = reader.get_le::<u16>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x3 => {
                     let count = 1;
-                    let pos = reader.read_le::<u8>()? as usize;
+                    let pos = reader.get_le::<u8>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x4 => {
                     let count = 1;
-                    let pos = reader.read_le::<u16>()? as usize;
+                    let pos = reader.get_le::<u16>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 255 => break,
@@ -100,13 +100,13 @@ impl ImageDecoder for Ggd256g {
 
     fn parse(mut data: &[u8]) -> Result<Self::Metadata> {
         Ok(Ggd256gMetadata {
-            magic: data.read_le()?,
-            header_len: data.read_le()?,
-            width: data.read_le()?,
-            height: data.read_le::<i32>()?.unsigned_abs(),
-            _unknown1: data.read_le()?,
-            _unknown2: data.read_le()?,
-            uncompressed_len: data.read_le()?,
+            magic: data.get_le()?,
+            header_len: data.get_le()?,
+            width: data.get_le()?,
+            height: data.get_le::<i32>()?.unsigned_abs(),
+            _unknown1: data.get_le()?,
+            _unknown2: data.get_le()?,
+            uncompressed_len: data.get_le()?,
         })
     }
 

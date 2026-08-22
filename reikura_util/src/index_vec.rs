@@ -27,12 +27,12 @@ impl<I: Into<usize>, V> From<Vec<V>> for IndexVec<I, V> {
 }
 
 impl<I: ReadEndian + Into<usize>, V: ReadEndian> ReadEndian for IndexVec<I, V> {
-    fn read_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self> {
-        let len = I::read_le(reader)?.into();
+    fn get_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self> {
+        let len = I::get_le(reader)?.into();
         let mut values = Vec::with_capacity(len);
 
         for _ in 0..len {
-            let val = V::read_le(reader)?;
+            let val = V::get_le(reader)?;
             values.push(val);
         }
 
