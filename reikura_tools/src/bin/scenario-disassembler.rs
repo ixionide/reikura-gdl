@@ -35,9 +35,16 @@ fn main() {
                 }
             }
             "-e" => {
-                if let Some(exe_path) = args.next() {
-                    let _ = exe_path;
+                let Some(exe_path) = args.next() else {
+                    continue;
                 };
+
+                let Ok(executable) = std::fs::read(&exe_path) else {
+                    eprintln!("failed to read executable {exe_path}");
+                    continue;
+                };
+
+                deopfuscator = Deobfuscator::try_filter_search(&executable);
             }
             _ => {
                 let path = Path::new(&arg);
@@ -477,6 +484,257 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let value = parser.read_param()?;
                 fmt.add_param(display_value(value));
             }
+            "GV" => {
+                let par: u16 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..2 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            // "GAL"
+            "GAOPEN" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+            }
+            // "GASET"
+            // "GAPOS"
+            // "GACLOSE"
+            // "GADELETE"
+            // "SGL"
+            "ML" => {
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            "MP" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                if inst_info.param_len == 5 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            "MF" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "MS" => (),
+            "SER" => {
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "SEP" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+
+                if inst_info.param_len == 8 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            "SED" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "PCMON" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            "PCML" => {
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+            }
+            "PCMS" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "PCMEND" => (),
+            "SES" => {
+                for _ in 0..2 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            // "BGMGETPOS"
+            // "SEGETPOS"
+            // "PCMGETPOS"
+            // "PCMCN"
+            "IM" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+            }
+            "IC" => match inst_info.param_len {
+                1 => {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+                4 => {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+                _ => eprint!("unknown IC param len"),
+            },
+            // "IMS"
+            "IXY" => {
+                for _ in 0..2 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            "IH" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..4 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+                let par: u16 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..3 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+            }
+            "IG" => {
+                for _ in 0..2 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                for _ in 0..2 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+            }
+            "IGINIT" | "IGRELEASE" => (),
+            "IHK" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..8 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            "IHKDEF" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "IHGL" => {
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+
+                for _ in 0..2 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            "IHGC" => (),
+            // "IHGP"
+            "CLK" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "IGN" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            // "DAE"
+            "DAP" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                if inst_info.param_len == 11 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            "DAS" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "SETINSIDEVOL" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            // "KIDCLR"
+            // "KIDMOJI"
+            // "KIDPAGE"
+            // "KIDSET"
+            // "KITEND"
+            "KIDFN" => {
+                let par: u32 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            "KIDHABA" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..2 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+            }
+            "KIDSCAN" => {
+                let par: u16 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..2 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            "SETKIDWNDPUTPOS" | "SETMESWNDPUTPOS" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..4 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            // "INNAME"
+            // "NAMECOPY"
+            // "CHANGEWALL"
+            // "MSGBOX"
+            // "SETSMPRATE"
+            // "CLKEXMCSET"
+            // "IRCLK"
+            // "IROPN"
+            // "PPTL"
+            // "PPABL"
+            // "PPTYPE"
+            // "PPORT"
+            // "PPCRT"
+            // "SABL"
+            // "MPM"
+            // "VOC"
+            // "PM2"
+            // "MPM2"
             _ => {
                 let params = parser.read_bytes(inst_info.param_len)?;
                 fmt.add_param(display_bytes(params)?);
