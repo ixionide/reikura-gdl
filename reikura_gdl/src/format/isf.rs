@@ -11,9 +11,9 @@ pub struct IsfMetadata {
 impl IsfMetadata {
     pub fn parse(mut data: &[u8]) -> Result<Self> {
         Ok(Self {
-            bytecode_offset: data.read_le()?,
-            version: data.read_be()?,
-            xor_key: data.read_le()?,
+            bytecode_offset: data.get_le()?,
+            version: data.get_be()?,
+            xor_key: data.get_le()?,
             _reserved: 0,
         })
     }

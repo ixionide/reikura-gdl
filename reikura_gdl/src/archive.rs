@@ -47,7 +47,7 @@ impl Archive {
         let mut file = File::open(path).with_context(err_ctx)?;
 
         let index = {
-            let magic = file.read_bytes::<8>()?;
+            let magic = file.get_bytes::<8>()?;
             file.rewind()?;
 
             match &magic {

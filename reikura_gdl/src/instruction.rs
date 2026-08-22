@@ -305,8 +305,8 @@ pub struct InstructionInfo {
 
 impl Parameters for InstructionInfo {
     #[inline]
-    fn deserialize(parser: &mut crate::Parser) -> Result<Self> {
-        let info = match parser.read_le::<u8>()? as usize {
+    fn parse(parser: &mut crate::Parser) -> Result<Self> {
+        let info = match parser.get_le::<u8>()? as usize {
             0 | 1 => Self {
                 len: 0,
                 param_len: 0,
@@ -314,7 +314,7 @@ impl Parameters for InstructionInfo {
             hi if hi & 0x80 != 0 => {
                 let len = {
                     let hi = (hi & 0x7F) << 8;
-                    let lo = parser.read_le::<u8>()? as usize;
+                    let lo = parser.get_le::<u8>()? as usize;
                     hi | lo
                 };
 

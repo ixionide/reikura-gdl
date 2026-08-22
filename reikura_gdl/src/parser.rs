@@ -89,7 +89,17 @@ impl Parser {
     }
 
     pub fn read_param<P: Parameters>(&mut self) -> Result<P> {
-        Parameters::deserialize(self)
+        Parameters::parse(self)
+    }
+
+    pub fn read_bytes(&mut self, length: usize) -> Result<&[u8]> {
+        let end = self.state.ip + length;
+        let Some(params) = self.state.scenario.code.get(self.state.ip..end) else {
+            bail!("end of scenario reached");
+        };
+
+        self.state.ip += end;
+        Ok(params)
     }
 }
 

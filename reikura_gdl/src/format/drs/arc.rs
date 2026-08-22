@@ -16,7 +16,7 @@ impl DrsArc {
     pub fn parse(file: &mut File) -> anyhow::Result<Self> {
         const ENTRY_CHUNK_LEN: usize = 16;
 
-        let entries_len = file.read_le::<u16>()? as usize;
+        let entries_len = file.get_le::<u16>()? as usize;
         let file_size = file.metadata()?.len() as usize;
 
         if !entries_len.is_multiple_of(ENTRY_CHUNK_LEN) || entries_len > file_size {
@@ -34,7 +34,7 @@ impl DrsArc {
             Vec::with_capacity(count)
         };
 
-        for chunk in entries_chunk.chunks_exact(ENTRY_CHUNK_LEN) {
+        for chunk in entries_chunk.as_chunks::<ENTRY_CHUNK_LEN>().0 {
             let entry = DrsArcEntry::parse(chunk)?;
 
             if let Some(prev) = entries.last_mut() {
@@ -76,8 +76,8 @@ pub struct DrsArcEntry {
 impl DrsArcEntry {
     pub fn parse(mut chunk: &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
-            filename: chunk.read_le()?,
-            offset: chunk.read_le()?,
+            filename: chunk.get_le()?,
+            offset: chunk.get_le()?,
             length: 0,
         })
     }

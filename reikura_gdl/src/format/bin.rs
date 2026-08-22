@@ -10,7 +10,7 @@ impl ImageDecoder for Bin {
     type Metadata = [u8; 2];
 
     fn parse(mut data: &[u8]) -> anyhow::Result<Self::Metadata> {
-        let magic = data.read_le::<[u8; 2]>()?;
+        let magic = data.get_le::<[u8; 2]>()?;
         Ok(magic)
     }
 

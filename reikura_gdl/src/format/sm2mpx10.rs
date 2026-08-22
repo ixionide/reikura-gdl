@@ -19,11 +19,11 @@ impl Sm2mpx10 {
     const MAGIC: &[u8] = b"SM2MPX10";
 
     pub fn parse(file: &mut File) -> Result<Self> {
-        let magic: [u8; 8] = file.read_le()?;
+        let magic: [u8; 8] = file.get_le()?;
 
         debug_assert_eq!(magic, Self::MAGIC);
 
-        let count: u32 = file.read_le()?;
+        let count: u32 = file.get_le()?;
         file.seek(std::io::SeekFrom::Start(32))?;
 
         let entries_chunk = {
@@ -33,7 +33,10 @@ impl Sm2mpx10 {
         };
         let mut entries = Vec::with_capacity(count as usize);
 
-        for chunk in entries_chunk.chunks_exact(size_of::<Sm2mpx10Entry>()) {
+        for chunk in entries_chunk
+            .as_chunks::<{ size_of::<Sm2mpx10Entry>() }>()
+            .0
+        {
             let entry = Sm2mpx10Entry::parse(chunk)?;
             entries.push(entry);
         }
@@ -66,9 +69,9 @@ pub struct Sm2mpx10Entry {
 impl Sm2mpx10Entry {
     pub fn parse(mut chunk: &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
-            filename: chunk.read_le()?,
-            offset: chunk.read_le()?,
-            length: chunk.read_le()?,
+            filename: chunk.get_le()?,
+            offset: chunk.get_le()?,
+            length: chunk.get_le()?,
         })
     }
 }

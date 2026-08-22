@@ -27,14 +27,14 @@ impl ImageDecoder for Gga {
 
     fn parse(mut data: &[u8]) -> Result<Self::Metadata> {
         Ok(GgaMetadata {
-            magic: data.read_le()?,
-            width: data.read_le()?,
-            height: data.read_le()?,
-            _unknown: data.read_le()?,
-            bpp: data.read_le()?,
-            flags: data.read_le()?,
-            pixel_offset: data.read_le()?,
-            compressed_len: data.read_le()?,
+            magic: data.get_le()?,
+            width: data.get_le()?,
+            height: data.get_le()?,
+            _unknown: data.get_le()?,
+            bpp: data.get_le()?,
+            flags: data.get_le()?,
+            pixel_offset: data.get_le()?,
+            compressed_len: data.get_le()?,
         })
     }
 
@@ -49,46 +49,46 @@ impl ImageDecoder for Gga {
         let mut buf = [0xFF; PIXEL_STRIDE];
 
         while cursor.position() < md.compressed_len as u64 {
-            let cmd = cursor.read_le::<u8>()?;
+            let cmd = cursor.get_le::<u8>()?;
             match cmd {
                 0x0 => {
                     let pos = 1;
-                    let count = cursor.read_le::<u8>()? as usize;
+                    let count = cursor.get_le::<u8>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x1 => {
                     let pos = 1;
-                    let count = cursor.read_le::<u16>()? as usize;
+                    let count = cursor.get_le::<u16>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x2 => {
-                    let pos = cursor.read_le::<u8>()? as usize;
+                    let pos = cursor.get_le::<u8>()? as usize;
                     let count = 1;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x3 => {
-                    let pos = cursor.read_le::<u16>()? as usize;
+                    let pos = cursor.get_le::<u16>()? as usize;
                     let count = 1;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x4 => {
-                    let pos = cursor.read_le::<u8>()? as usize;
-                    let count = cursor.read_le::<u8>()? as usize;
+                    let pos = cursor.get_le::<u8>()? as usize;
+                    let count = cursor.get_le::<u8>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x5 => {
-                    let pos = cursor.read_le::<u8>()? as usize;
-                    let count = cursor.read_le::<u16>()? as usize;
+                    let pos = cursor.get_le::<u8>()? as usize;
+                    let count = cursor.get_le::<u16>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x6 => {
-                    let pos = cursor.read_le::<u16>()? as usize;
-                    let count = cursor.read_le::<u8>()? as usize;
+                    let pos = cursor.get_le::<u16>()? as usize;
+                    let count = cursor.get_le::<u8>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count)
                 }
                 0x7 => {
-                    let pos = cursor.read_le::<u16>()? as usize;
-                    let count = cursor.read_le::<u16>()? as usize;
+                    let pos = cursor.get_le::<u16>()? as usize;
+                    let count = cursor.get_le::<u16>()? as usize;
                     copy_previous_pixels(&mut pixels, pos, count);
                 }
                 0x8 => {
