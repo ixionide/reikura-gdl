@@ -49,4 +49,8 @@ impl Scenario {
             subroutines: Rc::from(jump_table),
         })
     }
+
+    pub fn sub_offset(&self, index: usize) -> Option<usize> {
+        self.subroutines.get(index).copied()
+    }
 }
