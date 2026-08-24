@@ -248,7 +248,9 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(par);
 
                 'param: loop {
-                    match parser.read_param::<u8>()? {
+                    let cmd: u8 = parser.read_param()?;
+
+                    match cmd {
                         0x00 => {
                             if let Some(0) = parser.peek_opcode() {
                                 parser.state.ip += 1;
@@ -257,23 +259,27 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                             break 'param;
                         }
                         0x01 => {
+                            fmt.add_param(cmd);
+
                             for _ in 0..4 {
                                 let par: u8 = parser.read_param()?;
                                 fmt.add_param(par);
                             }
                         }
-                        0x02 | 0x03 | 0x06 => (),
+                        0x02 | 0x03 | 0x06 => {
+                            fmt.add_param(cmd);
+                        }
                         0x04 => {
                             let par: u8 = parser.read_param()?;
-                            fmt.add_param(par);
+                            fmt.add_param(cmd).add_param(par);
                         }
                         0x08 | 0x11 => {
                             let value = parser.read_param()?;
-                            fmt.add_param(display_value(value));
+                            fmt.add_param(cmd).add_param(display_value(value));
                         }
                         0x13 => {
                             let asset = parser.read_param()?;
-                            fmt.add_param(display_assetname(asset)?);
+                            fmt.add_param(cmd).add_param(display_assetname(asset)?);
                         }
                         0xFF => {
                             let mut msg_buffer = Vec::with_capacity(inst_info.param_len - 1);
@@ -297,9 +303,12 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                             }
 
                             let message = sjis_to_utf8(&msg_buffer)?;
-                            fmt.add_param(display_string(&message));
+                            fmt.add_param(display_message(&message));
                         }
-                        cmd => eprint!("unknown PM cmd: {cmd}"),
+                        _ => {
+                            eprint!("unknown PM cmd: {cmd}");
+                            fmt.add_param(cmd);
+                        }
                     }
                 }
             }
@@ -496,9 +505,9 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             // "GAL"
             "GAOPEN" => {
                 let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
                 let asset = parser.read_param()?;
-                fmt.add_param(display_assetname(asset)?);
+                fmt.add_param(display_value(value))
+                    .add_param(display_assetname(asset)?);
             }
             // "GASET"
             // "GAPOS"
@@ -901,7 +910,44 @@ fn display_bytes(bytes: &[u8]) -> Result<String, std::fmt::Error> {
 }
 
 fn display_string(string: &str) -> String {
-    format!("\"{}\"", string.escape_default())
+    let mut display = String::with_capacity(string.len() + 16);
+
+    display.push('"');
+
+    for char in string.chars() {
+        match char {
+            '\"' => display.push_str("\\\""),
+            '\\' => display.push_str("\\\\"),
+            '\n' => display.push_str("\\n"),
+            '\r' => display.push_str("\\r"),
+            _ => display.push(char),
+        }
+    }
+
+    display.push('"');
+
+    display
+}
+
+fn display_message(message: &str) -> String {
+    let mut display = String::with_capacity(message.len() + 32);
+
+    display.push('[');
+
+    for char in message.chars() {
+        match char {
+            '[' => display.push_str("\\["),
+            ']' => display.push_str("\\]"),
+            '\\' => display.push_str("\\\\"),
+            '\n' => display.push_str("\\n"),
+            '\r' => display.push_str("\\r"),
+            _ => display.push(char),
+        }
+    }
+
+    display.push(']');
+
+    display
 }
 
 fn display_value(value: Value) -> String {
