@@ -275,13 +275,13 @@ impl AssetName {
     }
 
     #[inline]
-    fn basename(&self) -> &[u8] {
+    fn stem(&self) -> &[u8] {
         let end = self.ext.unwrap_or(self.end);
         &self.buffer[..end]
     }
 
     #[inline]
-    pub fn filename(&self) -> &[u8] {
+    pub fn name(&self) -> &[u8] {
         &self.buffer[..self.end]
     }
 }
@@ -318,8 +318,8 @@ impl PartialEq for AssetName {
             return false;
         }
 
-        let lhs = self.basename().iter().map(u8::to_ascii_lowercase);
-        let rhs = other.basename().iter().map(u8::to_ascii_lowercase);
+        let lhs = self.stem().iter().map(u8::to_ascii_lowercase);
+        let rhs = other.stem().iter().map(u8::to_ascii_lowercase);
 
         lhs.eq(rhs)
     }
@@ -327,13 +327,13 @@ impl PartialEq for AssetName {
 
 impl std::fmt::Display for AssetName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&String::from_utf8_lossy(self.basename()))
+        f.write_str(&String::from_utf8_lossy(self.stem()))
     }
 }
 
 impl std::hash::Hash for AssetName {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        for b in self.basename() {
+        for b in self.stem() {
             state.write_u8(b.to_ascii_lowercase());
         }
     }

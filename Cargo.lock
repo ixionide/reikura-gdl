@@ -1280,7 +1280,9 @@ dependencies = [
 name = "reikura_tools"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "reikura_gdl",
+ "reikura_util",
 ]
 
 [[package]]
