@@ -7,7 +7,7 @@ use std::{
 
 use reikura_gdl::{
     AssetName, Parser, Scenario,
-    instruction::{INSTRUCTIONS, Instruction, InstructionInfo, ParamString, Value},
+    instruction::{CHARSET, INSTRUCTIONS, Instruction, InstructionInfo, ParamString, Value},
     secretfilter::{Deobfuscator, SIGNATURE, filters::get_known_filter},
 };
 use reikura_util::encoding::sjis_to_utf8;
@@ -243,7 +243,66 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let par: u8 = parser.read_param()?;
                 fmt.add_param(par);
             }
-            // "PM"
+            "PM" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                'param: loop {
+                    match parser.read_param::<u8>()? {
+                        0x00 => {
+                            if let Some(0) = parser.peek_opcode() {
+                                parser.state.ip += 1;
+                            };
+
+                            break 'param;
+                        }
+                        0x01 => {
+                            for _ in 0..4 {
+                                let par: u8 = parser.read_param()?;
+                                fmt.add_param(par);
+                            }
+                        }
+                        0x02 | 0x03 | 0x06 => (),
+                        0x04 => {
+                            let par: u8 = parser.read_param()?;
+                            fmt.add_param(par);
+                        }
+                        0x08 | 0x11 => {
+                            let value = parser.read_param()?;
+                            fmt.add_param(display_value(value));
+                        }
+                        0x13 => {
+                            let asset = parser.read_param()?;
+                            fmt.add_param(display_assetname(asset)?);
+                        }
+                        0xFF => {
+                            let mut msg_buffer = Vec::with_capacity(inst_info.param_len - 1);
+
+                            'msg: loop {
+                                match parser.read_param::<u8>()? {
+                                    0 => break 'msg,
+                                    index @ 1..0x7F => {
+                                        msg_buffer.extend(CHARSET[index as usize]);
+                                    }
+                                    0x7F => {
+                                        let byte: u8 = parser.read_param()?;
+                                        msg_buffer.push(byte);
+                                    }
+                                    byte @ 0x80.. => {
+                                        msg_buffer.push(byte);
+                                        let byte: u8 = parser.read_param()?;
+                                        msg_buffer.push(byte);
+                                    }
+                                };
+                            }
+
+                            let message = sjis_to_utf8(&msg_buffer)?;
+                            fmt.add_param(display_string(&message));
+                        }
+                        cmd => eprint!("unknown PM cmd: {cmd}"),
+                    }
+                }
+            }
             // "PMP"
             "WSH" | "WSS" => {
                 let value = parser.read_param()?;
@@ -448,9 +507,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             // "SGL"
             "ML" => {
                 let asset = parser.read_param()?;
-                fmt.add_param(display_assetname(asset)?);
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
+                fmt.add_param(display_assetname(asset)?).add_param(par);
             }
             "MP" => {
                 let par: u8 = parser.read_param()?;
@@ -468,9 +526,9 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             "MS" => (),
             "SER" => {
                 let asset = parser.read_param()?;
-                fmt.add_param(display_assetname(asset)?);
                 let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
+                fmt.add_param(display_assetname(asset)?)
+                    .add_param(display_value(value));
             }
             "SEP" => {
                 let value = parser.read_param()?;
@@ -510,9 +568,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             // "PCMCN"
             "IM" => {
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
                 let asset = parser.read_param()?;
-                fmt.add_param(display_assetname(asset)?);
+                fmt.add_param(par).add_param(display_assetname(asset)?);
             }
             "IC" => match inst_info.param_len {
                 1 => {
@@ -541,10 +598,9 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     fmt.add_param(display_value(value));
                 }
 
-                let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
-                let par: u16 = parser.read_param()?;
-                fmt.add_param(par);
+                let par1: u8 = parser.read_param()?;
+                let par2: u16 = parser.read_param()?;
+                fmt.add_param(par1).add_param(par2);
 
                 for _ in 0..3 {
                     let par: u8 = parser.read_param()?;
@@ -589,9 +645,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             // "IHGP"
             "CLK" => {
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
                 let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
+                fmt.add_param(par).add_param(display_value(value));
             }
             "IGN" => {
                 let value = parser.read_param()?;
@@ -600,9 +655,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             // "DAE"
             "DAP" => {
                 let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
+                fmt.add_param(display_value(value)).add_param(par);
 
                 if inst_info.param_len == 11 {
                     let value = parser.read_param()?;
@@ -615,9 +669,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             }
             "SETINSIDEVOL" => {
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
                 let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
+                fmt.add_param(par).add_param(display_value(value));
             }
             // "KIDCLR"
             // "KIDMOJI"
@@ -639,9 +692,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             }
             "KIDSCAN" => {
                 let par: u16 = parser.read_param()?;
-                fmt.add_param(par);
                 let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
+                fmt.add_param(par).add_param(display_value(value));
             }
             "SETKIDWNDPUTPOS" | "SETMESWNDPUTPOS" => {
                 let par: u8 = parser.read_param()?;
@@ -672,10 +724,9 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             // "MPM2"
             "TAGSET" => {
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
-
                 let string: ParamString = parser.read_param()?;
-                fmt.add_param(display_string(&string.decode_sjis()?));
+                fmt.add_param(par)
+                    .add_param(display_string(&string.decode_sjis()?));
             }
             "FRAMESET" => {
                 for _ in 0..2 {
@@ -693,10 +744,9 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 }
 
                 let par: u16 = parser.read_param()?;
-                fmt.add_param(par);
-
                 let string: ParamString = parser.read_param()?;
-                fmt.add_param(display_string(&string.decode_sjis()?));
+                fmt.add_param(par)
+                    .add_param(display_string(&string.decode_sjis()?));
             }
             "SLDRSET" => {
                 for _ in 0..4 {
@@ -736,9 +786,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             // "EXT2"
             "CNF" => {
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
                 let asset = parser.read_param()?;
-                fmt.add_param(display_assetname(asset)?);
+                fmt.add_param(par).add_param(display_assetname(asset)?);
             }
             "ATIMES" => {
                 let value = parser.read_param()?;
