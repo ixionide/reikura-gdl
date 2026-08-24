@@ -98,7 +98,7 @@ impl Parser {
             bail!("end of scenario reached");
         };
 
-        self.state.ip += end;
+        self.state.ip = end;
         Ok(params)
     }
 }

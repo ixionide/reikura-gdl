@@ -7,7 +7,7 @@ use std::{
 
 use reikura_gdl::{
     AssetName, Parser, Scenario,
-    instruction::{INSTRUCTIONS, Instruction, InstructionInfo, Value},
+    instruction::{INSTRUCTIONS, Instruction, InstructionInfo, ParamString, Value},
     secretfilter::{Deobfuscator, SIGNATURE, filters::get_known_filter},
 };
 use reikura_util::encoding::sjis_to_utf8;
@@ -73,65 +73,6 @@ fn main() {
                 let scenario = Scenario::load(String::new(), data).unwrap();
                 disassemble(&outpath, scenario).unwrap();
             }
-        }
-    }
-}
-
-struct Formatter {
-    mnemonic: String,
-    params: String,
-    err: Option<std::fmt::Error>,
-}
-
-impl Formatter {
-    fn new(inst: &Instruction) -> Self {
-        let mut mnemonic = inst.name.to_owned();
-
-        if mnemonic == "INVALID" {
-            mnemonic = format!("<{:02X}>", inst.opcode)
-        }
-
-        Self {
-            mnemonic,
-            params: String::with_capacity(256),
-            err: None,
-        }
-    }
-
-    fn add_param(&mut self, param: impl Display) -> &mut Self {
-        if self.err.is_some() {
-            return self;
-        }
-
-        let result = {
-            if self.params.is_empty() {
-                write!(self.params, "{param}")
-            } else {
-                write!(self.params, ", {param}")
-            }
-        };
-
-        self.err = result.err();
-
-        self
-    }
-
-    fn write(self, out: &mut BufWriter<File>) -> std::io::Result<()> {
-        let Self {
-            mnemonic,
-            params,
-            err,
-        } = self;
-        let indent = "    ";
-
-        if let Some(err) = err {
-            return Err(std::io::Error::other(err));
-        };
-
-        if params.is_empty() {
-            writeln!(out, "{indent}{mnemonic}")
-        } else {
-            writeln!(out, "{indent}{mnemonic:16} {params}")
         }
     }
 }
@@ -480,10 +421,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(display_assetname(asset)?);
             }
             // "GPE"
-            "GSCRL" => {
-                let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
-            }
+            // "GSCRL"
             "GV" => {
                 let par: u16 = parser.read_param()?;
                 fmt.add_param(par);
@@ -702,11 +640,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             "KIDSCAN" => {
                 let par: u16 = parser.read_param()?;
                 fmt.add_param(par);
-
-                for _ in 0..2 {
-                    let value = parser.read_param()?;
-                    fmt.add_param(display_value(value));
-                }
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
             }
             "SETKIDWNDPUTPOS" | "SETMESWNDPUTPOS" => {
                 let par: u8 = parser.read_param()?;
@@ -735,6 +670,144 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             // "VOC"
             // "PM2"
             // "MPM2"
+            "TAGSET" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                let string: ParamString = parser.read_param()?;
+                fmt.add_param(display_string(&string.decode_sjis()?));
+            }
+            "FRAMESET" => {
+                for _ in 0..2 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                let string: ParamString = parser.read_param()?;
+                fmt.add_param(display_string(&string.decode_sjis()?));
+            }
+            "RBSET" | "CBSET" => {
+                for _ in 0..3 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                let par: u16 = parser.read_param()?;
+                fmt.add_param(par);
+
+                let string: ParamString = parser.read_param()?;
+                fmt.add_param(display_string(&string.decode_sjis()?));
+            }
+            "SLDRSET" => {
+                for _ in 0..4 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                for _ in 0..3 {
+                    let string: ParamString = parser.read_param()?;
+                    fmt.add_param(display_string(&string.decode_sjis()?));
+                }
+
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..3 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+
+                for _ in 0..2 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+            }
+            "OPSL" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            "OPPROP" => (),
+            // "DISABLE"
+            // "ENABLE"
+            // "TITLE"
+            // "EXT2"
+            "CNF" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+            }
+            "ATIMES" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "AWAIT" => (),
+            "AVIP" => {
+                for _ in 0..4 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+
+                let asset = parser.read_param()?;
+                fmt.add_param(display_assetname(asset)?);
+            }
+            "PPF" | "SVF" => {
+                let par: u8 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            // "PPE"
+            "SETGAMEINFO" => {
+                let string: ParamString = parser.read_param()?;
+                fmt.add_param(display_string(&string.decode_sjis()?));
+            }
+            "SETFONTSTYLE" => {
+                for _ in 0..2 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+            }
+            "SETFONTCOLOR" => {
+                for _ in 0..2 {
+                    let par: u8 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
+
+                match inst_info.param_len {
+                    5 => {
+                        for _ in 0..3 {
+                            let par: u8 = parser.read_param()?;
+                            fmt.add_param(par);
+                        }
+                    }
+                    14 => {
+                        for _ in 0..3 {
+                            let value = parser.read_param()?;
+                            fmt.add_param(display_value(value));
+                        }
+                    }
+                    _ => eprint!("unknown SETFONTCOLOR param len"),
+                }
+            }
+            "TIMERSET" => {
+                let value = parser.read_param()?;
+                fmt.add_param(display_value(value));
+            }
+            "TIMEREND" => {
+                if inst_info.param_len == 4 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+            }
+            "TIMERGET" => {
+                let par: u16 = parser.read_param()?;
+                fmt.add_param(par);
+            }
+            // "GRPOUT"
+            // "BREAK"
+            // "EXT"
             _ => {
                 let params = parser.read_bytes(inst_info.param_len)?;
                 fmt.add_param(display_bytes(params)?);
@@ -743,9 +816,15 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
 
         fmt.write(&mut out)?;
 
+        let mut first = true;
         while Some(parser.state.ip) == parser.state.scenario.sub_offset(sub_index) {
-            writeln!(out, "#LABEL_{sub_index:04}:")?;
+            writeln!(
+                out,
+                "{}#LABEL_{sub_index:04}:",
+                if first { "\n" } else { "" }
+            )?;
             sub_index += 1;
+            first = false;
         }
     }
 
@@ -759,23 +838,21 @@ fn display_bytes(bytes: &[u8]) -> Result<String, std::fmt::Error> {
         return Ok(String::new());
     }
 
-    write!(display, "<")?;
-
     for byte in bytes.iter() {
         if display.is_empty() {
-            write!(display, "{byte:2X}")?;
+            write!(display, "<{byte:02X}")?;
         } else {
-            write!(display, " {byte:2X}")?;
+            write!(display, " {byte:02X}")?;
         }
     }
 
-    writeln!(display, ">")?;
+    write!(display, ">")?;
 
     Ok(display)
 }
 
 fn display_string(string: &str) -> String {
-    string.escape_default().to_string()
+    format!("\"{}\"", string.escape_default())
 }
 
 fn display_value(value: Value) -> String {
@@ -797,4 +874,61 @@ fn display_assetname(asset: AssetName) -> anyhow::Result<String> {
 
 fn display_label(index: u16) -> String {
     format!("LABEL_{index:04}")
+}
+
+struct Formatter {
+    mnemonic: String,
+    params: String,
+    err: Option<std::fmt::Error>,
+}
+
+impl Formatter {
+    fn new(inst: &Instruction) -> Self {
+        let mut mnemonic = inst.name.to_owned();
+
+        if mnemonic == "INVALID" {
+            mnemonic = format!("<{:02X}>", inst.opcode)
+        }
+
+        Self {
+            mnemonic,
+            params: String::with_capacity(256),
+            err: None,
+        }
+    }
+
+    fn add_param(&mut self, param: impl Display) -> &mut Self {
+        if self.err.is_some() {
+            return self;
+        }
+
+        let result = write!(
+            self.params,
+            "{}{param}",
+            if self.params.is_empty() { "" } else { ", " }
+        );
+
+        self.err = result.err();
+
+        self
+    }
+
+    fn write(self, out: &mut BufWriter<File>) -> std::io::Result<()> {
+        let Self {
+            mnemonic,
+            params,
+            err,
+        } = self;
+        let indent = "    ";
+
+        if let Some(err) = err {
+            return Err(std::io::Error::other(err));
+        };
+
+        if params.is_empty() {
+            writeln!(out, "{indent}{mnemonic}")
+        } else {
+            writeln!(out, "{indent}{mnemonic:16} {params}")
+        }
+    }
 }
