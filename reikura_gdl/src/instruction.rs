@@ -13,6 +13,8 @@ inst! {
     //
     cns,
     //
+    pm,
+    //
     fln, sk, sks, hf, ft, sp, hp,
     //
     hn,
@@ -78,7 +80,7 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     // insts[0x28] = PJ;
     // insts[0x29] = WO;
     // insts[0x2A] = WC;
-    // insts[0x2B] = PM;
+    insts[0x25] = Instruction::new("PM", pm);
     // insts[0x2C] = PMP;
     // insts[0x2D] = WSH;
     // insts[0x2E] = WSS;

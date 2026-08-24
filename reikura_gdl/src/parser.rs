@@ -79,8 +79,13 @@ impl Parser {
         Ok(())
     }
 
+    #[inline]
+    pub fn peek_opcode(&mut self) -> Option<u8> {
+        self.state.scenario.code.get(self.state.ip).copied()
+    }
+
     pub fn read_opcode(&mut self) -> Result<u8> {
-        let Some(op) = self.state.scenario.code.get(self.state.ip).copied() else {
+        let Some(op) = self.peek_opcode() else {
             bail!("end of scenario reached");
         };
 

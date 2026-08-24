@@ -1,3 +1,13 @@
+/// const_iota! {
+///     u8 = iota,
+///     A,
+///     B,
+///     C
+/// }
+///
+/// assert_eq!(A, 0);
+/// assert_eq!(B, 1);
+/// assert_eq!(C, 2);
 #[macro_export]
 macro_rules! const_iota {
     ($ty:ty = $expr:expr, $($id:ident),+ $(,)?) => {
