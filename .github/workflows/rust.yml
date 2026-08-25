@@ -25,9 +25,9 @@ jobs:
       - name: Check
         run: |
           cargo fmt --check
-          cargo clippy --all-targets -- -D warnings
+          cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
-        run: cargo test
+        run: cargo test --workspace
 
   build-win:
     runs-on: windows-latest
