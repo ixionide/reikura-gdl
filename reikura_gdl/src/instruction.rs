@@ -266,7 +266,7 @@ impl Instruction {
             bail!("invalid instruction called")
         }
 
-        Self::new("INVALID", invalid_fn)
+        Self::new("", invalid_fn)
     };
 
     pub(crate) const fn new(
@@ -292,10 +292,9 @@ impl Instruction {
     }
 
     #[inline]
-    pub fn execute(&self, vm: &mut Vm) -> Result<()> {
-        let inst_pos = vm.parser.state.ip - 1;
+    pub fn execute(&self, vm: &mut Vm, ip: usize) -> Result<()> {
         let info: InstructionInfo = vm.parser.read_param()?;
-        let _next_pos = inst_pos + info.len;
+        let next_ip = ip + info.len;
 
         // terminator
         if info.len == 0 {
@@ -303,7 +302,14 @@ impl Instruction {
             return Ok(());
         }
 
-        (self.exec_fn)(vm, info)
+        (self.exec_fn)(vm, info)?;
+
+        // TODO: log something is wrong
+        if vm.parser.state.ip != next_ip {
+            vm.parser.state.ip = next_ip;
+        };
+
+        Ok(())
     }
 }
 
@@ -316,11 +322,8 @@ pub struct InstructionInfo {
 impl Parameters for InstructionInfo {
     #[inline]
     fn parse(parser: &mut crate::Parser) -> Result<Self> {
-        let info = match parser.get_le::<u8>()? as usize {
-            0 | 1 => Self {
-                len: 0,
-                param_len: 0,
-            },
+        let (len, param_len) = match parser.get_le::<u8>()? as usize {
+            0 | 1 => (0, 0),
             hi if hi & 0x80 != 0 => {
                 let len = {
                     let hi = (hi & 0x7F) << 8;
@@ -328,17 +331,11 @@ impl Parameters for InstructionInfo {
                     hi | lo
                 };
 
-                Self {
-                    len,
-                    param_len: len - 3,
-                }
+                (len, len - 3)
             }
-            len => Self {
-                len,
-                param_len: len - 2,
-            },
+            len => (len, len - 2),
         };
 
-        Ok(info)
+        Ok(Self { len, param_len })
     }
 }

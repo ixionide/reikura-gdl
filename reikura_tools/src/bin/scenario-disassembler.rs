@@ -589,7 +589,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
                 }
-                _ => eprint!("unknown IC param len"),
+                _ => eprintln!("unknown IC param len"),
             },
             // "IMS"
             "IXY" => {
@@ -846,7 +846,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                             fmt.add_param(display_value(value));
                         }
                     }
-                    _ => eprint!("unknown SETFONTCOLOR param len"),
+                    _ => eprintln!("unknown SETFONTCOLOR param len"),
                 }
             }
             "TIMERSET" => {
@@ -910,7 +910,7 @@ fn display_bytes(bytes: &[u8]) -> Result<String, std::fmt::Error> {
 }
 
 fn display_string(string: &str) -> String {
-    let mut display = String::with_capacity(string.len() + 16);
+    let mut display = String::with_capacity(string.len() + 8);
 
     display.push('"');
 
@@ -930,7 +930,7 @@ fn display_string(string: &str) -> String {
 }
 
 fn display_message(message: &str) -> String {
-    let mut display = String::with_capacity(message.len() + 32);
+    let mut display = String::with_capacity(message.len() + 16);
 
     display.push('[');
 
@@ -981,8 +981,8 @@ impl Formatter {
     fn new(inst: &Instruction) -> Self {
         let mut mnemonic = inst.name.to_owned();
 
-        if mnemonic == "INVALID" {
-            mnemonic = format!("<{:02X}>", inst.opcode)
+        if mnemonic.is_empty() {
+            mnemonic = format!("<{:02X}>", inst.opcode);
         }
 
         Self {
