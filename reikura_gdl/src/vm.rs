@@ -74,10 +74,10 @@ impl Vm {
         match self.state {
             State::Exit => todo!(),
             State::Running => {
+                let ip = self.parser.state.ip;
                 let op = self.parser.read_opcode()?;
                 let inst = INSTRUCTIONS[op as usize];
-                inst.execute(self)?;
-                // let info = self.parser.read_param::<InstructionInfo>()?;
+                inst.execute(self, ip)?;
 
                 // #[cfg(debug_assertions)]
                 // {
