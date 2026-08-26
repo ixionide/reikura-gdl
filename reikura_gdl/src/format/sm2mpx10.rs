@@ -16,7 +16,7 @@ pub struct Sm2mpx10 {
 }
 
 impl Sm2mpx10 {
-    const MAGIC: &[u8] = b"SM2MPX10";
+    pub const MAGIC: &[u8] = b"SM2MPX10";
 
     pub fn parse(file: &mut File) -> Result<Self> {
         let magic: [u8; 8] = file.get_le()?;
