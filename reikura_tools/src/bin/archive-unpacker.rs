@@ -12,10 +12,8 @@ use reikura_gdl::{
 fn main() {
     let mut magic_buf = [0; 8];
 
-    for arg in std::env::args().skip(1) {
-        let out_dir = &format!("{arg}_out");
-
-        let Ok(mut file) = File::open(&arg) else {
+    for ref arg in std::env::args().skip(1) {
+        let Ok(mut file) = File::open(arg) else {
             eprintln!("failed to open {arg}");
             continue;
         };
@@ -34,7 +32,7 @@ fn main() {
         match &magic_buf {
             b"SM2MPX10" => {
                 if let Ok(arc) = Sm2mpx10::parse(&mut file) {
-                    unpack_entries(out_dir, arc.entries.into_iter(), &mut file);
+                    unpack_entries(arg, arc.entries.into_iter(), &mut file);
                 } else {
                     eprintln!("{arg}: invalid archive");
                     continue;
@@ -46,7 +44,7 @@ fn main() {
             }
             _ => {
                 if let Ok(arc) = DrsArc::parse(&mut file) {
-                    unpack_entries(out_dir, arc.entries.into_iter(), &mut file);
+                    unpack_entries(arg, arc.entries.into_iter(), &mut file);
                 } else {
                     eprintln!("{arg}: invalid archive");
                     continue;
@@ -57,12 +55,17 @@ fn main() {
 }
 
 fn unpack_entries(
-    out_path: impl AsRef<Path>,
+    path: impl AsRef<Path>,
     entries: impl Iterator<Item: TryInto<ArchiveEntry>>,
     arc_file: &mut File,
 ) {
-    _ = std::fs::create_dir(&out_path);
-    let out_path = out_path.as_ref();
+    let out_path = {
+        let path = path.as_ref();
+        let out_dir = path.parent().unwrap().join("_unpack");
+        _ = std::fs::create_dir(&out_dir);
+        out_dir.join(path.file_name().unwrap())
+    };
+    _ = std::fs::create_dir_all(&out_path);
     let mut buf = Vec::with_capacity(1 << 20);
 
     for entry in entries {
@@ -70,14 +73,15 @@ fn unpack_entries(
             continue;
         };
 
-        let path = out_path.join(entry.filename);
         arc_file.seek(Start(entry.offset as _)).unwrap();
-
         if buf.len() < entry.length {
             buf.resize(entry.length, 0);
-            let data = &mut buf[..entry.length];
-            arc_file.read_exact(data).unwrap();
-            std::fs::write(path, data).unwrap();
         }
+        arc_file.read_exact(&mut buf[..entry.length]).unwrap();
+
+        let path = out_path.join(entry.filename);
+        let data = &mut buf[..entry.length];
+
+        std::fs::write(path, data).unwrap();
     }
 }
