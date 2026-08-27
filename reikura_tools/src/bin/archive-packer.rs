@@ -24,6 +24,21 @@ fn main() {
             }
         }
 
+        files.sort_by(|a, b| {
+            a.file_name()
+                .unwrap()
+                .as_encoded_bytes()
+                .iter()
+                .map(|it| it.to_ascii_lowercase())
+                .cmp(
+                    b.file_name()
+                        .unwrap()
+                        .as_encoded_bytes()
+                        .iter()
+                        .map(|it| it.to_ascii_lowercase()),
+                )
+        });
+
         let name = {
             let mut buf = [0; 12];
             let filename = path.file_name().unwrap_or_default().as_encoded_bytes();
