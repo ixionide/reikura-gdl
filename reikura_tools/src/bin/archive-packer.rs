@@ -1,10 +1,12 @@
 use std::{
+    ffi::OsStr,
     fs::File,
     io::{BufWriter, Cursor, Write},
     path::{Path, PathBuf},
 };
 
 use reikura_gdl::format::sm2mpx10::Sm2mpx10;
+use reikura_util::io::WriteExt;
 
 const ALIGN: u32 = 16;
 
@@ -25,18 +27,14 @@ fn main() {
         }
 
         files.sort_by(|a, b| {
-            a.file_name()
-                .unwrap()
-                .as_encoded_bytes()
-                .iter()
-                .map(|it| it.to_ascii_lowercase())
-                .cmp(
-                    b.file_name()
-                        .unwrap()
-                        .as_encoded_bytes()
-                        .iter()
-                        .map(|it| it.to_ascii_lowercase()),
-                )
+            fn filename_bytes(path: &Path) -> &[u8] {
+                path.file_name().map_or(&[], OsStr::as_encoded_bytes)
+            }
+
+            let a = filename_bytes(a).iter().map(u8::to_ascii_lowercase);
+            let b = filename_bytes(b).iter().map(u8::to_ascii_lowercase);
+
+            a.cmp(b)
         });
 
         let name = {
@@ -107,11 +105,11 @@ fn create_header(name: [u8; 12], entries: &[PathBuf]) -> std::io::Result<Vec<u8>
     let data_start = header_len.next_multiple_of(ALIGN);
     let mut header = Cursor::new(Vec::with_capacity(data_start as usize));
 
-    header.write_all(Sm2mpx10::MAGIC)?;
-    header.write_all(&count.to_le_bytes())?;
-    header.write_all(&header_len.to_le_bytes())?;
-    header.write_all(&name)?;
-    header.write_all(&table_start.to_le_bytes())?;
+    header.put_bytes(Sm2mpx10::MAGIC)?;
+    header.put_le(count)?;
+    header.put_le(header_len)?;
+    header.put_bytes(name)?;
+    header.put_le(table_start)?;
 
     let mut name = name;
     let mut addr = data_start;
@@ -128,9 +126,9 @@ fn create_header(name: [u8; 12], entries: &[PathBuf]) -> std::io::Result<Vec<u8>
         }
         name[..filename.len()].copy_from_slice(filename);
 
-        header.write_all(&name)?;
-        header.write_all(&addr.to_le_bytes())?;
-        header.write_all(&size.to_le_bytes())?;
+        header.put_bytes(name)?;
+        header.put_le(addr)?;
+        header.put_le(size)?;
 
         addr = (addr + size).next_multiple_of(ALIGN);
     }
