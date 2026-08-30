@@ -101,7 +101,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             return Ok(());
         }
 
-        let mut fmt = Formatter::new(&inst);
+        let mut fmt = Formatter::new(&inst)?;
 
         match inst.name {
             "ED" | "SRET" | "RT" => (),
@@ -977,24 +977,22 @@ fn display_label(index: u16) -> String {
 }
 
 struct Formatter {
-    mnemonic: String,
+    mnemonic: &'static str,
     params: String,
     err: Option<std::fmt::Error>,
 }
 
 impl Formatter {
-    fn new(inst: &Instruction) -> Self {
-        let mut mnemonic = inst.name.to_owned();
-
-        if mnemonic.is_empty() {
-            mnemonic = format!("<{:02X}>", inst.opcode);
+    fn new(inst: &Instruction) -> anyhow::Result<Self> {
+        if inst.name.is_empty() {
+            bail!("invalid instruction opcode: {:02X}", inst.opcode)
         }
 
-        Self {
-            mnemonic,
+        Ok(Self {
+            mnemonic: inst.name,
             params: String::with_capacity(256),
             err: None,
-        }
+        })
     }
 
     fn add_param(&mut self, param: impl Display) -> &mut Self {
