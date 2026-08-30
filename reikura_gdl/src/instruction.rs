@@ -173,7 +173,7 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
 
     insts[0x8F] = stub("<8F>");
 
-    insts[0x90] = stub("Dae");
+    insts[0x90] = stub("DAE");
     insts[0x91] = Instruction::new("DAP", dap);
     insts[0x92] = Instruction::new("DAS", das);
     insts[0x9F] = Instruction::new("SETINSIDEVOL", setinsidevol);
