@@ -113,12 +113,14 @@ fn create_header(name: [u8; 12], entries: &[PathBuf]) -> std::io::Result<Vec<u8>
 
         name.fill(0);
         let filename = entry.file_name().unwrap_or_default().as_encoded_bytes();
-        if !filename.is_ascii() || filename.len() > 12 {
+
+        if !filename.is_ascii() || filename.len() > name.len() {
             return Err(std::io::Error::other(format!(
                 "illegal filename {:?}, filename should only contain ascii and be less than 12 bytes",
                 filename
             )));
         }
+
         name[..filename.len()].copy_from_slice(filename);
 
         header.put_bytes(name)?;
