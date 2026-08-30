@@ -70,10 +70,17 @@ fn main() {
         };
 
         for file in files {
-            let Ok(data) = std::fs::read(&file) else {
+            let Ok(mut data) = std::fs::read(&file) else {
                 eprintln!("failed to read file {}", file.display());
                 continue 'arg;
             };
+
+            let data_len = data.len();
+            let padded_len = data_len.next_multiple_of(ALIGN as usize);
+            // align the data
+            if data_len != padded_len {
+                data.resize(padded_len, 0);
+            }
 
             if let Err(err) = writer.write_all(&data) {
                 eprintln!(
@@ -82,18 +89,6 @@ fn main() {
                 );
                 continue 'arg;
             };
-
-            let data_len = data.len();
-            let padded_len = data_len.next_multiple_of(ALIGN as usize);
-            if data_len != padded_len
-                && let Err(err) = writer.write_all(&vec![0; padded_len - data_len])
-            {
-                eprintln!(
-                    "{} failed to write data with err: {err}",
-                    out_path.display()
-                );
-                continue 'arg;
-            }
         }
     }
 }
