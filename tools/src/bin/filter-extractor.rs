@@ -18,7 +18,6 @@ fn main() {
             eprintln!("failed to read {arg}");
             continue;
         };
-        let out = path.with_extension("filter");
 
         let Some(pos) = data
             .array_windows::<8>()
@@ -37,6 +36,8 @@ fn main() {
             eprintln!("invalid filter is found in {arg}");
             continue;
         };
+
+        let out = path.with_extension("filter");
 
         if let Err(err) = std::fs::write(&out, filter) {
             eprintln!(
