@@ -35,19 +35,14 @@ fn main() {
                     unpack_entries(arg, arc.entries.into_iter(), &mut file);
                 } else {
                     eprintln!("{arg}: invalid archive");
-                    continue;
                 };
             }
-            b"SM2MPX20" => {
-                eprintln!("{arg}: unsupported sm2mpx20 archive");
-                continue;
-            }
+            b"SM2MPX20" => eprintln!("{arg}: unsupported sm2mpx20 archive"),
             _ => {
                 if let Ok(arc) = DrsArc::parse(&mut file) {
                     unpack_entries(arg, arc.entries.into_iter(), &mut file);
                 } else {
                     eprintln!("{arg}: invalid archive");
-                    continue;
                 }
             }
         }
