@@ -5,6 +5,7 @@ use std::{
     path::Path,
 };
 
+use anyhow::bail;
 use reikura_gdl::{
     AssetName, Parser, Scenario,
     instruction::{CHARSET, INSTRUCTIONS, Instruction, InstructionInfo, ParamString, Value},
@@ -71,7 +72,11 @@ fn main() {
 
                 let outpath = path.with_extension("txt");
                 let scenario = Scenario::load(String::new(), data).unwrap();
-                disassemble(&outpath, scenario).unwrap();
+                if let Err(err) = disassemble(&outpath, scenario) {
+                    _ = std::fs::remove_file(outpath);
+                    eprintln!("failed to disassemble {arg}");
+                    eprintln!("Error: {err}");
+                };
             }
         }
     }
