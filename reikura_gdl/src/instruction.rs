@@ -171,7 +171,7 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x8D] = stub("CLK");
     insts[0x8E] = stub("IGN");
 
-    // insts[0x8F] = _Unknown;
+    insts[0x8F] = stub("<8F>");
 
     insts[0x90] = stub("Dae");
     insts[0x91] = Instruction::new("DAP", dap);
@@ -186,7 +186,7 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0xA6] = stub("KIDHABA");
     insts[0xA7] = stub("KIDSCAN");
 
-    // insts[0xAD] = _Unknown;
+    insts[0xAD] = stub("<AD>");
 
     insts[0xAE] = stub("SETKIDWNDPUTPOS");
     insts[0xAF] = stub("SETMESWNDPUTPOS");
@@ -209,7 +209,7 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0xD8] = stub("PM2");
     insts[0xD9] = stub("MPM2");
 
-    // insts[0xDA] = _Unknown;
+    insts[0xDA] = stub("<DA>");
 
     insts[0xE0] = stub("TAGSET");
     insts[0xE1] = stub("FRAMESET");
