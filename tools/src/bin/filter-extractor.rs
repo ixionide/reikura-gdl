@@ -43,7 +43,6 @@ fn main() {
                 "failed to write filter to file {}, with err: {err}",
                 out.display()
             );
-            continue;
         }
     }
 }
