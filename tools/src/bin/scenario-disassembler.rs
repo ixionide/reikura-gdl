@@ -236,7 +236,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 }
 
                 let name = parser.read_bytes(inst_info.param_len - 2)?;
-                fmt.add_param(display_bytes_as_string(name)?);
+                fmt.add_param(display_sjis_bytes_as_string(name)?);
             }
             "PF" | "PB" | "PJ" => {
                 let par: u8 = parser.read_param()?;
@@ -311,7 +311,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                             fmt.add_param(display_message(&message));
                         }
                         _ => {
-                            eprint!("unknown PM cmd: {cmd}");
+                            eprintln!("unknown PM cmd: {cmd}");
                             fmt.add_param(cmd);
                         }
                     }
@@ -963,13 +963,13 @@ fn display_value(value: Value) -> String {
     }
 }
 
-fn display_bytes_as_string(bytes: &[u8]) -> anyhow::Result<String> {
+fn display_sjis_bytes_as_string(bytes: &[u8]) -> anyhow::Result<String> {
     let string = sjis_to_utf8(bytes)?;
     Ok(display_string(&string))
 }
 
 fn display_assetname(asset: AssetName) -> anyhow::Result<String> {
-    display_bytes_as_string(asset.name())
+    display_sjis_bytes_as_string(asset.name())
 }
 
 fn display_label(index: u16) -> String {
