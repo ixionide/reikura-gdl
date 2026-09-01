@@ -80,12 +80,12 @@ impl Parameters for Value {
         let raw: u32 = parser.get_le()?;
         let tag = raw & Self::TAG_MASK;
 
-        let unsigned_payload = (raw & !Self::TAG_MASK) as usize;
+        let unsigned_payload = raw & !Self::TAG_MASK;
         let signed_payload = ((raw as i32) << 2) >> 2;
 
         let value = {
             match tag {
-                Self::REG_TAG => Self::Register(unsigned_payload),
+                Self::REG_TAG => Self::Register(unsigned_payload as usize),
                 Self::RNG_TAG => Self::Random(signed_payload),
                 _ => Self::Literal(signed_payload),
             }
@@ -94,31 +94,6 @@ impl Parameters for Value {
         Ok(value)
     }
 }
-
-// impl Parameters for Value {
-//     fn parse(parser: &mut Parser) -> Result<Self> {
-//         let value: u32 = parser.get_le()?;
-//         let num = (value & Self::NUM_MASK) as i32;
-
-//         let mask = if num as u32 & Self::MIN_FLAG != 0 {
-//             Self::TAG_MASK as _
-//         } else {
-//             0
-//         };
-
-//         let result = {
-//             if value & Self::REG_TAG != 0 {
-//                 Self::Register(num as usize)
-//             } else if value & Self::RNG_TAG != 0 {
-//                 Self::Random(num | mask) //
-//             } else {
-//                 Self::Literal(num | mask)
-//             }
-//         };
-
-//         Ok(result)
-//     }
-// }
 
 pub struct ParamString {
     buffer: Vec<u8>,
