@@ -170,11 +170,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let bytes = parser.read_bytes(inst_info.param_len - 18)?;
                 let string = sjis_to_utf8(bytes)?;
 
-                if let Some(c) = string.strip_circumfix('"', '"') {
-                    fmt.add_param(display_string(c));
-                } else {
-                    fmt.add_param(display_string(&string));
-                }
+                let stripped = string.strip_circumfix('"', '"').unwrap_or(&string);
+                fmt.add_param(display_string(&stripped));
             }
             "CWO" => {
                 let par1: u8 = parser.read_param()?;
@@ -240,9 +237,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             }
             "PF" | "PB" | "PJ" => {
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
                 let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
+                fmt.add_param(par).add_param(display_value(value));
             }
             "WO" | "WC" => {
                 let par: u8 = parser.read_param()?;
@@ -343,17 +339,18 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(par).add_param(display_label(label));
             }
             "FT" => {
-                let par1: u16 = parser.read_param()?;
-                let par2: u16 = parser.read_param()?;
-                let par3: u16 = parser.read_param()?;
-                fmt.add_param(par1).add_param(par2).add_param(par3);
+                for _ in 0..3 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
             }
             // "SP"
             // "STS"
             "ES" | "EC" => {
-                let par1: u16 = parser.read_param()?;
-                let par2: u16 = parser.read_param()?;
-                fmt.add_param(par1).add_param(par2);
+                for _ in 0..2 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
             }
             "STC" => {
                 for _ in 0..2 {
@@ -959,7 +956,7 @@ fn display_value(value: Value) -> String {
     match value {
         Value::Literal(value) => format!("{value}"),
         Value::Register(index) => format!("@{index}"),
-        Value::Random(max) => format!("%{max}"),
+        Value::Random(max) => format!("~{max}"),
     }
 }
 
