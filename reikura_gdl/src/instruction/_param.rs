@@ -39,38 +39,37 @@ impl<T: ReadEndian> Parameters for T {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Value {
     Literal(i32),
-    Register(i32),
+    Register(usize),
     Random(i32),
 }
 
 impl Value {
-    const BIT_MASK: i32 = (1 << 30) - 1; // signed 30bit integer
-    const MIN_MASK: i32 = !Self::BIT_MASK;
-    const REG_FLAG: i32 = 1 << 31;
-    const RNG_FLAG: i32 = 1 << 30;
-    const MIN_FLAG: i32 = 1 << 29;
+    // signed 30bit integer
+    pub const REG_TAG: u32 = 2 << 30;
+    pub const RNG_TAG: u32 = 1 << 30;
+    const TAG_MASK: u32 = Self::REG_TAG | Self::RNG_TAG;
 
     pub fn is_random(&self) -> bool {
-        matches!(self, Value::Random(_))
+        if let Self::Random(_) = self {
+            true
+        } else {
+            false
+        }
     }
 
     pub fn evaluate(&self, ctx: &VmContext) -> i32 {
         match *self {
             Value::Literal(value) => value,
-            Value::Register(index) => match index.try_into() {
-                Ok(index) => ctx.registers.get(index).unwrap_or(0),
-                Err(_) => 0,
-            },
+            Value::Register(index) => ctx.registers.get(index).unwrap_or(0),
             Value::Random(modulo) => {
                 if modulo == 0 {
                     return 0;
                 }
 
-                let random_number = fastrand::i32(0..modulo.abs());
-                random_number * modulo.signum()
+                fastrand::i32(0..modulo.abs()) * modulo.signum()
             }
         }
     }
@@ -78,26 +77,48 @@ impl Value {
 
 impl Parameters for Value {
     fn parse(parser: &mut Parser) -> Result<Self> {
-        let value: i32 = parser.get_le()?;
-        let mut val = value & Self::BIT_MASK;
+        let raw: u32 = parser.get_le()?;
+        let tag = raw & Self::TAG_MASK;
 
-        if value & Self::MIN_FLAG != 0 {
-            val |= Self::MIN_MASK;
-        }
+        let unsigned_payload = (raw & !Self::TAG_MASK) as usize;
+        let signed_payload = ((raw as i32) << 2) >> 2;
 
-        let result = {
-            if value & Self::REG_FLAG != 0 {
-                Self::Register(val)
-            } else if value & Self::RNG_FLAG != 0 {
-                Self::Random(val)
-            } else {
-                Self::Literal(val)
+        let value = {
+            match tag {
+                Self::REG_TAG => Self::Register(unsigned_payload),
+                Self::RNG_TAG => Self::Random(signed_payload),
+                _ => Self::Literal(signed_payload),
             }
         };
 
-        Ok(result)
+        Ok(value)
     }
 }
+
+// impl Parameters for Value {
+//     fn parse(parser: &mut Parser) -> Result<Self> {
+//         let value: u32 = parser.get_le()?;
+//         let num = (value & Self::NUM_MASK) as i32;
+
+//         let mask = if num as u32 & Self::MIN_FLAG != 0 {
+//             Self::TAG_MASK as _
+//         } else {
+//             0
+//         };
+
+//         let result = {
+//             if value & Self::REG_TAG != 0 {
+//                 Self::Register(num as usize)
+//             } else if value & Self::RNG_TAG != 0 {
+//                 Self::Random(num | mask) //
+//             } else {
+//                 Self::Literal(num | mask)
+//             }
+//         };
+
+//         Ok(result)
+//     }
+// }
 
 pub struct ParamString {
     buffer: Vec<u8>,

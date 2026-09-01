@@ -5,7 +5,7 @@ pub struct IsfMetadata {
     pub bytecode_offset: u32,
     pub version: [u8; 2],
     pub xor_key: u8,
-    _reserved: u8,
+    pub _reserved: u8,
 }
 
 impl IsfMetadata {
