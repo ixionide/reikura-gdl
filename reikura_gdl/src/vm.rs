@@ -9,7 +9,7 @@ use crate::{
     instruction::INSTRUCTIONS,
 };
 
-pub const FRAME_DURATION: Duration = Duration::from_millis(16);
+pub const FRAME_INTERVAL: Duration = Duration::from_millis(16);
 
 pub struct VmContext {
     pub flags: BitSet,
@@ -100,7 +100,7 @@ impl Vm {
                 }
 
                 let time_remaining = duration.saturating_sub(elapsed);
-                let sleep_duration = FRAME_DURATION.min(time_remaining);
+                let sleep_duration = FRAME_INTERVAL.min(time_remaining);
                 std::thread::sleep(sleep_duration);
             }
             State::WaitClick => todo!(),
