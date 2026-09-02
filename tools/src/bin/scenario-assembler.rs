@@ -25,7 +25,7 @@ fn main() {
             continue;
         }
 
-        let dup = opcodes.insert(inst.name.to_owned(), inst.opcode);
+        let dup = opcodes.insert(inst.name.to_ascii_lowercase(), inst.opcode);
         assert!(dup.is_none(), "duplicate instruction {}", inst.name);
     }
 
@@ -69,7 +69,7 @@ fn main() {
 
             let (inst, mut parser) = parse_line(line);
 
-            let Some(opcode) = opcodes.get(inst).copied() else {
+            let Some(opcode) = opcodes.get(&inst.to_ascii_lowercase()).copied() else {
                 return Err(anyhow::anyhow!("invalid instruction {inst}")).with_context(ctx);
             };
 
@@ -400,7 +400,10 @@ impl Labels {
     }
 
     fn new_label(&mut self, label: &str) -> anyhow::Result<()> {
-        let dup = self.tables.insert(label.to_owned(), self.subroutines.len());
+        let dup = self
+            .tables
+            .insert(label.to_ascii_lowercase(), self.subroutines.len());
+
         self.subroutines.push(0);
 
         if dup.is_some() {
@@ -418,7 +421,7 @@ impl Labels {
     }
 
     fn new_subroutine(&mut self, label: &str, offset: usize) -> anyhow::Result<()> {
-        if let Some(idx) = self.tables.get(label).copied() {
+        if let Some(idx) = self.tables.get(&label.to_ascii_lowercase()).copied() {
             self.subroutines[idx] = offset as u32;
         } else {
             bail!("label {label} not found");
