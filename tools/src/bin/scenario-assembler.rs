@@ -304,16 +304,10 @@ fn main() {
                 }
                 // "CALC"
                 _ => {
-                    let params = parser.params;
-
-                    if let Some(params) = params.strip_circumfix('<', '>') {
-                        let mut bytes = Vec::with_capacity(params.len() / 3);
-
-                        for str in params.split_ascii_whitespace() {
-                            let byte = u8::from_str_radix(str, 16)?;
-                            bytes.push(byte);
-                        }
-
+                    if let Ok(bytes) = parser
+                        .read_raw_bytes()
+                        .inspect_err(|err| eprintln!("{err}"))
+                    {
                         fmt.write_bytes(&bytes);
                     }
 
@@ -381,8 +375,8 @@ fn parse_line(line: &str) -> (&str, ParamParser<'_>) {
 fn parse_all_labels(scenario: &str) -> anyhow::Result<Labels> {
     let mut labels = Labels::new();
 
-    for (line_num, line) in scenario.lines().map(str::trim).enumerate() {
-        let ctx = || format!("Error at line no {line_num}");
+    for (i, line) in scenario.lines().map(str::trim).enumerate() {
+        let ctx = || format!("Error at line no {}", i + 1);
 
         if let Some(label) = line.strip_circumfix('#', ':') {
             labels.new_label(label).with_context(ctx)?;
@@ -618,6 +612,25 @@ impl<'a> ParamParser<'a> {
         Ok(value)
     }
 
+    fn read_raw_bytes(&mut self) -> anyhow::Result<Vec<u8>> {
+        let param = self
+            .next()
+            .ok_or_else(|| anyhow!("unexpected end of param"))?;
+
+        let Some(params) = param.strip_circumfix('<', '>') else {
+            bail!("invalid bytes param: {param}");
+        };
+
+        let mut bytes = Vec::with_capacity(params.len() / 3);
+
+        for str in params.split_ascii_whitespace() {
+            let byte = u8::from_str_radix(str, 16)?;
+            bytes.push(byte);
+        }
+
+        Ok(bytes)
+    }
+
     fn is_exhausted(&mut self) -> bool {
         self.next().is_none()
     }
@@ -630,12 +643,14 @@ impl<'a> ParamParser<'a> {
 
 #[test]
 fn test_param_parser() {
-    let mut parser = ParamParser::new(
+    let (inst, mut parser) = parse_line(
         r#"
-            989,"Test", "Foo\nBar", "Foo\s", 87, 54535,-2
+            MOV 989,"Test", "Foo\nBar", "Foo\s", 87, 54535,-2
         "#
         .trim(),
     );
+
+    assert_eq!(inst, "MOV");
 
     assert_eq!(parser.next().unwrap(), "989");
     assert_eq!(parser.read_string().unwrap(), "Test");
@@ -648,13 +663,25 @@ fn test_param_parser() {
 
     let mut parser = ParamParser::new(
         r#"
-            @78,%-12,%99,7892,   -232
+            @78,~-12,~99,7892,   -232
         "#
         .trim(),
     );
+
     assert_eq!(parser.read_value().unwrap(), Value::Register(78));
     assert_eq!(parser.read_value().unwrap(), Value::Random(-12));
     assert_eq!(parser.read_value().unwrap(), Value::Random(99));
     assert_eq!(parser.read_value().unwrap(), Value::Literal(7892));
     assert_eq!(parser.read_value().unwrap(), Value::Literal(-232));
+
+    let mut parser = ParamParser::new(
+        r#"
+            <1f 23 10 67 de ad be ef>
+        "#
+        .trim(),
+    );
+    assert_eq!(
+        parser.read_raw_bytes().unwrap(),
+        &[0x1f, 0x23, 0x10, 0x67, 0xDE, 0xAD, 0xBE, 0xEF]
+    );
 }
