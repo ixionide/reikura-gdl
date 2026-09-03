@@ -81,6 +81,7 @@ fn get_key(filter: &[u8; 2048]) -> Vec<u8> {
     let len = (hi << 4) | lo;
 
     let mut key = vec![0; len as usize];
+
     key.iter_mut()
         .enumerate()
         .for_each(|(i, k)| *k = base36_diff(filter[0x510 + i], filter[0x110 + i]));
@@ -88,12 +89,14 @@ fn get_key(filter: &[u8; 2048]) -> Vec<u8> {
     key
 }
 
-fn update_key(key: &mut [u8], start: usize, filter: &[u8; 2048]) {
-    let filter = filter[0..1024].iter().cycle().skip(start);
+fn update_key(key: &mut [u8], mut start: usize, filter: &[u8; 2048]) {
+    let update_filter = &filter[0..1024];
     decode(key);
 
-    for (k, f) in key.iter_mut().zip(filter) {
-        let index = (*k + f) % 36;
-        *k = BASE36_DIGITS[index as usize];
+    for key_byte in key {
+        let filter_byte = update_filter[start % 1024];
+        let index = (*key_byte + filter_byte) % 36;
+        *key_byte = BASE36_DIGITS[index as usize];
+        start += 1;
     }
 }
