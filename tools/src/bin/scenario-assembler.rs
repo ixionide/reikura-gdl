@@ -13,7 +13,10 @@ use reikura_gdl::{
     format::isf::IsfMetadata,
     instruction::{INSTRUCTIONS, Value},
 };
-use reikura_util::io::{WriteEndian, WriteExt};
+use reikura_util::{
+    encoding::utf8_to_sjis,
+    io::{WriteEndian, WriteExt},
+};
 
 const CAP: usize = 256;
 
@@ -79,7 +82,7 @@ fn main() {
                 "ED" | "SRET" | "RT" => (),
                 "LS" | "LSBS" => {
                     let asset = parser.read_assetname()?;
-                    fmt.write_string(&asset);
+                    fmt.write_bytes(&asset);
                 }
                 "JP" | "JS" => {
                     let label = labels.get_label_index(&parser.read_label()?)?;
@@ -127,7 +130,7 @@ fn main() {
                     }
 
                     let asset = parser.read_assetname()?;
-                    fmt.write_string(&asset);
+                    fmt.write_bytes(&asset);
                 }
                 "CPS" => {
                     let par: u8 = parser.read_num()?;
@@ -153,7 +156,7 @@ fn main() {
                     }
 
                     let string = parser.read_string()?;
-                    fmt.write_string(&string);
+                    fmt.write_bytes(&string);
                 }
                 "CWO" => {
                     let par1: u8 = parser.read_num()?;
@@ -191,7 +194,7 @@ fn main() {
                 "WL" => {
                     let par: u8 = parser.read_num()?;
                     let asset = parser.read_assetname()?;
-                    fmt.write_num(par).write_string(&asset);
+                    fmt.write_num(par).write_bytes(&asset);
                 }
                 "WW" => {
                     let par: u8 = parser.read_num()?;
@@ -213,7 +216,7 @@ fn main() {
                     }
 
                     let name = parser.read_string()?;
-                    fmt.write_string(&name);
+                    fmt.write_bytes(&name);
                 }
                 "PF" | "PB" | "PJ" => {
                     let par: u8 = parser.read_num()?;
@@ -449,12 +452,6 @@ impl Serializer {
         self
     }
 
-    fn write_string(&mut self, param: &str) -> &mut Self {
-        // TODO: encode to sjis
-        self.write_bytes(param.as_bytes());
-        self
-    }
-
     fn write_bytes(&mut self, params: &[u8]) -> &mut Self {
         self.params.extend_from_slice(params);
         self
@@ -534,12 +531,12 @@ impl<'a> ParamParser<'a> {
         T::from_str(param).map_err(|err| anyhow!("{err}"))
     }
 
-    fn read_assetname(&mut self) -> anyhow::Result<String> {
+    fn read_assetname(&mut self) -> anyhow::Result<Vec<u8>> {
         let string = self.read_string()?;
 
-        if string.as_bytes().len() > AssetName::LEN {
+        if string.len() > AssetName::LEN {
             bail!(
-                "asset name is too long: {string}, max length is {} bytes",
+                "asset name is too long: {string:?}, max length is {} bytes",
                 AssetName::LEN
             );
         }
@@ -547,7 +544,7 @@ impl<'a> ParamParser<'a> {
         Ok(string)
     }
 
-    fn read_string(&mut self) -> anyhow::Result<String> {
+    fn read_string(&mut self) -> anyhow::Result<Vec<u8>> {
         let strip = self
             .params
             .strip_prefix('"')
@@ -580,7 +577,7 @@ impl<'a> ParamParser<'a> {
 
         self.params = &strip[end..];
         let _ = self.next();
-        Ok(string)
+        Ok(utf8_to_sjis(&string)?)
     }
 
     fn read_label(&mut self) -> anyhow::Result<String> {
