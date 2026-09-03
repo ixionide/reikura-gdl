@@ -13,6 +13,35 @@ use crate::{
     format::{drs::DrsArc, sm2mpx10::Sm2mpx10},
 };
 
+pub struct VmArchive {
+    pub main: Archive,
+    pub extra: Vec<Archive>,
+}
+
+impl VmArchive {
+    pub fn load(path: impl AsRef<Path>) -> Result<Self> {
+        let path = path.as_ref();
+        let main = Archive::load(path)?;
+        let mut extra = vec![];
+
+        let mut i = 1;
+        while let Ok(extra_arc) = Archive::load(format!("{}{i}", path.to_string_lossy())) {
+            extra.push(extra_arc);
+            i += 1;
+        }
+
+        Ok(Self { main, extra })
+    }
+
+    pub fn get_asset(&mut self, name: &AssetName) -> Result<(String, Vec<u8>)> {
+        self.extra
+            .iter_mut()
+            .find(|arc| arc.asset_exist(name))
+            .unwrap_or(&mut self.main)
+            .get_asset(name)
+    }
+}
+
 pub struct ArchiveEntry {
     pub filename: String,
     pub offset: usize,
@@ -22,26 +51,10 @@ pub struct ArchiveEntry {
 pub struct Archive {
     file: File,
     index: HashMap<AssetName, ArchiveEntry>,
-    extra: Vec<Archive>,
 }
 
 impl Archive {
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
-        let path = path.as_ref();
-        let mut arc = Self::open(path)?;
-
-        let mut extra = vec![];
-        let mut i = 1;
-        while let Ok(extra_arc) = Self::open(format!("{}{i}", path.to_string_lossy())) {
-            extra.push(extra_arc);
-            i += 1;
-        }
-
-        arc.extra = extra;
-        Ok(arc)
-    }
-
-    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref();
         let err_ctx = || format!("failed to load archive: {}", path.display());
         let mut file = File::open(path).with_context(err_ctx)?;
@@ -57,11 +70,7 @@ impl Archive {
             }
         };
 
-        Ok(Self {
-            file,
-            index,
-            extra: Vec::new(),
-        })
+        Ok(Self { file, index })
     }
 
     fn asset_exist(&self, name: &AssetName) -> bool {
@@ -69,27 +78,20 @@ impl Archive {
     }
 
     pub fn get_asset(&mut self, name: &AssetName) -> Result<(String, Vec<u8>)> {
-        let extra_arc = self.extra.iter_mut().find(|arc| arc.asset_exist(name));
+        let entry = self
+            .index
+            .get(name)
+            .with_context(|| format!("asset {name} not found"))?;
 
-        match extra_arc {
-            Some(arc) => arc.get_asset(name),
-            None => {
-                let entry = self
-                    .index
-                    .get(name)
-                    .with_context(|| format!("asset {name} not found"))?;
+        let pos = SeekFrom::Start(entry.offset as u64);
+        let len = entry.length;
 
-                let pos = SeekFrom::Start(entry.offset as u64);
-                let len = entry.length;
+        let mut buffer = vec![0; len];
 
-                let mut buffer = vec![0; len];
+        self.file.seek(pos)?;
+        self.file.read_exact(&mut buffer)?;
 
-                self.file.seek(pos)?;
-                self.file.read_exact(&mut buffer)?;
-
-                Ok((entry.filename.clone(), buffer))
-            }
-        }
+        Ok((entry.filename.clone(), buffer))
     }
 }
 

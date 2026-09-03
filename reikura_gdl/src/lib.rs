@@ -15,7 +15,7 @@ pub mod secretfilter;
 mod vm;
 
 pub use self::{
-    archive::{Archive, ArchiveEntry, ArchiveIndex},
+    archive::{Archive, ArchiveEntry, ArchiveIndex, VmArchive},
     asset::{AssetManager, AssetName},
     audio::{Audio, AudioManager},
     cache::CacheManager,

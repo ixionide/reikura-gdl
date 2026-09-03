@@ -9,7 +9,7 @@ use anyhow::{Result, anyhow, bail};
 use lru::LruCache;
 
 use crate::{
-    Archive, Audio, CacheManager, Image, Manifest, Scenario,
+    Audio, CacheManager, Image, Manifest, Scenario, VmArchive,
     secretfilter::{Deobfuscator, filters::get_known_filter},
 };
 
@@ -25,13 +25,12 @@ const ARCHIVE_NAMES: [&str; 7] = [DATA, GGD, ISF, SE, VOICE, WMSC, MIDI];
 type Lazy<T> = LazyCell<T, Box<dyn FnOnce() -> T>>;
 
 pub struct AssetManager {
-    data: Archive,
-    image: Archive,
-    scene: Archive,
-    voice: Archive,
-    sfx: Archive,
-    bgm: Archive,
-    bgm_midi: Option<Archive>,
+    data: VmArchive,
+    image: VmArchive,
+    scene: VmArchive,
+    voice: VmArchive,
+    sfx: VmArchive,
+    bgm: VmArchive,
     fakecdda: HashMap<u8, PathBuf>,
     cache: CacheManager,
     deobfuscator: Lazy<Option<Deobfuscator>>,
@@ -67,18 +66,25 @@ impl AssetManager {
 
             for arc_name in ARCHIVE_NAMES {
                 if entry_file_name.eq_ignore_ascii_case(arc_name) {
-                    let archive = Archive::load(&entry_path)?;
+                    let archive = VmArchive::load(&entry_path)?;
                     archives.insert(arc_name, archive);
                     break;
                 }
             }
         }
 
+        let midi = archives.remove(MIDI);
+
         let mut get_archive = |name: &str| {
             archives
                 .remove(name)
                 .ok_or_else(|| anyhow!("missing {name} archive"))
         };
+
+        let mut bgm = get_archive(WMSC)?;
+        if let Some(midi) = midi {
+            bgm.extra.push(midi.main);
+        }
 
         let deobfuscator: Lazy<Option<Deobfuscator>> = {
             let title_id = manifest.key.clone();
@@ -98,9 +104,8 @@ impl AssetManager {
             image: get_archive(GGD)?,
             scene: get_archive(ISF)?,
             sfx: get_archive(SE)?,
-            bgm: get_archive(WMSC)?,
+            bgm,
             voice: get_archive(VOICE)?,
-            bgm_midi: archives.remove(MIDI),
             fakecdda,
             cache: CacheManager::new(),
             deobfuscator,
@@ -184,17 +189,8 @@ impl AssetManager {
             return Ok(data.clone());
         }
 
-        let audio = match &mut self.bgm_midi {
-            Some(arc) => {
-                let (_name, _data) = arc.get_asset(&asset_name)?;
-                todo!(); // Audio::load_midi
-            }
-            None => {
-                let (name, data) = self.bgm.get_asset(&asset_name)?;
-                Audio::load(name, data)?
-            }
-        };
-
+        let (name, data) = self.bgm.get_asset(&asset_name)?;
+        let audio = Audio::load(name, data)?;
         self.cache.bgm.put(asset_name, audio.clone());
 
         Ok(audio)
