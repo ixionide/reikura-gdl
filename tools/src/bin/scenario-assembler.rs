@@ -307,17 +307,17 @@ fn main() {
                 }
                 // "CALC"
                 _ => {
-                    if let Ok(bytes) = parser
+                    let Ok(bytes) = parser
                         .read_raw_bytes()
                         .inspect_err(|err| eprintln!("{err}"))
-                    {
-                        fmt.write_bytes(&bytes);
-                    }
+                    else {
+                        return Err(anyhow::anyhow!(
+                            "failed to assemble unimplemented instruction {inst}"
+                        ))
+                        .with_context(ctx);
+                    };
 
-                    return Err(anyhow::anyhow!(
-                        "failed to assemble unimplemented instruction {inst}"
-                    ))
-                    .with_context(ctx);
+                    fmt.write_bytes(&bytes);
                 }
             }
 
@@ -475,13 +475,14 @@ impl Serializer {
 
     fn serialize_into(self, writer: &mut impl Write) -> std::io::Result<usize> {
         writer.put_le(self.opcode)?;
-        let mut inst_len = self.params.len() + 2; // plus the opcode and the len itself;
+        let mut inst_len = self.params.len() + 1; // plus the opcode;
 
         if inst_len > 0x7f {
-            inst_len += 1; // the len is two bytes here
             writer.put_le(0x80_00 | u16::try_from(inst_len).unwrap())?;
+            inst_len += 2;
         } else {
             writer.put_le(u8::try_from(inst_len).unwrap())?;
+            inst_len += 1;
         };
 
         writer.put_bytes(self.params)?;
