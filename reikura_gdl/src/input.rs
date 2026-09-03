@@ -75,17 +75,22 @@ impl InputManager {
 pub struct HotSpot {
     pub id: u8,
     pub rect: [i32; 4],
-    pub flag: bool,
+    pub state_storage: StateStorage,
     pub state_index: usize,
     pub _unknown: [u8; 3],
 }
 
+#[repr(u8)]
+pub enum StateStorage {
+    Register,
+    Flag,
+}
+
 impl HotSpot {
     pub fn is_enabled(&self, ctx: &VmContext) -> bool {
-        if self.flag {
-            ctx.flags.get(self.state_index).unwrap_or(false)
-        } else {
-            ctx.registers.get(self.state_index).unwrap_or(0) != 0
+        match self.state_storage {
+            StateStorage::Flag => ctx.flags.get(self.state_index).unwrap_or(false),
+            StateStorage::Register => ctx.registers.get(self.state_index).unwrap_or(0) != 0,
         }
     }
 
