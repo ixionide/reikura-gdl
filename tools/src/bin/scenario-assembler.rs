@@ -155,7 +155,7 @@ fn main() {
                         fmt.write_value(value);
                     }
 
-                    let string = parser.read_string()?;
+                    let string = parser.read_sjis()?;
                     fmt.write_bytes(&string);
                 }
                 "CWO" => {
@@ -215,7 +215,7 @@ fn main() {
                         fmt.write_num(par);
                     }
 
-                    let name = parser.read_string()?;
+                    let name = parser.read_sjis()?;
                     fmt.write_bytes(&name);
                 }
                 "PF" | "PB" | "PJ" => {
@@ -533,7 +533,7 @@ impl<'a> ParamParser<'a> {
     }
 
     fn read_assetname(&mut self) -> anyhow::Result<Vec<u8>> {
-        let string = self.read_string()?;
+        let string = self.read_sjis()?;
 
         if string.len() > AssetName::LEN {
             bail!(
@@ -545,7 +545,7 @@ impl<'a> ParamParser<'a> {
         Ok(string)
     }
 
-    fn read_string(&mut self) -> anyhow::Result<Vec<u8>> {
+    fn read_string(&mut self) -> anyhow::Result<String> {
         let strip = self
             .params
             .strip_prefix('"')
@@ -578,6 +578,11 @@ impl<'a> ParamParser<'a> {
 
         self.params = &strip[end..];
         let _ = self.next();
+        Ok(string)
+    }
+
+    fn read_sjis(&mut self) -> anyhow::Result<Vec<u8>> {
+        let string = self.read_string()?;
         Ok(utf8_to_sjis(&string)?)
     }
 
@@ -643,7 +648,7 @@ impl<'a> ParamParser<'a> {
 }
 
 #[test]
-fn test_param_parser() {
+fn param_parsing() {
     let (inst, mut parser) = parse_line(
         r#"
             MOV 989,"Test", "Foo\nBar", "Foo\s", 87, 54535,-2
