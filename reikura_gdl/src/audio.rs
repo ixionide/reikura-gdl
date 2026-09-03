@@ -13,6 +13,8 @@ use kira::{
 
 pub const SFX_SLOT: usize = 32;
 
+const MIDI_SIGNATURE: &[u8] = b"MThd";
+
 const DEFAULT_TWEEN: Tween = Tween {
     start_time: StartTime::Immediate,
     duration: Duration::from_millis(10),
@@ -30,7 +32,6 @@ fn tween_duration(duration: Duration) -> Tween {
 pub struct Audio {
     pub name: Rc<str>,
     pub data: Arc<[u8]>,
-    pub midi: bool,
     pub volume: Option<f32>,
 }
 
@@ -39,18 +40,12 @@ impl Audio {
         Ok(Self {
             name: name.into(),
             data: data.into(),
-            midi: false,
             volume: None,
         })
     }
 
-    pub fn load_midi(name: &str, data: Vec<u8>) -> Result<Self> {
-        Ok(Self {
-            name: name.to_owned().into(),
-            data: data.into(),
-            midi: true,
-            volume: None,
-        })
+    pub fn is_midi(&self) -> bool {
+        self.data.starts_with(MIDI_SIGNATURE)
     }
 }
 
