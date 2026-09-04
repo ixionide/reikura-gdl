@@ -459,16 +459,11 @@ impl Serializer {
 
     fn write_value(&mut self, value: Value) -> &mut Self {
         match value {
-            Value::Literal(num) => self.params.put_le(num).unwrap(),
-            Value::Register(idx) => {
-                let idx = idx as u32;
-                self.params.put_le(idx | Value::REG_TAG).unwrap();
-            }
-            Value::Random(max) => {
-                let max = max | Value::RNG_TAG as i32;
-                self.params.put_le(max).unwrap();
-            }
+            Value::Literal(num) => self.params.put_le(num),
+            Value::Register(idx) => self.params.put_le(idx as u32 | Value::REG_TAG),
+            Value::Random(max) => self.params.put_le(max | Value::RNG_TAG as i32),
         }
+        .unwrap();
 
         self
     }
