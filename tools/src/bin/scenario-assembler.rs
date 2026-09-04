@@ -418,7 +418,7 @@ impl Labels {
 
     fn get_label_index(&self, label: &str) -> anyhow::Result<u16> {
         self.tables
-            .get(label)
+            .get(&label.to_ascii_lowercase())
             .map(|index| *index as u16)
             .ok_or_else(|| anyhow!("undefined label {label}"))
     }
