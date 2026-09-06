@@ -669,7 +669,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let par: u8 = parser.read_param()?;
                 fmt.add_param(display_value(value)).add_param(par);
 
-                if inst_info.param_len == 11 {
+                if inst_info.param_len == 9 {
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
                 }
