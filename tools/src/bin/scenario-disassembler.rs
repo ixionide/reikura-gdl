@@ -5,6 +5,7 @@ use std::{
     path::Path,
 };
 
+use anyhow::bail;
 use reikura_gdl::{
     AssetName, Parser, Scenario,
     instruction::{CHARSET, INSTRUCTIONS, Instruction, InstructionInfo, ParamString, Value},
@@ -71,7 +72,11 @@ fn main() {
 
                 let outpath = path.with_extension("txt");
                 let scenario = Scenario::load(String::new(), data).unwrap();
-                disassemble(&outpath, scenario).unwrap();
+                if let Err(err) = disassemble(&outpath, scenario) {
+                    _ = std::fs::remove_file(outpath);
+                    eprintln!("failed to disassemble {arg}");
+                    eprintln!("Error: {err}");
+                };
             }
         }
     }
@@ -96,7 +101,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             return Ok(());
         }
 
-        let mut fmt = Formatter::new(&inst);
+        let mut fmt = Formatter::new(&inst)?;
 
         match inst.name {
             "ED" | "SRET" | "RT" => (),
@@ -165,11 +170,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let bytes = parser.read_bytes(inst_info.param_len - 18)?;
                 let string = sjis_to_utf8(bytes)?;
 
-                if let Some(c) = string.strip_circumfix('"', '"') {
-                    fmt.add_param(display_string(c));
-                } else {
-                    fmt.add_param(display_string(&string));
-                }
+                let stripped = string.strip_circumfix('"', '"').unwrap_or(&string);
+                fmt.add_param(display_string(stripped));
             }
             "CWO" => {
                 let par1: u8 = parser.read_param()?;
@@ -231,13 +233,12 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 }
 
                 let name = parser.read_bytes(inst_info.param_len - 2)?;
-                fmt.add_param(display_bytes_as_string(name)?);
+                fmt.add_param(display_sjis_bytes_as_string(name)?);
             }
             "PF" | "PB" | "PJ" => {
                 let par: u8 = parser.read_param()?;
-                fmt.add_param(par);
                 let value = parser.read_param()?;
-                fmt.add_param(display_value(value));
+                fmt.add_param(par).add_param(display_value(value));
             }
             "WO" | "WC" => {
                 let par: u8 = parser.read_param()?;
@@ -306,7 +307,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                             fmt.add_param(display_message(&message));
                         }
                         _ => {
-                            eprint!("unknown PM cmd: {cmd}");
+                            eprintln!("unknown PM cmd: {cmd}");
                             fmt.add_param(cmd);
                         }
                     }
@@ -338,17 +339,18 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(par).add_param(display_label(label));
             }
             "FT" => {
-                let par1: u16 = parser.read_param()?;
-                let par2: u16 = parser.read_param()?;
-                let par3: u16 = parser.read_param()?;
-                fmt.add_param(par1).add_param(par2).add_param(par3);
+                for _ in 0..3 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
             }
             // "SP"
             // "STS"
             "ES" | "EC" => {
-                let par1: u16 = parser.read_param()?;
-                let par2: u16 = parser.read_param()?;
-                fmt.add_param(par1).add_param(par2);
+                for _ in 0..2 {
+                    let par: u16 = parser.read_param()?;
+                    fmt.add_param(par);
+                }
             }
             "STC" => {
                 for _ in 0..2 {
@@ -667,7 +669,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let par: u8 = parser.read_param()?;
                 fmt.add_param(display_value(value)).add_param(par);
 
-                if inst_info.param_len == 11 {
+                if inst_info.param_len == 9 {
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
                 }
@@ -954,17 +956,17 @@ fn display_value(value: Value) -> String {
     match value {
         Value::Literal(value) => format!("{value}"),
         Value::Register(index) => format!("@{index}"),
-        Value::Random(max) => format!("%{max}"),
+        Value::Random(max) => format!("~{max}"),
     }
 }
 
-fn display_bytes_as_string(bytes: &[u8]) -> anyhow::Result<String> {
+fn display_sjis_bytes_as_string(bytes: &[u8]) -> anyhow::Result<String> {
     let string = sjis_to_utf8(bytes)?;
     Ok(display_string(&string))
 }
 
 fn display_assetname(asset: AssetName) -> anyhow::Result<String> {
-    display_bytes_as_string(asset.name())
+    display_sjis_bytes_as_string(asset.name())
 }
 
 fn display_label(index: u16) -> String {
@@ -972,24 +974,22 @@ fn display_label(index: u16) -> String {
 }
 
 struct Formatter {
-    mnemonic: String,
+    mnemonic: &'static str,
     params: String,
     err: Option<std::fmt::Error>,
 }
 
 impl Formatter {
-    fn new(inst: &Instruction) -> Self {
-        let mut mnemonic = inst.name.to_owned();
-
-        if mnemonic.is_empty() {
-            mnemonic = format!("<{:02X}>", inst.opcode);
+    fn new(inst: &Instruction) -> anyhow::Result<Self> {
+        if inst.name.is_empty() {
+            bail!("invalid instruction opcode: {:02X}", inst.opcode)
         }
 
-        Self {
-            mnemonic,
+        Ok(Self {
+            mnemonic: inst.name,
             params: String::with_capacity(256),
             err: None,
-        }
+        })
     }
 
     fn add_param(&mut self, param: impl Display) -> &mut Self {
