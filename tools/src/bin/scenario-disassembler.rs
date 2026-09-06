@@ -171,7 +171,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let string = sjis_to_utf8(bytes)?;
 
                 let stripped = string.strip_circumfix('"', '"').unwrap_or(&string);
-                fmt.add_param(display_string(&stripped));
+                fmt.add_param(display_string(stripped));
             }
             "CWO" => {
                 let par1: u8 = parser.read_param()?;
