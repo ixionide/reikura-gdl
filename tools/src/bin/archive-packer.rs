@@ -70,10 +70,17 @@ fn main() {
         };
 
         for file in files {
-            let Ok(data) = std::fs::read(&file) else {
+            let Ok(mut data) = std::fs::read(&file) else {
                 eprintln!("failed to read file {}", file.display());
                 continue 'arg;
             };
+
+            let data_len = data.len();
+            let padded_len = data_len.next_multiple_of(ALIGN as usize);
+            // align the data
+            if data_len != padded_len {
+                data.resize(padded_len, 0);
+            }
 
             if let Err(err) = writer.write_all(&data) {
                 eprintln!(
@@ -82,18 +89,6 @@ fn main() {
                 );
                 continue 'arg;
             };
-
-            let data_len = data.len();
-            let padded_len = data_len.next_multiple_of(ALIGN as usize);
-            if data_len != padded_len
-                && let Err(err) = writer.write_all(&vec![0; padded_len - data_len])
-            {
-                eprintln!(
-                    "{} failed to write data with err: {err}",
-                    out_path.display()
-                );
-                continue 'arg;
-            }
         }
     }
 }
@@ -118,12 +113,14 @@ fn create_header(name: [u8; 12], entries: &[PathBuf]) -> std::io::Result<Vec<u8>
 
         name.fill(0);
         let filename = entry.file_name().unwrap_or_default().as_encoded_bytes();
-        if !filename.is_ascii() || filename.len() > 12 {
+
+        if !filename.is_ascii() || filename.len() > name.len() {
             return Err(std::io::Error::other(format!(
                 "illegal filename {:?}, filename should only contain ascii and be less than 12 bytes",
                 filename
             )));
         }
+
         name[..filename.len()].copy_from_slice(filename);
 
         header.put_bytes(name)?;
