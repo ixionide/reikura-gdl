@@ -73,7 +73,6 @@ fn main() {
                 let outpath = path.with_extension("txt");
                 let scenario = Scenario::load(String::new(), data).unwrap();
                 if let Err(err) = disassemble(&outpath, scenario) {
-                    _ = std::fs::remove_file(outpath);
                     eprintln!("failed to disassemble {arg}");
                     eprintln!("Error: {err}");
                 };

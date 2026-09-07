@@ -44,7 +44,6 @@ fn main() {
         let outpath = path.with_extension("isf");
         let mut error_line = None;
         if let Err(err) = assemble(&outpath, &scenario, &opcodes, &mut error_line) {
-            _ = std::fs::remove_file(outpath);
             eprintln!("failed to assemble {arg}");
             let line = error_line
                 .map(|line| format!(" at line {line}"))
