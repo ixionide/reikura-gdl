@@ -52,7 +52,7 @@ fn main() {
         };
 
         let out_path = {
-            let out_dir = path.parent().unwrap().join("_pack");
+            let out_dir = path.parent().unwrap().join("_packed");
             _ = std::fs::create_dir(&out_dir);
             out_dir.join(path.file_name().unwrap())
         };

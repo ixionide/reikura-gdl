@@ -56,7 +56,7 @@ fn unpack_entries(
 ) {
     let out_path = {
         let path = path.as_ref();
-        let out_dir = path.parent().unwrap().join("_unpack");
+        let out_dir = path.parent().unwrap().join("_unpacked");
         _ = std::fs::create_dir(&out_dir);
         out_dir.join(path.file_name().unwrap())
     };
