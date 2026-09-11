@@ -1,7 +1,7 @@
 use anyhow::{bail, ensure};
 
 use crate::{
-    Parser, Vm,
+    ScenarioParser, Vm,
     instruction::{InstructionInfo, Value},
 };
 
@@ -26,7 +26,7 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let mut conds = Vec::with_capacity(10);
     let end: u8;
 
-    fn read_param_cond(parser: &mut Parser) -> anyhow::Result<(Value, u8, Value)> {
+    fn read_param_cond(parser: &mut ScenarioParser) -> anyhow::Result<(Value, u8, Value)> {
         let lhs: Value = parser.read_param()?;
         let op: u8 = parser.read_param()?;
         let rhs: Value = parser.read_param()?;

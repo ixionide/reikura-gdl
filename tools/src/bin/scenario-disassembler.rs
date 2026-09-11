@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::bail;
 use reikura_gdl::{
-    AssetName, Parser, Scenario,
+    AssetName, Scenario, ScenarioParser,
     instruction::{CHARSET, INSTRUCTIONS, Instruction, InstructionInfo, ParamString, Value},
     secretfilter::{Deobfuscator, SIGNATURE, filters::get_known_filter},
 };
@@ -82,11 +82,11 @@ fn main() {
 }
 
 fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
-    let mut parser = Parser::new(scenario);
+    let mut parser = ScenarioParser::new(scenario);
     let mut sub_index = 0;
     let mut out = BufWriter::new(File::create_new(outpath)?);
 
-    while Some(parser.state.ip) == parser.state.scenario.sub_offset(sub_index) {
+    while Some(parser.ip) == parser.scenario.sub_offset(sub_index) {
         writeln!(out, "#LABEL_{sub_index:04}:")?;
         sub_index += 1;
     }
@@ -253,7 +253,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     match cmd {
                         0x00 => {
                             if let Some(0) = parser.peek_opcode() {
-                                parser.state.ip += 1;
+                                parser.ip += 1;
                             };
 
                             break 'param;
@@ -876,7 +876,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
         fmt.write(&mut out)?;
 
         let mut first = true;
-        while Some(parser.state.ip) == parser.state.scenario.sub_offset(sub_index) {
+        while Some(parser.ip) == parser.scenario.sub_offset(sub_index) {
             writeln!(
                 out,
                 "{}#LABEL_{sub_index:04}:",

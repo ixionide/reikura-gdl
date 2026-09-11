@@ -4,7 +4,7 @@ use reikura_util::{
     io::{ReadEndian, ReadExt},
 };
 
-use crate::{Parser, vm::VmContext};
+use crate::{ScenarioParser, vm::VmContext};
 
 pub use crate::AssetName;
 
@@ -29,11 +29,11 @@ pub const CHARSET: [[u8; 2]; 128] = [
 ];
 
 pub trait Parameters: Sized {
-    fn parse(parser: &mut Parser) -> Result<Self>;
+    fn parse(parser: &mut ScenarioParser) -> Result<Self>;
 }
 
 impl<T: ReadEndian> Parameters for T {
-    fn parse(parser: &mut Parser) -> Result<Self> {
+    fn parse(parser: &mut ScenarioParser) -> Result<Self> {
         let param = parser.get_le::<T>()?;
         Ok(param)
     }
@@ -76,7 +76,7 @@ impl Value {
 }
 
 impl Parameters for Value {
-    fn parse(parser: &mut Parser) -> Result<Self> {
+    fn parse(parser: &mut ScenarioParser) -> Result<Self> {
         let raw: u32 = parser.get_le()?;
         let tag = raw & Self::TAG_MASK;
 
@@ -107,7 +107,7 @@ impl ParamString {
 }
 
 impl Parameters for ParamString {
-    fn parse(parser: &mut Parser) -> Result<Self> {
+    fn parse(parser: &mut ScenarioParser) -> Result<Self> {
         let mut buffer = Vec::with_capacity(32);
 
         loop {
@@ -143,7 +143,7 @@ impl Rect<Value> {
 }
 
 impl<T: Parameters> Parameters for Rect<T> {
-    fn parse(parser: &mut Parser) -> anyhow::Result<Self> {
+    fn parse(parser: &mut ScenarioParser) -> anyhow::Result<Self> {
         Ok(Self {
             x: parser.read_param()?,
             y: parser.read_param()?,

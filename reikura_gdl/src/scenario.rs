@@ -20,12 +20,11 @@ pub struct Scenario {
 impl Scenario {
     pub fn load(name: String, mut data: Vec<u8>) -> Result<Self> {
         let isf = IsfMetadata::parse(&data)?;
-
         let code_offset = isf.bytecode_offset as usize;
-        let table_start = 8; // start offset of jump table. from here on data is encrypted
+        let subs_offset = 8; // offset of the subroutine table. from here on data is encrypted
 
         // decrypting
-        let encrypted = data.iter_mut().skip(table_start);
+        let encrypted = data.iter_mut().skip(subs_offset);
         match isf.version {
             火 => encrypted.for_each(|byte| *byte ^= isf.xor_key),
             風 => encrypted.for_each(|byte| *byte = byte.rotate_right(2)),
@@ -34,19 +33,19 @@ impl Scenario {
             ver => bail!("unsupported scenario version: {ver:?}"),
         }
 
-        let table_count = (code_offset - table_start) / size_of::<u32>();
-        let mut jump_table = Vec::with_capacity(table_count);
+        let subs_count = (code_offset - subs_offset) / size_of::<u32>();
+        let mut subs_table = Vec::with_capacity(subs_count);
 
-        for chunk in data[table_start..code_offset].as_chunks().0 {
-            let offset = u32::from_le_bytes(*chunk);
-            jump_table.push(offset as usize);
+        for chunk in data[subs_offset..code_offset].as_chunks().0 {
+            let sub_offset = u32::from_le_bytes(*chunk);
+            subs_table.push(sub_offset as usize);
         }
 
         Ok(Self {
             name: name.into(),
             code: data.split_off(code_offset).into(),
             code_offset,
-            subroutines: Rc::from(jump_table),
+            subroutines: Rc::from(subs_table),
         })
     }
 

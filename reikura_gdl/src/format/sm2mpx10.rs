@@ -21,7 +21,7 @@ impl Sm2mpx10 {
     pub fn parse(file: &mut File) -> Result<Self> {
         let magic: [u8; 8] = file.get_le()?;
 
-        debug_assert_eq!(magic, Self::MAGIC);
+        assert_eq!(magic, Self::MAGIC);
 
         let count: u32 = file.get_le()?;
         file.seek(std::io::SeekFrom::Start(32))?;

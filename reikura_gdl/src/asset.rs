@@ -73,19 +73,6 @@ impl AssetManager {
             }
         }
 
-        let midi = archives.remove(MIDI);
-
-        let mut get_archive = |name: &str| {
-            archives
-                .remove(name)
-                .ok_or_else(|| anyhow!("missing {name} archive"))
-        };
-
-        let mut bgm = get_archive(WMSC)?;
-        if let Some(midi) = midi {
-            bgm.extra.push(midi.main);
-        }
-
         let deobfuscator: Lazy<Option<Deobfuscator>> = {
             let title_id = manifest.key.clone();
             let closure = move || {
@@ -98,6 +85,19 @@ impl AssetManager {
 
             LazyCell::new(Box::new(closure))
         };
+
+        let midi = archives.remove(MIDI);
+        let mut get_archive = |name: &str| {
+            archives
+                .remove(name)
+                .ok_or_else(|| anyhow!("missing {name} archive"))
+        };
+
+        let mut bgm = get_archive(WMSC)?;
+        if let Some(midi) = midi {
+            bgm.extra.push(midi.main);
+            bgm.extra.extend(midi.extra);
+        }
 
         Ok(Self {
             data: get_archive(DATA)?,
@@ -283,7 +283,7 @@ impl AssetName {
 }
 
 impl crate::instruction::Parameters for AssetName {
-    fn parse(scene: &mut crate::Parser) -> Result<Self> {
+    fn parse(scene: &mut crate::ScenarioParser) -> Result<Self> {
         let mut buffer = [0; Self::LEN];
         let mut end = Self::LEN;
         let mut ext = None;

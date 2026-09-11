@@ -33,7 +33,7 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> BitSet<B> {
     pub fn from_raw(bytes: B, bit_count: usize) -> Self {
         let byte_count = bit_count.div_ceil(8);
 
-        debug_assert!(byte_count == bytes.as_ref().len());
+        assert!(byte_count == bytes.as_ref().len());
 
         Self {
             inner: bytes,

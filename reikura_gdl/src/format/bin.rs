@@ -15,7 +15,7 @@ impl ImageDecoder for Bin {
     }
 
     fn decode(magic: Self::Metadata, data: &[u8]) -> anyhow::Result<(u32, u32, Vec<u8>)> {
-        debug_assert_eq!(magic, Self::MAGIC);
+        assert_eq!(magic, Self::MAGIC);
 
         let image = image::load_from_memory_with_format(data, image::ImageFormat::Bmp)?;
 

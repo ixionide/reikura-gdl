@@ -9,11 +9,11 @@ use std::path::{Path, PathBuf};
 const SAVE_DIR: &str = "saves";
 const FLAG_SAVE_NAME: &str = "flags";
 const REG_SAVE_NAME: &str = "registers";
-const MSG_SAVE_NAME: &str = "messages";
+const MSG_SAVE_NAME: &str = "message_flags";
 
 #[allow(dead_code)]
 fn save_name(index: u8) -> String {
-    format!("reikura_{index}.sav")
+    format!("reikura_{index:02}.sav")
 }
 
 pub struct SaveManager {
@@ -45,17 +45,18 @@ impl SaveManager {
                 .open(flag_save_path)
                 .context("failed to create save flag save file")?;
             flag_save_file.set_len(len as u64)?;
-            let mmapmut = MmapMut::map_mut(&flag_save_file)?;
-            BitSet::from_raw(mmapmut, flag_count)
+            let mmap_mut = MmapMut::map_mut(&flag_save_file)?;
+            BitSet::from_raw(mmap_mut, flag_count)
         };
 
         let registers = unsafe {
-            let count = register_count * size_of::<i32>();
+            let len = register_count * size_of::<i32>();
             let reg_save_file = opt
                 .open(reg_save_path)
                 .context("failed to create register save file")?;
-            reg_save_file.set_len(count as u64)?;
-            MmapReg::new(MmapMut::map_mut(&reg_save_file)?).into()
+            reg_save_file.set_len(len as u64)?;
+            let mmap_reg = MmapReg::new(MmapMut::map_mut(&reg_save_file)?);
+            Register::from(mmap_reg)
         };
 
         Ok(Self {
@@ -78,8 +79,8 @@ impl SaveManager {
                 .open(msg_save_path)
                 .context("failed to create message save file")?;
             msg_save_file.set_len(len as u64)?;
-            let mmapmut = MmapMut::map_mut(&msg_save_file)?;
-            BitSet::from_raw(mmapmut, count)
+            let mmap_mut = MmapMut::map_mut(&msg_save_file)?;
+            BitSet::from_raw(mmap_mut, count)
         };
 
         self.message_flags = Some(flags);

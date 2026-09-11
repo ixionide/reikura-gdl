@@ -23,7 +23,7 @@ pub use self::{
     image::{Image, ImageDecoder},
     input::{HitMask, HotSpot, InputManager, KeyMap},
     manifest::Manifest,
-    parser::Parser,
+    parser::{Parser, ScenarioParser},
     save::SaveManager,
     scenario::Scenario,
     vm::Vm,

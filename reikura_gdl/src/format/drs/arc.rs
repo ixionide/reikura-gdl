@@ -45,7 +45,7 @@ impl DrsArc {
         }
 
         if let Some(terminator) = entries.pop() {
-            debug_assert_eq!(file_size, terminator.offset as _);
+            assert_eq!(file_size, terminator.offset as _);
         };
 
         Ok(Self { entries })

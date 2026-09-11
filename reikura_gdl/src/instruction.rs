@@ -239,8 +239,8 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0xFE] = stub("BREAK");
     insts[0xFF] = stub("EXT");
 
-    let mut op = 0;
-    while op != 256 {
+    let mut op = 0x00;
+    while op <= 0xFF {
         insts[op].opcode = op as u8;
         op += 1;
     }
@@ -296,7 +296,7 @@ impl Instruction {
         let info: InstructionInfo = vm.parser.read_param()?;
         let next_ip = ip + info.len;
 
-        // terminator
+        // end of scenario
         if info.len == 0 {
             vm.state.exit();
             return Ok(());
@@ -321,7 +321,7 @@ pub struct InstructionInfo {
 
 impl Parameters for InstructionInfo {
     #[inline]
-    fn parse(parser: &mut crate::Parser) -> Result<Self> {
+    fn parse(parser: &mut crate::ScenarioParser) -> Result<Self> {
         let (len, param_len) = match parser.get_le::<u8>()? as usize {
             0 | 1 => (0, 0),
             hi if hi & 0x80 != 0 => {

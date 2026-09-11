@@ -1,7 +1,7 @@
 use std::io::{Read, Result, Write};
 
 pub trait ReadEndian: Sized {
-    fn get_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self>;
+    fn read_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self>;
     fn read_be<R: Read + ?Sized>(reader: &mut R) -> Result<Self>;
 }
 
@@ -10,11 +10,11 @@ pub trait WriteEndian: Sized {
     fn write_be<W: Write + ?Sized>(self, writer: &mut W) -> Result<()>;
 }
 
-macro_rules! impl_endian {
+macro_rules! endian_impl {
     ($($type:ty),*) => ($(
         impl ReadEndian for $type {
             #[inline]
-            fn get_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self> {
+            fn read_le<R: Read + ?Sized>(reader: &mut R) -> Result<Self> {
                 let mut buf = [0; size_of::<$type>()];
                 reader.read_exact(&mut buf)?;
                 Ok(<$type>::from_le_bytes(buf))
@@ -28,7 +28,7 @@ macro_rules! impl_endian {
             }
         }
         impl<const N: usize> ReadEndian for [$type; N] {
-            fn get_le<R: Read + ?Sized>(mut reader: &mut R) -> Result<Self> {
+            fn read_le<R: Read + ?Sized>(mut reader: &mut R) -> Result<Self> {
                 let mut buf = [0; N];
                 for ele in buf.iter_mut() {
                     *ele = reader.get_le()?;
@@ -38,7 +38,6 @@ macro_rules! impl_endian {
             }
             fn read_be<R: Read + ?Sized>(mut reader: &mut R) -> Result<Self> {
                 let mut buf = [0; N];
-
                 for ele in buf.iter_mut() {
                     *ele = reader.get_be()?;
                 }
@@ -94,8 +93,8 @@ macro_rules! impl_endian {
     )*)
 }
 
-impl_endian!(i8, i16, i32, i64);
-impl_endian!(u8, u16, u32, u64);
+endian_impl!(i8, i16, i32, i64);
+endian_impl!(u8, u16, u32, u64);
 
 pub trait ReadExt: Read {
     #[inline]
@@ -107,7 +106,7 @@ pub trait ReadExt: Read {
 
     #[inline]
     fn get_le<T: ReadEndian>(&mut self) -> Result<T> {
-        T::get_le(self)
+        T::read_le(self)
     }
 
     #[inline]

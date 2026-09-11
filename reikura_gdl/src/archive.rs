@@ -85,7 +85,6 @@ impl Archive {
 
         let pos = SeekFrom::Start(entry.offset as u64);
         let len = entry.length;
-
         let mut buffer = vec![0; len];
 
         self.file.seek(pos)?;

@@ -28,7 +28,7 @@ impl ImageDecoder for GgpFaike {
     }
 
     fn decode(mut md: Self::Metadata, data: &[u8]) -> anyhow::Result<(u32, u32, Vec<u8>)> {
-        debug_assert_eq!(md.magic, Self::MAGIC);
+        assert_eq!(md.magic, Self::MAGIC);
 
         let offset = md.offset as usize;
         let length = md.length as usize;

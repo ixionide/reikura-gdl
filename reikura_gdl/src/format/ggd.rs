@@ -30,7 +30,7 @@ impl ImageDecoder for GgdFull {
     }
 
     fn decode(md: Self::Metadata, data: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
-        debug_assert_eq!(md.magic, Self::MAGIC);
+        assert_eq!(md.magic, Self::MAGIC);
 
         let size = md.width as usize * md.height as usize * PIXEL_STRIDE;
         let mut pixels = Vec::with_capacity(size);
@@ -111,7 +111,7 @@ impl ImageDecoder for Ggd256g {
     }
 
     fn decode(md: Self::Metadata, data: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
-        debug_assert_eq!(md.magic, Self::MAGIC);
+        assert_eq!(md.magic, Self::MAGIC);
 
         let size = md.width as usize * md.height as usize * PIXEL_STRIDE;
         let palette_pos = md.header_len as usize + 4;

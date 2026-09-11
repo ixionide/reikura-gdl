@@ -39,8 +39,8 @@ impl ImageDecoder for Gga {
     }
 
     fn decode(md: Self::Metadata, data: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
-        debug_assert_eq!(md.magic, Self::MAGIC);
-        debug_assert_eq!(md.bpp, 32);
+        assert_eq!(md.magic, Self::MAGIC);
+        assert_eq!(md.bpp, 32);
 
         let opaque = (md.flags & 1) == 0;
         let compressed = &data[md.pixel_offset as usize..][..md.compressed_len as usize];
