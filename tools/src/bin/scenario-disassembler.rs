@@ -30,22 +30,20 @@ fn main() {
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
-            "-k" => {
-                if let Some(title_id) = args.next() {
-                    deopfuscator = get_known_filter(&title_id).map(Deobfuscator::new)
-                }
+            "-f" => {
+                let title_id = args
+                    .next()
+                    .expect("missing an argument for parameter filter");
+
+                deopfuscator = get_known_filter(&title_id).map(Deobfuscator::new);
             }
             "-e" => {
-                let Some(exe_path) = args.next() else {
-                    continue;
-                };
+                let exe_path = args
+                    .next()
+                    .expect("missing an argument for parameter executable");
+                let exe_data = std::fs::read(&exe_path).expect("invalid executable path");
 
-                let Ok(executable) = std::fs::read(&exe_path) else {
-                    eprintln!("failed to read executable {exe_path}");
-                    continue;
-                };
-
-                deopfuscator = Deobfuscator::try_filter_search(&executable);
+                deopfuscator = Deobfuscator::try_filter_search(&exe_data);
             }
             _ => {
                 let path = Path::new(&arg);
@@ -64,7 +62,7 @@ fn main() {
 
                 if let Some(obfuscated) = get_obfuscated(&mut data) {
                     let Some(deobfuscator) = &deopfuscator else {
-                        eprintln!("scenario {arg} is obfuscated but the key is unknown");
+                        eprintln!("scenario {arg} is obfuscated but the filter is unknown");
                         continue;
                     };
                     deobfuscator.deobfuscate(obfuscated);
