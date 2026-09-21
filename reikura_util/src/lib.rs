@@ -7,3 +7,4 @@ mod iota;
 pub mod lzss;
 pub mod rect;
 pub mod register;
+pub mod stack;

@@ -4,23 +4,24 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
+use reikura_util::stack::Stack;
 
 use crate::{Scenario, instruction::Parameters};
 
-const SUB_CALL_STACK: usize = 1024;
-const SCENE_CALL_STACK: usize = 256;
+const MAX_SUB_CALL: usize = 1024;
+const MAX_SCN_CALL: usize = 256;
 
 pub struct Parser {
     pub state: ScenarioParser,
-    stack: Vec<ScenarioParser>,
+    stack: Stack<ScenarioParser, MAX_SCN_CALL>,
 }
 
 impl Parser {
     pub fn new(start_scene: Scenario) -> Self {
         Self {
             state: ScenarioParser::new(start_scene),
-            stack: Vec::with_capacity(SCENE_CALL_STACK),
+            stack: Stack::new(),
         }
     }
 
@@ -30,22 +31,11 @@ impl Parser {
 
     pub fn call_scene(&mut self, scenario: Scenario) -> Result<()> {
         let caller = mem::replace(&mut self.state, ScenarioParser::new(scenario));
-
-        if self.stack.len() < SCENE_CALL_STACK {
-            self.stack.push(caller);
-        } else {
-            bail!("parser call stack overflow");
-        }
-
-        Ok(())
+        self.stack.push(caller).context("scene call")
     }
 
     pub fn ret_scene(&mut self) -> Result<()> {
-        match self.stack.pop() {
-            Some(state) => self.state = state,
-            None => bail!("parser call stack underflow"),
-        }
-
+        self.state = self.stack.pop().context("scene return")?;
         Ok(())
     }
 }
@@ -66,7 +56,7 @@ impl DerefMut for Parser {
 
 pub struct ScenarioParser {
     pub ip: usize,
-    pub stack: Vec<usize>,
+    pub stack: Stack<usize, MAX_SUB_CALL>,
     pub scenario: Scenario,
 }
 
@@ -74,7 +64,7 @@ impl ScenarioParser {
     pub fn new(scenario: Scenario) -> Self {
         Self {
             ip: 0,
-            stack: Vec::with_capacity(SUB_CALL_STACK),
+            stack: Stack::new(),
             scenario,
         }
     }
@@ -99,22 +89,11 @@ impl ScenarioParser {
     pub fn call_sub(&mut self, index: u16) -> Result<()> {
         let caller_ip = self.ip;
         self.jump_sub(index)?;
-
-        if self.stack.len() < SUB_CALL_STACK {
-            self.stack.push(caller_ip);
-        } else {
-            bail!("state call stack overflow")
-        }
-
-        Ok(())
+        self.stack.push(caller_ip).context("subroutine call")
     }
 
     pub fn ret_sub(&mut self) -> Result<()> {
-        match self.stack.pop() {
-            Some(pos) => self.ip = pos,
-            None => bail!("state call stack underflow"),
-        }
-
+        self.ip = self.stack.pop().context("subroutine return")?;
         Ok(())
     }
 
