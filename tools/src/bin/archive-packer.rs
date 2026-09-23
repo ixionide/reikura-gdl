@@ -1,7 +1,7 @@
 use std::{
     ffi::OsStr,
     fs::File,
-    io::{BufWriter, Cursor, Write},
+    io::{BufWriter, Write},
     path::{Path, PathBuf},
 };
 
@@ -98,13 +98,14 @@ fn create_header(name: [u8; 12], entries: &[PathBuf]) -> std::io::Result<Vec<u8>
     let table_start: u32 = 32;
     let header_len = table_start + count * 20;
     let data_start = header_len.next_multiple_of(ALIGN);
-    let mut header = Cursor::new(Vec::with_capacity(data_start as usize));
+    let mut header = vec![0; data_start as usize];
+    let mut writer = header.as_mut_slice();
 
-    header.put_bytes(Sm2mpx10::MAGIC)?;
-    header.put_le(count)?;
-    header.put_le(header_len)?;
-    header.put_bytes(name)?;
-    header.put_le(table_start)?;
+    writer.put_bytes(Sm2mpx10::MAGIC)?;
+    writer.put_le(count)?;
+    writer.put_le(header_len)?;
+    writer.put_bytes(name)?;
+    writer.put_le(table_start)?;
 
     let mut name = name;
     let mut addr = data_start;
@@ -123,18 +124,12 @@ fn create_header(name: [u8; 12], entries: &[PathBuf]) -> std::io::Result<Vec<u8>
 
         name[..filename.len()].copy_from_slice(filename);
 
-        header.put_bytes(name)?;
-        header.put_le(addr)?;
-        header.put_le(size)?;
+        writer.put_bytes(name)?;
+        writer.put_le(addr)?;
+        writer.put_le(size)?;
 
         addr = (addr + size).next_multiple_of(ALIGN);
     }
 
-    let mut bytes = header.into_inner();
-    // padding
-    if bytes.len() != data_start as usize {
-        bytes.resize(data_start as usize, 0);
-    }
-
-    Ok(bytes)
+    Ok(header)
 }
