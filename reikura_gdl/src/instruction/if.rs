@@ -75,13 +75,13 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
                 }
             }
             CONTINUE => continue,
-            _ => bail!("unknown IF command: {cmd}"),
+            _ => bail!("unknown IF cmd: {cmd}"),
         }
 
         break;
     }
 
-    ensure!(end == 255, "IF instruction isn't end properly: {end}");
+    ensure!(end == 255, "IF params isn't terminate properly: {end}");
 
     Ok(())
 }

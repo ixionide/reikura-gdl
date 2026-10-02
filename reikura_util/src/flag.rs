@@ -122,8 +122,8 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> Flag<B> {
 }
 
 pub struct FlagGroup {
-    pub(self) byte_pos: usize,
-    pub(self) bitmasks: Vec<u8>,
+    pub byte_pos: usize,
+    pub bitmasks: Vec<u8>,
 }
 
 impl FlagGroup {
@@ -133,11 +133,4 @@ impl FlagGroup {
             bitmasks,
         }
     }
-}
-
-pub enum CheckGroup {
-    All,
-    Any,
-    NotAll,
-    NotAny,
 }

@@ -7,7 +7,7 @@ pub fn sp(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
     let bytes = vm.parser.read_bytes(info.param_len)?;
 
     let Some((0xFF, mut params)) = bytes.split_last() else {
-        bail!("SP: invalid param terminator");
+        bail!("invalid param terminator");
     };
 
     let group_index: u8 = params.get_le()?;

@@ -21,7 +21,7 @@ pub fn hxp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         MATCH_NONE => GroupMatch::None,
         MATCH_NOTALL => GroupMatch::NotAll,
         MATCH_ANY => GroupMatch::Any,
-        _ => bail!("invalid group match"),
+        _ => bail!("invalid group match: {group_match}"),
     };
 
     let should_jump = vm.ctx.flags.check_group(group_index as usize, group_match);

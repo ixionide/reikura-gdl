@@ -16,7 +16,7 @@ reikura_util::const_iota! {
 pub fn exs(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let ctx = &mut vm.ctx;
     let Some(save) = &mut vm.save else {
-        bail!("EXS: save context is not initialized yet");
+        bail!("save context is not initialized yet");
     };
 
     let dst = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
