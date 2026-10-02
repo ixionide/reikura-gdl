@@ -2,17 +2,17 @@ use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use reikura_gfx::GraphicEngine;
-use reikura_util::{bitset::BitSet, register::Register};
+use reikura_util::{flag::Flag, register::Register};
 
 use crate::{
-    AssetManager, AssetName, AudioManager, Config, InputManager, Manifest, Parser, SaveManager,
+    AssetManager, AssetName, AudioManager, InputManager, Manifest, Parser, SaveContext, UserSetup,
     instruction::INSTRUCTIONS,
 };
 
 pub const FRAME_INTERVAL: Duration = Duration::from_millis(16);
 
 pub struct VmContext {
-    pub flags: BitSet,
+    pub flags: Flag,
     pub registers: Register,
     pub wait_duration: Option<Duration>,
     pub timer: Option<Timer>,
@@ -24,7 +24,7 @@ pub struct VmContext {
 impl VmContext {
     pub fn new() -> Self {
         Self {
-            flags: BitSet::new(2048),
+            flags: Flag::new(2048),
             registers: Register::new(2048),
             wait_duration: None,
             timer: None,
@@ -41,8 +41,8 @@ pub struct Vm {
     pub audio: AudioManager,
     pub gfx: GraphicEngine,
     pub ctx: VmContext,
-    pub save: Option<SaveManager>,
-    pub config: Config,
+    pub save: Option<SaveContext>,
+    pub user_setup: UserSetup,
     pub input: InputManager,
     pub state: State,
 }
@@ -64,7 +64,7 @@ impl Vm {
             gfx,
             ctx: VmContext::new(),
             save: None,
-            config: Config::open(config_path)?,
+            user_setup: UserSetup::open(config_path)?,
             input,
             state: State::Running,
         })

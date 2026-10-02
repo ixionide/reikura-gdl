@@ -16,7 +16,7 @@ reikura_util::const_iota! {
 pub fn exc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let ctx = &mut vm.ctx;
     let Some(save) = &mut vm.save else {
-        bail!("EXC: save is not initialized yet");
+        bail!("EXC: save context is not initialized yet");
     };
 
     let src = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
@@ -28,7 +28,7 @@ pub fn exc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
             let bound_count = min(save.flags.len() - src, ctx.flags.len() - dst);
 
             for i in 0..count.min(bound_count) {
-                let flag = save.flags.get(src + i).unwrap_or(false);
+                let flag = save.flags.get(src + i);
                 ctx.flags.set(dst + i, flag);
             }
         }
@@ -36,7 +36,7 @@ pub fn exc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
             let bound_count = min(save.registers.len() - src, ctx.registers.len() - dst);
 
             for i in 0..count.min(bound_count) {
-                let value = save.registers.get(src + i).unwrap_or(0);
+                let value = save.registers.get(src + i);
                 ctx.registers.set(dst + i, value);
             }
         }

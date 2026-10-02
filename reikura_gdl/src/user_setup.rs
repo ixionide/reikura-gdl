@@ -17,9 +17,9 @@ const DEFAULT: &[u8] = &[
     128, // textbox a
 ];
 
-pub struct Config(MmapMut);
+pub struct UserSetup(MmapMut);
 
-impl Config {
+impl UserSetup {
     pub fn open(path: impl AsRef<Path>) -> std::io::Result<Self> {
         let mut opt = OpenOptions::new();
         opt.read(true).write(true).create(true);

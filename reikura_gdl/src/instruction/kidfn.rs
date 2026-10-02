@@ -7,6 +7,6 @@ pub fn kidfn(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
 
     match &mut vm.save {
         Some(save) => save.init_message_flags(count as usize),
-        None => bail!("save is not initialized yet"),
+        None => bail!("save context is not initialized yet"),
     }
 }

@@ -11,14 +11,14 @@ impl<V: AsRef<[i32]> + AsMut<[i32]>> From<V> for Register<V> {
 }
 
 impl Register {
-    pub fn new(reg_count: usize) -> Self {
+    pub fn new(count: usize) -> Self {
         Self {
-            inner: vec![0; reg_count],
+            inner: vec![0; count],
         }
     }
 
-    pub fn resize(&mut self, reg_count: usize) {
-        self.inner.resize(reg_count, 0);
+    pub fn resize(&mut self, count: usize) {
+        self.inner.resize(count, 0);
     }
 }
 
@@ -31,38 +31,26 @@ impl<V: AsRef<[i32]> + AsMut<[i32]>> Register<V> {
         self.len() == 0
     }
 
-    pub fn get(&self, index: usize) -> Option<i32> {
-        self.inner.as_ref().get(index).copied()
+    pub fn get(&self, index: usize) -> i32 {
+        self.inner.as_ref().get(index).copied().unwrap_or(0)
     }
 
-    pub fn set(&mut self, index: usize, value: i32) -> bool {
-        let Some(register) = self.inner.as_mut().get_mut(index) else {
-            return false;
-        };
-
-        *register = value;
-
-        true
+    pub fn set(&mut self, index: usize, value: i32) {
+        if let Some(register) = self.inner.as_mut().get_mut(index) {
+            *register = value;
+        }
     }
 
-    pub fn inc(&mut self, index: usize) -> bool {
-        let Some(register) = self.inner.as_mut().get_mut(index) else {
-            return false;
+    pub fn inc(&mut self, index: usize) {
+        if let Some(register) = self.inner.as_mut().get_mut(index) {
+            *register += 1;
         };
-
-        *register += 1;
-
-        true
     }
 
-    pub fn dec(&mut self, index: usize) -> bool {
-        let Some(register) = self.inner.as_mut().get_mut(index) else {
-            return false;
+    pub fn dec(&mut self, index: usize) {
+        if let Some(register) = self.inner.as_mut().get_mut(index) {
+            *register -= 1;
         };
-
-        *register -= 1;
-
-        true
     }
 }
 

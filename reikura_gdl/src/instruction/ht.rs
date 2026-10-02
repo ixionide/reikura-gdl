@@ -1,5 +1,3 @@
-use anyhow::bail;
-
 use crate::{Vm, instruction::InstructionInfo};
 
 pub fn ht(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
@@ -12,18 +10,14 @@ pub fn ht(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     if src < dst {
         // descending
         for i in range.rev() {
-            match vm.ctx.registers.get(src + i) {
-                Some(value) => vm.ctx.registers.set(dst + 1, value),
-                None => bail!("register index out of bounds: {}", src + i),
-            };
+            let value = vm.ctx.registers.get(src + i);
+            vm.ctx.registers.set(dst + 1, value);
         }
     } else {
         // ascending
         for i in range {
-            match vm.ctx.registers.get(src + i) {
-                Some(value) => vm.ctx.registers.set(dst + 1, value),
-                None => bail!("register index out of bounds: {}", src + i),
-            };
+            let value = vm.ctx.registers.get(src + i);
+            vm.ctx.registers.set(dst + 1, value);
         }
     }
 

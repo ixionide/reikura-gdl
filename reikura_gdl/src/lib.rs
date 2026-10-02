@@ -2,7 +2,6 @@ mod archive;
 mod asset;
 mod audio;
 mod cache;
-mod config;
 pub mod format;
 mod image;
 mod input;
@@ -12,6 +11,7 @@ mod parser;
 mod save;
 mod scenario;
 pub mod secretfilter;
+mod user_setup;
 mod vm;
 
 pub use self::{
@@ -19,12 +19,12 @@ pub use self::{
     asset::{AssetManager, AssetName},
     audio::{Audio, AudioManager},
     cache::CacheManager,
-    config::Config,
     image::{Image, ImageDecoder},
     input::{HitMask, HotSpot, InputManager, KeyMap},
     manifest::Manifest,
     parser::{Parser, ScenarioParser},
-    save::SaveManager,
+    save::SaveContext,
     scenario::Scenario,
+    user_setup::UserSetup,
     vm::Vm,
 };

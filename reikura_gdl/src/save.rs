@@ -1,7 +1,7 @@
 use anyhow::{Context, Ok, Result};
 use memmap2::MmapMut;
 use reikura_util::{
-    bitset::BitSet,
+    flag::Flag,
     register::{MmapReg, Register},
 };
 use std::path::{Path, PathBuf};
@@ -16,15 +16,15 @@ fn save_name(index: u8) -> String {
     format!("reikura_{index:02}.sav")
 }
 
-pub struct SaveManager {
+pub struct SaveContext {
     pub path: PathBuf,
-    pub flags: BitSet<MmapMut>,
+    pub flags: Flag<MmapMut>,
     pub registers: Register<MmapReg>,
-    message_flags: Option<BitSet<MmapMut>>,
+    message_flags: Option<Flag<MmapMut>>,
     pub game_info: Option<String>,
 }
 
-impl SaveManager {
+impl SaveContext {
     pub fn new(
         game_path: impl AsRef<Path>,
         flag_count: usize,
@@ -46,7 +46,7 @@ impl SaveManager {
                 .context("failed to create save flag save file")?;
             flag_save_file.set_len(len as u64)?;
             let mmap_mut = MmapMut::map_mut(&flag_save_file)?;
-            BitSet::from_raw(mmap_mut, flag_count)
+            Flag::from_raw(mmap_mut, flag_count)
         };
 
         let registers = unsafe {
@@ -80,7 +80,7 @@ impl SaveManager {
                 .context("failed to create message save file")?;
             msg_save_file.set_len(len as u64)?;
             let mmap_mut = MmapMut::map_mut(&msg_save_file)?;
-            BitSet::from_raw(mmap_mut, count)
+            Flag::from_raw(mmap_mut, count)
         };
 
         self.message_flags = Some(flags);
@@ -91,7 +91,7 @@ impl SaveManager {
     pub fn is_message_read(&self, index: usize) -> bool {
         self.message_flags
             .as_ref()
-            .and_then(|it| it.get(index))
+            .map(|it| it.get(index))
             .unwrap_or_default()
     }
 

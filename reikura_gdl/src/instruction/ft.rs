@@ -1,5 +1,3 @@
-use anyhow::bail;
-
 use crate::{Vm, instruction::InstructionInfo};
 
 pub fn ft(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
@@ -12,18 +10,14 @@ pub fn ft(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     if src < dst {
         // copy in descending order
         for i in range.rev() {
-            match vm.ctx.flags.get(src + i) {
-                Some(val) => vm.ctx.flags.set(dst + i, val),
-                None => bail!("flag index out of bounds: {}", src + i),
-            };
+            let value = vm.ctx.flags.get(src + i);
+            vm.ctx.flags.set(dst + i, value);
         }
     } else {
         // copy in ascending order
         for i in range {
-            match vm.ctx.flags.get(src + i) {
-                Some(val) => vm.ctx.flags.set(dst + i, val),
-                None => bail!("flag index out of bounds: {}", src + i),
-            };
+            let value = vm.ctx.flags.get(src + i);
+            vm.ctx.flags.set(dst + i, value);
         }
     }
 

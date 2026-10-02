@@ -89,8 +89,8 @@ pub enum StateStorage {
 impl HotSpot {
     pub fn is_enabled(&self, ctx: &VmContext) -> bool {
         match self.state_storage {
-            StateStorage::Flag => ctx.flags.get(self.state_index).unwrap_or(false),
-            StateStorage::Register => ctx.registers.get(self.state_index).unwrap_or(0) != 0,
+            StateStorage::Flag => ctx.flags.get(self.state_index),
+            StateStorage::Register => ctx.registers.get(self.state_index) != 0,
         }
     }
 

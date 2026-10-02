@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
-use reikura_util::stack::Stack;
+use reikura_util::collections::Stack;
 
 use crate::{Scenario, instruction::Parameters};
 

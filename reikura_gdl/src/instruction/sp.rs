@@ -1,5 +1,5 @@
 use anyhow::bail;
-use reikura_util::{index_vec::IndexVec, io::ReadExt};
+use reikura_util::{collections::LenVec, io::ReadExt};
 
 use crate::{Vm, instruction::InstructionInfo};
 
@@ -18,7 +18,7 @@ pub fn sp(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
 
     while !params.is_empty() {
         let byte_index_start: u16 = params.get_le()?;
-        let bits: IndexVec<u16, u8> = params.get_le()?;
+        let bits: LenVec<u16, u8> = params.get_le()?;
 
         for (bit, byte_index) in bits.iter().copied().zip(byte_index_start..) {
             // XXX: this logic only work when there is only one bit that is set

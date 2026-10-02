@@ -63,7 +63,7 @@ impl Value {
     pub fn evaluate(&self, ctx: &VmContext) -> i32 {
         match *self {
             Value::Literal(value) => value,
-            Value::Register(index) => ctx.registers.get(index).unwrap_or(0),
+            Value::Register(index) => ctx.registers.get(index),
             Value::Random(modulo) => {
                 if modulo == 0 {
                     return 0;
