@@ -41,6 +41,10 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> BitSet<B> {
         }
     }
 
+    pub fn as_slice(&self) -> &[u8] {
+        self.inner.as_ref()
+    }
+
     pub fn len(&self) -> usize {
         self.count
     }

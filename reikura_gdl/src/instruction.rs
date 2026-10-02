@@ -15,9 +15,7 @@ inst! {
     //
     fln, sk, sks, hf, ft, sp, hp,
     //
-    hn,
-    //
-    hln,
+    hn, hxp, hln,
     //
     hs, hinc, hdec, calc, hsg, ht,
     r#if,
@@ -41,23 +39,24 @@ inst! {
 }
 
 pub const INSTRUCTIONS: [Instruction; 256] = const {
-    let mut insts = [Instruction::INVALID; 256];
+    type Inst = Instruction;
+    let mut insts = [Inst::INVALID; 256];
 
     const fn stub(name: &'static str) -> Instruction {
-        Instruction::skip(name)
+        Instruction::new_skipped(name)
     }
 
-    insts[0x00] = Instruction::new("ED", ed);
-    insts[0x01] = Instruction::new("LS", ls);
-    insts[0x02] = Instruction::new("LSBS", lsbs);
-    insts[0x03] = Instruction::new("SRET", sret);
-    insts[0x04] = Instruction::new("JP", jp);
-    insts[0x05] = Instruction::new("JS", js);
-    insts[0x06] = Instruction::new("RT", rt);
-    insts[0x07] = Instruction::new("ONJP", onjp);
-    insts[0x08] = Instruction::new("ONJS", onjs);
-    insts[0x09] = Instruction::skip("CHILD");
-    insts[0x0A] = Instruction::skip("URL");
+    insts[0x00] = Inst::new("ED", ed);
+    insts[0x01] = Inst::new("LS", ls);
+    insts[0x02] = Inst::new("LSBS", lsbs);
+    insts[0x03] = Inst::new("SRET", sret);
+    insts[0x04] = Inst::new("JP", jp);
+    insts[0x05] = Inst::new("JS", js);
+    insts[0x06] = Inst::new("RT", rt);
+    insts[0x07] = Inst::new("ONJP", onjp);
+    insts[0x08] = Inst::new("ONJS", onjs);
+    insts[0x09] = Inst::new_skipped("CHILD");
+    insts[0x0A] = Inst::new_skipped("URL");
     insts[0x10] = stub("CW");
     insts[0x11] = stub("CP");
     insts[0x12] = stub("CIR");
@@ -76,7 +75,7 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x22] = stub("WL");
     insts[0x23] = stub("WW");
     insts[0x24] = stub("CN");
-    insts[0x25] = Instruction::new("CNS", cns);
+    insts[0x25] = Inst::new("CNS", cns);
     insts[0x26] = stub("PF");
     insts[0x27] = stub("PB");
     insts[0x28] = stub("PJ");
@@ -86,40 +85,40 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x2C] = stub("PMP");
     insts[0x2D] = stub("WSH");
     insts[0x2E] = stub("WSS");
-    insts[0x30] = Instruction::new("FLN", fln);
-    insts[0x31] = Instruction::new("SK", sk);
-    insts[0x32] = Instruction::new("SKS", sks);
-    insts[0x33] = Instruction::new("HF", hf);
-    insts[0x34] = Instruction::new("FT", ft);
-    insts[0x35] = Instruction::new("SP", sp);
-    insts[0x36] = Instruction::new("HP", hp);
+    insts[0x30] = Inst::new("FLN", fln);
+    insts[0x31] = Inst::new("SK", sk);
+    insts[0x32] = Inst::new("SKS", sks);
+    insts[0x33] = Inst::new("HF", hf);
+    insts[0x34] = Inst::new("FT", ft);
+    insts[0x35] = Inst::new("SP", sp);
+    insts[0x36] = Inst::new("HP", hp);
     insts[0x37] = stub("STS");
     insts[0x38] = stub("ES");
     insts[0x39] = stub("EC");
     insts[0x3A] = stub("STC");
-    insts[0x3B] = Instruction::new("HN", hn);
-    insts[0x3C] = stub("HXP");
-    insts[0x40] = Instruction::new("HLN", hln);
-    insts[0x41] = Instruction::new("HS", hs);
-    insts[0x42] = Instruction::new("HINC", hinc);
-    insts[0x43] = Instruction::new("HDEC", hdec);
-    insts[0x44] = Instruction::new("CALC", calc);
-    insts[0x45] = Instruction::new("HSG", hsg);
-    insts[0x46] = Instruction::new("HT", ht);
-    insts[0x47] = Instruction::new("IF", r#if);
-    insts[0x48] = Instruction::new("EXA", exa);
-    insts[0x49] = Instruction::new("EXS", exs);
-    insts[0x4A] = Instruction::new("EXC", exc);
+    insts[0x3B] = Inst::new("HN", hn);
+    insts[0x3C] = Inst::new("HXP", hxp);
+    insts[0x40] = Inst::new("HLN", hln);
+    insts[0x41] = Inst::new("HS", hs);
+    insts[0x42] = Inst::new("HINC", hinc);
+    insts[0x43] = Inst::new("HDEC", hdec);
+    insts[0x44] = Inst::new("CALC", calc);
+    insts[0x45] = Inst::new("HSG", hsg);
+    insts[0x46] = Inst::new("HT", ht);
+    insts[0x47] = Inst::new("IF", r#if);
+    insts[0x48] = Inst::new("EXA", exa);
+    insts[0x49] = Inst::new("EXS", exs);
+    insts[0x4A] = Inst::new("EXC", exc);
     insts[0x4B] = stub("SCP");
     insts[0x4C] = stub("SSP");
-    insts[0x50] = Instruction::new("VSET", vset);
-    insts[0x51] = Instruction::new("GN", gn);
-    insts[0x52] = Instruction::new("GF", gf);
-    insts[0x53] = Instruction::new("GC", gc);
+    insts[0x50] = Inst::new("VSET", vset);
+    insts[0x51] = Inst::new("GN", gn);
+    insts[0x52] = Inst::new("GF", gf);
+    insts[0x53] = Inst::new("GC", gc);
     insts[0x54] = stub("GI");
     insts[0x55] = stub("GO");
-    insts[0x56] = Instruction::new("GL", gl);
-    insts[0x57] = Instruction::new("GP", gp);
+    insts[0x56] = Inst::new("GL", gl);
+    insts[0x57] = Inst::new("GP", gp);
     insts[0x58] = stub("GB");
     insts[0x59] = stub("GPB");
     insts[0x5A] = stub("GPJ");
@@ -139,18 +138,18 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x68] = stub("GACLOSE");
     insts[0x69] = stub("GADELETE");
     insts[0x6F] = stub("SGL");
-    insts[0x70] = Instruction::new("ML", ml);
-    insts[0x71] = Instruction::new("MP", mp);
-    insts[0x72] = Instruction::new("MF", mf);
-    insts[0x73] = Instruction::new("MS", ms);
-    insts[0x74] = Instruction::new("SER", ser);
-    insts[0x75] = Instruction::new("SEP", sep);
-    insts[0x76] = Instruction::new("SED", sed);
-    insts[0x77] = Instruction::new("PCMON", pcmon);
-    insts[0x78] = Instruction::new("PCML", pcml);
-    insts[0x79] = Instruction::new("PCMS", pcms);
-    insts[0x7A] = Instruction::new("PCMEND", pcmend);
-    insts[0x7B] = Instruction::new("SES", ses);
+    insts[0x70] = Inst::new("ML", ml);
+    insts[0x71] = Inst::new("MP", mp);
+    insts[0x72] = Inst::new("MF", mf);
+    insts[0x73] = Inst::new("MS", ms);
+    insts[0x74] = Inst::new("SER", ser);
+    insts[0x75] = Inst::new("SEP", sep);
+    insts[0x76] = Inst::new("SED", sed);
+    insts[0x77] = Inst::new("PCMON", pcmon);
+    insts[0x78] = Inst::new("PCML", pcml);
+    insts[0x79] = Inst::new("PCMS", pcms);
+    insts[0x7A] = Inst::new("PCMEND", pcmend);
+    insts[0x7B] = Inst::new("SES", ses);
     insts[0x7C] = stub("BGMGETPOS");
     insts[0x7D] = stub("SEGETPOS");
     insts[0x7E] = stub("PCMGETPOS");
@@ -159,14 +158,14 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x81] = stub("IC");
     insts[0x82] = stub("IMS");
     insts[0x83] = stub("IXY");
-    insts[0x84] = Instruction::new("IH", ih);
+    insts[0x84] = Inst::new("IH", ih);
     insts[0x85] = stub("IG");
-    insts[0x86] = Instruction::skip("IGINIT");
-    insts[0x87] = Instruction::skip("IGRELEASE");
-    insts[0x88] = Instruction::new("IHK", ihk);
-    insts[0x89] = Instruction::new("IHKDEF", ihkdef);
-    insts[0x8A] = Instruction::new("IHGL", ihgl);
-    insts[0x8B] = Instruction::new("IHGC", ihgc);
+    insts[0x86] = Inst::new_skipped("IGINIT");
+    insts[0x87] = Inst::new_skipped("IGRELEASE");
+    insts[0x88] = Inst::new("IHK", ihk);
+    insts[0x89] = Inst::new("IHKDEF", ihkdef);
+    insts[0x8A] = Inst::new("IHGL", ihgl);
+    insts[0x8B] = Inst::new("IHGC", ihgc);
     insts[0x8C] = stub("IHGP");
     insts[0x8D] = stub("CLK");
     insts[0x8E] = stub("IGN");
@@ -174,15 +173,15 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x8F] = stub("<8F>");
 
     insts[0x90] = stub("DAE");
-    insts[0x91] = Instruction::new("DAP", dap);
-    insts[0x92] = Instruction::new("DAS", das);
-    insts[0x9F] = Instruction::new("SETINSIDEVOL", setinsidevol);
+    insts[0x91] = Inst::new("DAP", dap);
+    insts[0x92] = Inst::new("DAS", das);
+    insts[0x9F] = Inst::new("SETINSIDEVOL", setinsidevol);
     insts[0xA0] = stub("KIDCLR");
     insts[0xA1] = stub("KIDMOJI");
     insts[0xA2] = stub("KIDPAGE");
     insts[0xA3] = stub("KIDSET");
     insts[0xA4] = stub("KIDEND");
-    insts[0xA5] = Instruction::new("KIDFN", kidfn);
+    insts[0xA5] = Inst::new("KIDFN", kidfn);
     insts[0xA6] = stub("KIDHABA");
     insts[0xA7] = stub("KIDSCAN");
 
@@ -222,19 +221,19 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0xE8] = stub("ENABLE");
     insts[0xE9] = stub("TITLE");
     insts[0xEF] = stub("EXT2");
-    insts[0xF0] = Instruction::new("CNF", cnf);
-    insts[0xF1] = Instruction::new("ATIMES", atimes);
-    insts[0xF2] = Instruction::new("AWAIT", r#await);
+    insts[0xF0] = Inst::new("CNF", cnf);
+    insts[0xF1] = Inst::new("ATIMES", atimes);
+    insts[0xF2] = Inst::new("AWAIT", r#await);
     insts[0xF3] = stub("AVIP");
     insts[0xF4] = stub("PPF");
     insts[0xF5] = stub("SVF");
     insts[0xF6] = stub("PPE");
-    insts[0xF7] = Instruction::new("SETGAMEINFO", setgameinfo);
+    insts[0xF7] = Inst::new("SETGAMEINFO", setgameinfo);
     insts[0xF8] = stub("SETFONTSTYLE");
     insts[0xF9] = stub("SETFONTCOLOR");
-    insts[0xFA] = Instruction::new("TIMERSET", timerset);
-    insts[0xFB] = Instruction::new("TIMEREND", timerend);
-    insts[0xFC] = Instruction::new("TIMERGET", timerget);
+    insts[0xFA] = Inst::new("TIMERSET", timerset);
+    insts[0xFB] = Inst::new("TIMEREND", timerend);
+    insts[0xFC] = Inst::new("TIMERGET", timerget);
     insts[0xFD] = stub("GRPOUT");
     insts[0xFE] = stub("BREAK");
     insts[0xFF] = stub("EXT");
@@ -280,7 +279,7 @@ impl Instruction {
         }
     }
 
-    pub(crate) const fn skip(name: &'static str) -> Self {
+    pub(crate) const fn new_skipped(name: &'static str) -> Self {
         use std::io::Seek;
 
         fn skip_fn(vm: &mut Vm, info: InstructionInfo) -> Result<()> {

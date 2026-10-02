@@ -18,7 +18,6 @@ pub struct VmContext {
     pub timer: Option<Timer>,
     // TODO: this make much more sense stored in the text renderer struct
     pub char_names: [Option<String>; 256],
-    pub flag_groups: [Option<Vec<usize>>; 256],
 }
 
 impl VmContext {
@@ -29,7 +28,6 @@ impl VmContext {
             wait_duration: None,
             timer: None,
             char_names: [const { None }; 256],
-            flag_groups: [const { None }; 256],
         }
     }
 }
