@@ -21,7 +21,7 @@ pub fn ml(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     match cmd {
         AUTO_PLAY => vm.audio.play_bgm(true, None)?,
         NO_AUTO_PLAY => (),
-        _ => bail!("unknown ML cmd: {cmd}"),
+        _ => bail!("unknown cmd: {cmd}"),
     }
 
     Ok(())

@@ -5,7 +5,9 @@ pub fn exa(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let flag_count = vm.parser.read_param::<u16>()? as usize;
     let reg_count = vm.parser.read_param::<u16>()? as usize;
 
-    vm.save = Some(SaveContext::new(path, flag_count, reg_count)?);
+    if vm.save.is_none() {
+        vm.save = Some(SaveContext::new(path, flag_count, reg_count)?);
+    }
 
     Ok(())
 }

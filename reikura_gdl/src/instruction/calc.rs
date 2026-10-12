@@ -69,7 +69,7 @@ pub fn calc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
                 vm.ctx.registers.set(reg_index as usize, result);
                 break;
             }
-            unk => bail!("unknown CALC operator: {unk}"),
+            unk => bail!("unknown operator: {unk}"),
         }
     }
 

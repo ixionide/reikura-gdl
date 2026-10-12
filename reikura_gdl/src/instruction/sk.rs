@@ -17,7 +17,7 @@ pub fn sk(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         UNSET => vm.ctx.flags.set(flag_index, false),
         SET => vm.ctx.flags.set(flag_index, true),
         TOGGLE => vm.ctx.flags.toggle(flag_index),
-        unk => bail!("unrecognized flag value: {unk}"),
+        unk => bail!("invalid flag value: {unk}"),
     };
 
     Ok(())

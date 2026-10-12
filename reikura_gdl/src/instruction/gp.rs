@@ -57,7 +57,7 @@ pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
             let _duration = Duration::from_millis(dst_id as u64);
             vm.gfx.blit_blend_image(param)?;
         }
-        _ => bail!("invalid or unsupported GP cmd: {cmd}"),
+        _ => bail!("invalid or unsupported cmd: {cmd}"),
     }
 
     Ok(())

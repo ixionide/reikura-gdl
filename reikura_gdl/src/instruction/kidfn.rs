@@ -6,7 +6,7 @@ pub fn kidfn(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let count: u32 = vm.parser.read_param()?;
 
     match &mut vm.save {
-        Some(save) => save.init_message_flags(count as usize),
+        Some(save) => save.init_message_flags(count as usize + 1),
         None => bail!("save context is not initialized yet"),
     }
 }

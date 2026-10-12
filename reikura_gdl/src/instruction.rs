@@ -15,9 +15,8 @@ inst! {
     //
     fln, sk, sks, hf, ft, sp, hp,
     //
-    hn, hxp, hln,
-    //
-    hs, hinc, hdec, calc, hsg, ht,
+    hn, hxp,
+    hln, hs, hinc, hdec, calc, hsg, ht,
     r#if,
     exa, exs, exc,
     //

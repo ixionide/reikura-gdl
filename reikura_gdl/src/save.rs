@@ -36,20 +36,19 @@ impl SaveContext {
         let mut opt = std::fs::OpenOptions::new();
         opt.read(true).write(true).create(true);
 
-        let flag_save_path = save_path.join(FLAG_SAVE_NAME);
-        let reg_save_path = save_path.join(REG_SAVE_NAME);
-
         let flags = unsafe {
+            let flag_save_path = save_path.join(FLAG_SAVE_NAME);
             let len = flag_count.div_ceil(u8::BITS as _);
             let flag_save_file = opt
                 .open(flag_save_path)
-                .context("failed to create save flag save file")?;
+                .context("failed to create flag save file")?;
             flag_save_file.set_len(len as u64)?;
             let mmap_mut = MmapMut::map_mut(&flag_save_file)?;
             Flag::from_raw(mmap_mut, flag_count)
         };
 
         let registers = unsafe {
+            let reg_save_path = save_path.join(REG_SAVE_NAME);
             let len = register_count * size_of::<i32>();
             let reg_save_file = opt
                 .open(reg_save_path)
@@ -69,15 +68,15 @@ impl SaveContext {
     }
 
     pub fn init_message_flags(&mut self, count: usize) -> Result<()> {
-        let msg_save_path = self.path.join(MSG_SAVE_NAME);
         let mut opt = std::fs::OpenOptions::new();
         opt.read(true).write(true).create(true);
 
         let flags = unsafe {
+            let msg_save_path = self.path.join(MSG_SAVE_NAME);
             let len = count.div_ceil(u8::BITS as _);
             let msg_save_file = opt
                 .open(msg_save_path)
-                .context("failed to create message save file")?;
+                .context("failed to create message-flag save file")?;
             msg_save_file.set_len(len as u64)?;
             let mmap_mut = MmapMut::map_mut(&msg_save_file)?;
             Flag::from_raw(mmap_mut, count)

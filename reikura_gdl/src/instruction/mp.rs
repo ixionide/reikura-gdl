@@ -25,7 +25,7 @@ pub fn mp(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
     let looping = match cmd {
         LOOP => true,
         ONCE => false,
-        _ => bail!("unknown MP cmd: {cmd}"),
+        _ => bail!("unknown cmd: {cmd}"),
     };
 
     vm.audio.play_bgm(looping, fade)?;

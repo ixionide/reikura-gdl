@@ -32,7 +32,7 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         let rhs: Value = parser.read_param()?;
 
         if ![EQ, LT, LE, GT, GE, NE].contains(&op) {
-            bail!("unknown IF operator: {op}");
+            bail!("unknown operator: {op}");
         }
 
         Ok((lhs, op, rhs))
@@ -75,7 +75,7 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
                 }
             }
             CONTINUE => continue,
-            _ => bail!("unknown IF cmd: {cmd}"),
+            _ => bail!("unknown cmd: {cmd}"),
         }
 
         break;

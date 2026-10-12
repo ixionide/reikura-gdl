@@ -20,7 +20,7 @@ impl DrsArc {
         let file_size = file.metadata()?.len() as usize;
 
         if !entries_len.is_multiple_of(ENTRY_CHUNK_LEN) || entries_len > file_size {
-            bail!("invalid Digital Romance System Archive");
+            bail!("invalid Digital Romance System archive format");
         }
 
         let entries_chunk = {

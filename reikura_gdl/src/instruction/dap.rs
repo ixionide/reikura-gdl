@@ -19,13 +19,13 @@ pub fn dap(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
     let mut fade = None;
 
     if track_num == 0 {
-        bail!("DAP: track_num is zero")
+        bail!("track_num is zero")
     }
 
     let looping = match cmd {
         LOOP => true,
         ONCE => false,
-        _ => bail!("unknown DAP cmd: {cmd}"),
+        _ => bail!("unknown cmd: {cmd}"),
     };
 
     if info.param_len == 11 {

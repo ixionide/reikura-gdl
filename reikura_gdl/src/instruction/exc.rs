@@ -16,31 +16,37 @@ reikura_util::const_iota! {
 pub fn exc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let ctx = &mut vm.ctx;
     let Some(save) = &mut vm.save else {
-        bail!("EXC: save context is not initialized yet");
+        bail!("save context is not initialized yet");
     };
 
-    let src = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
-    let dst = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
+    let save_ctx_pos = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
+    let vm_ctx_pos = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
     let count = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
 
     match vm.parser.read_param::<u8>()? {
         COPY_FLAG => {
-            let bound_count = min(save.flags.len() - src, ctx.flags.len() - dst);
+            let bound_count = min(
+                save.flags.len() - save_ctx_pos,
+                ctx.flags.len() - vm_ctx_pos,
+            );
 
             for i in 0..count.min(bound_count) {
-                let flag = save.flags.get(src + i);
-                ctx.flags.set(dst + i, flag);
+                let flag = save.flags.get(save_ctx_pos + i);
+                ctx.flags.set(vm_ctx_pos + i, flag);
             }
         }
         COPY_REGISTER => {
-            let bound_count = min(save.registers.len() - src, ctx.registers.len() - dst);
+            let bound_count = min(
+                save.registers.len() - save_ctx_pos,
+                ctx.registers.len() - vm_ctx_pos,
+            );
 
             for i in 0..count.min(bound_count) {
-                let value = save.registers.get(src + i);
-                ctx.registers.set(dst + i, value);
+                let value = save.registers.get(save_ctx_pos + i);
+                ctx.registers.set(vm_ctx_pos + i, value);
             }
         }
-        _ => bail!("invalid EXC copy param"),
+        _ => bail!("invalid copy"),
     }
 
     Ok(())

@@ -46,9 +46,9 @@ fn main() {
         if let Err(err) = assemble(&outpath, &scenario, &opcodes, &mut error_line) {
             eprintln!("failed to assemble {arg}");
             let line = error_line
-                .map(|line| format!(" at line {line}"))
+                .map(|line| format!("at line {line}"))
                 .unwrap_or_default();
-            eprintln!("Error{line}: {err}");
+            eprintln!("Error {line}: {err}");
         }
     }
 

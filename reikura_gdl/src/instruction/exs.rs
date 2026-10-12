@@ -19,28 +19,34 @@ pub fn exs(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         bail!("save context is not initialized yet");
     };
 
-    let dst = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
-    let src = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
+    let save_ctx_pos = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
+    let vm_ctx_pos = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
     let count = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
 
     match vm.parser.read_param::<u8>()? {
         COPY_FLAG => {
-            let bound_count = min(ctx.flags.len() - src, save.flags.len() - dst);
+            let bound_count = min(
+                ctx.flags.len() - vm_ctx_pos,
+                save.flags.len() - save_ctx_pos,
+            );
 
             for i in 0..count.min(bound_count) {
-                let flag = ctx.flags.get(src + i);
-                save.flags.set(dst + i, flag);
+                let flag = ctx.flags.get(vm_ctx_pos + i);
+                save.flags.set(save_ctx_pos + i, flag);
             }
         }
         COPY_REGISTER => {
-            let bound_count = min(ctx.registers.len() - src, save.registers.len() - dst);
+            let bound_count = min(
+                ctx.registers.len() - vm_ctx_pos,
+                save.registers.len() - save_ctx_pos,
+            );
 
             for i in 0..count.min(bound_count) {
-                let value = ctx.registers.get(src + i);
-                save.registers.set(dst + i, value);
+                let value = ctx.registers.get(vm_ctx_pos + i);
+                save.registers.set(save_ctx_pos + i, value);
             }
         }
-        _ => bail!("invalid EXS copy param"),
+        _ => bail!("invalid copy"),
     }
 
     Ok(())

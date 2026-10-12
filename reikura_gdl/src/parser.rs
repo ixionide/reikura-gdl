@@ -31,11 +31,11 @@ impl Parser {
 
     pub fn call_scene(&mut self, scenario: Scenario) -> Result<()> {
         let caller = mem::replace(&mut self.state, ScenarioParser::new(scenario));
-        self.stack.push(caller).context("scene call")
+        self.stack.push(caller).context("scenario call")
     }
 
     pub fn ret_scene(&mut self) -> Result<()> {
-        self.state = self.stack.pop().context("scene return")?;
+        self.state = self.stack.pop().context("scenario return")?;
         Ok(())
     }
 }

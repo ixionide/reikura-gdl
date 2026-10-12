@@ -59,7 +59,7 @@ impl Manifest {
                 };
             } else {
                 let Some((key, value)) = line.split_once('=') else {
-                    bail!("invalid key value pair: {line}");
+                    bail!("invalid key-value pair: {line}");
                 };
 
                 let key = key.trim().to_string();
@@ -70,7 +70,7 @@ impl Manifest {
         }
 
         let Some(key) = startup_info_section.remove(KEY) else {
-            bail!("missing key value in manifest file")
+            bail!("missing key-value in manifest file")
         };
 
         let title = startup_info_section
