@@ -11,6 +11,8 @@ macro_rules! inst {
 inst! {
     ed, ls, lsbs, sret, rt, jp, js, onjp, onjs,
     //
+    cps,
+    //
     cns,
     //
     fln, sk, sks, hf, ft, sp, hp,
@@ -69,17 +71,17 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x1A] = stub("CRESET");
     insts[0x1B] = stub("CRND");
     insts[0x1C] = stub("CTEXT");
-    insts[0x20] = stub("WS");
-    insts[0x21] = stub("WP");
+    insts[0x20] = stub("WS"); // set text window position
+    insts[0x21] = stub("WP"); // set text window background
     insts[0x22] = stub("WL");
     insts[0x23] = stub("WW");
     insts[0x24] = stub("CN");
     insts[0x25] = Inst::new("CNS", cns);
     insts[0x26] = stub("PF");
-    insts[0x27] = stub("PB");
-    insts[0x28] = stub("PJ");
-    insts[0x29] = stub("WO");
-    insts[0x2A] = stub("WC");
+    insts[0x27] = stub("PB"); // set text window fontsize?
+    insts[0x28] = stub("PJ"); // set text window fontstyle?
+    insts[0x29] = stub("WO"); // show text window
+    insts[0x2A] = stub("WC"); // hide text window
     insts[0x2B] = stub("PM");
     insts[0x2C] = stub("PMP");
     insts[0x2D] = stub("WSH");
@@ -224,8 +226,8 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0xF1] = Inst::new("ATIMES", atimes);
     insts[0xF2] = Inst::new("AWAIT", r#await);
     insts[0xF3] = stub("AVIP");
-    insts[0xF4] = stub("PPF");
-    insts[0xF5] = stub("SVF");
+    insts[0xF4] = stub("PPF"); // enable/disable context menu
+    insts[0xF5] = stub("SVF"); // enable/disable saving
     insts[0xF6] = stub("PPE");
     insts[0xF7] = Inst::new("SETGAMEINFO", setgameinfo);
     insts[0xF8] = stub("SETFONTSTYLE");

@@ -24,7 +24,7 @@ pub use self::{
     manifest::Manifest,
     parser::{Parser, ScenarioParser},
     save::SaveContext,
-    scenario::Scenario,
+    scenario::{Scenario, ScenarioMetadata, ScenarioVersion},
     user_setup::UserSetup,
     vm::Vm,
 };

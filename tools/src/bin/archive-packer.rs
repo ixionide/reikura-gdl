@@ -56,7 +56,7 @@ fn main() {
             _ = std::fs::create_dir(&out_dir);
             out_dir.join(path.file_name().unwrap())
         };
-        let Ok(mut writer) = File::create_new(&out_path).map(BufWriter::new) else {
+        let Ok(mut writer) = File::create(&out_path).map(BufWriter::new) else {
             eprintln!("failed to create file {}", out_path.display());
             continue;
         };

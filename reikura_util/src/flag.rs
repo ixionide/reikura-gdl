@@ -86,10 +86,6 @@ impl Flag {
             }
         }
     }
-
-    pub fn resize(&mut self, count: usize) {
-        self.inner.resize(count);
-    }
 }
 
 impl<B: AsRef<[u8]> + AsMut<[u8]>> Flag<B> {

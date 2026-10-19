@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::bail;
 use reikura_gdl::{
-    AssetName, Scenario, ScenarioParser,
+    AssetName, Scenario, ScenarioParser, ScenarioVersion,
     instruction::{CHARSET, INSTRUCTIONS, Instruction, InstructionInfo, ParamString, Value},
     secretfilter::{Deobfuscator, SIGNATURE, filters::get_known_filter},
 };
@@ -80,12 +80,14 @@ fn main() {
 }
 
 fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
+    let mut legacy: Option<bool> = None;
     let mut parser = ScenarioParser::new(scenario);
     let mut sub_index = 0;
-    let mut out = BufWriter::new(File::create_new(outpath)?);
+    let mut buf = BufWriter::new(Vec::new());
+    let mut out = File::create(outpath)?;
 
     while Some(parser.ip) == parser.scenario.sub_offset(sub_index) {
-        writeln!(out, "#LABEL_{sub_index:04}:")?;
+        writeln!(buf, "#LABEL_{sub_index:04}:")?;
         sub_index += 1;
     }
 
@@ -523,8 +525,14 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(par);
 
                 if inst_info.param_len == 5 {
+                    assert!(matches!(legacy, None | Some(false)));
+                    legacy = Some(false);
+
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
+                } else {
+                    assert!(matches!(legacy, None | Some(true)));
+                    legacy = Some(true);
                 }
             }
             "MF" => {
@@ -543,8 +551,14 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(display_value(value));
 
                 if inst_info.param_len == 8 {
+                    assert!(matches!(legacy, None | Some(false)));
+                    legacy = Some(false);
+
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
+                } else {
+                    assert!(matches!(legacy, None | Some(true)));
+                    legacy = Some(true);
                 }
             }
             "SED" => {
@@ -581,10 +595,16 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             }
             "IC" => match inst_info.param_len {
                 1 => {
+                    assert!(matches!(legacy, None | Some(true)));
+                    legacy = Some(true);
+
                     let par: u8 = parser.read_param()?;
                     fmt.add_param(par);
                 }
                 4 => {
+                    assert!(matches!(legacy, None | Some(false)));
+                    legacy = Some(false);
+
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
                 }
@@ -667,8 +687,14 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(display_value(value)).add_param(par);
 
                 if inst_info.param_len == 9 {
+                    assert!(matches!(legacy, None | Some(false)));
+                    legacy = Some(false);
+
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
+                } else {
+                    assert!(matches!(legacy, None | Some(true)));
+                    legacy = Some(true);
                 }
             }
             "DAS" => {
@@ -834,12 +860,18 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
 
                 match inst_info.param_len {
                     5 => {
+                        assert!(matches!(legacy, None | Some(true)));
+                        legacy = Some(true);
+
                         for _ in 0..3 {
                             let par: u8 = parser.read_param()?;
                             fmt.add_param(par);
                         }
                     }
                     14 => {
+                        assert!(matches!(legacy, None | Some(false)));
+                        legacy = Some(false);
+
                         for _ in 0..3 {
                             let value = parser.read_param()?;
                             fmt.add_param(display_value(value));
@@ -854,8 +886,14 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             }
             "TIMEREND" => {
                 if inst_info.param_len == 4 {
+                    assert!(matches!(legacy, None | Some(false)));
+                    legacy = Some(false);
+
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
+                } else {
+                    assert!(matches!(legacy, None | Some(true)));
+                    legacy = Some(true);
                 }
             }
             "TIMERGET" => {
@@ -871,12 +909,12 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             }
         }
 
-        fmt.write(&mut out)?;
+        fmt.write(&mut buf)?;
 
         let mut first = true;
         while Some(parser.ip) == parser.scenario.sub_offset(sub_index) {
             writeln!(
-                out,
+                buf,
                 "{}#LABEL_{sub_index:04}:",
                 if first { "\n" } else { "" }
             )?;
@@ -884,6 +922,24 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             first = false;
         }
     }
+
+    match parser.scenario.metadata.version {
+        ScenarioVersion::FU => writeln!(out, "%version 風")?,
+        ScenarioVersion::RIN => writeln!(out, "%version 林")?,
+        ScenarioVersion::KA(key) => {
+            writeln!(out, "%version 火")?;
+            writeln!(out, "%xor {key}")?;
+        }
+        ScenarioVersion::SAKURA => writeln!(out, "%version 桜")?,
+    };
+
+    if legacy == Some(true) {
+        writeln!(out, "%legacy")?;
+    }
+
+    write!(out, "\n\n")?;
+    let buf_inner = buf.into_inner()?;
+    out.write(&buf_inner)?;
 
     Ok(())
 }
@@ -1005,7 +1061,7 @@ impl Formatter {
         self
     }
 
-    fn write(self, out: &mut BufWriter<File>) -> std::io::Result<()> {
+    fn write(self, out: &mut impl std::io::Write) -> std::io::Result<()> {
         let Self {
             mnemonic,
             params,

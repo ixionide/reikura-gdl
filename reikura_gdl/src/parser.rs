@@ -70,7 +70,7 @@ impl ScenarioParser {
     }
 
     pub fn cur_offset(&self) -> usize {
-        self.scenario.code_offset + self.ip
+        self.scenario.metadata.code_offset + self.ip
     }
 
     pub fn remaining_len(&self) -> usize {

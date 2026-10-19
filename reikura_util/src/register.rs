@@ -16,10 +16,6 @@ impl Register {
             inner: vec![0; count],
         }
     }
-
-    pub fn resize(&mut self, count: usize) {
-        self.inner.resize(count, 0);
-    }
 }
 
 impl<V: AsRef<[i32]> + AsMut<[i32]>> Register<V> {

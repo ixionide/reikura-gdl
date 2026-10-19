@@ -9,8 +9,7 @@ use std::{
 
 use anyhow::{Context, anyhow, bail};
 use reikura_gdl::{
-    AssetName,
-    format::isf::IsfMetadata,
+    AssetName, ScenarioMetadata, ScenarioVersion,
     instruction::{INSTRUCTIONS, Value},
 };
 use reikura_util::{
@@ -58,6 +57,7 @@ fn main() {
         opcodes: &HashMap<String, u8>,
         line_num: &mut Option<usize>,
     ) -> anyhow::Result<()> {
+        let (mut md, legacy) = parse_metadata(scenario, line_num)?;
         let mut labels = parse_all_labels(scenario, line_num)?;
         let mut code = Cursor::new(Vec::with_capacity(1 << 20));
         let mut code_len: usize = 0;
@@ -65,7 +65,7 @@ fn main() {
         for (i, line) in scenario.lines().map(str::trim).enumerate() {
             *line_num = Some(i + 1);
 
-            if line.is_empty() || line.starts_with(';') {
+            if line.is_empty() || line.starts_with(';') || line.starts_with('%') {
                 continue;
             }
 
@@ -499,7 +499,8 @@ fn main() {
                     let par: u8 = parser.read_num()?;
                     fmt.write_num(par);
 
-                    if let Ok(value) = parser.read_value() {
+                    if !legacy {
+                        let value = parser.read_value()?;
                         fmt.write_value(value);
                     }
                 }
@@ -517,7 +518,8 @@ fn main() {
                     let value = parser.read_value()?;
                     fmt.write_value(value);
 
-                    if let Ok(value) = parser.read_value() {
+                    if !legacy {
+                        let value = parser.read_value()?;
                         fmt.write_value(value);
                     }
                 }
@@ -555,23 +557,14 @@ fn main() {
                 }
 
                 "IC" => {
-                    let value = parser.read_value()?;
-                    fmt.write_value(value);
-                    // or
-                    // let par: u8 = parser.read_num()?;
-                    // fmt.write_num(par);
+                    if legacy {
+                        let par: u8 = parser.read_num()?;
+                        fmt.write_num(par);
+                    } else {
+                        let value = parser.read_value()?;
+                        fmt.write_value(value);
+                    }
                 }
-                // "IC" => match inst_info.param_len {
-                //     1 => {
-                //         let par: u8 = parser.read_param()?;
-                //         fmt.add_param(par);
-                //     }
-                //     4 => {
-                //         let value = parser.read_param()?;
-                //         fmt.add_param(display_value(value));
-                //     }
-                //     _ => eprintln!("unknown IC param len"),
-                // },
                 // "IMS"
                 "IXY" => {
                     for _ in 0..2 {
@@ -648,7 +641,8 @@ fn main() {
                     let par: u8 = parser.read_num()?;
                     fmt.write_value(value).write_num(par);
 
-                    if let Ok(value) = parser.read_value() {
+                    if !legacy {
+                        let value = parser.read_value()?;
                         fmt.write_value(value);
                     }
                 }
@@ -811,35 +805,25 @@ fn main() {
                         fmt.write_num(par);
                     }
 
-                    for _ in 0..3 {
-                        let value = parser.read_value()?;
-                        fmt.write_value(value);
-                        // or
-                        // let par: u8 = parser.read_num()?;
-                        // fmt.write_num(par);
+                    if legacy {
+                        for _ in 0..3 {
+                            let par: u8 = parser.read_num()?;
+                            fmt.write_num(par);
+                        }
+                    } else {
+                        for _ in 0..3 {
+                            let value = parser.read_value()?;
+                            fmt.write_value(value);
+                        }
                     }
-                    // match inst_info.param_len {
-                    //     5 => {
-                    //         for _ in 0..3 {
-                    //             let par: u8 = parser.read_param()?;
-                    //             fmt.add_param(par);
-                    //         }
-                    //     }
-                    //     14 => {
-                    //         for _ in 0..3 {
-                    //             let value = parser.read_param()?;
-                    //             fmt.add_param(display_value(value));
-                    //         }
-                    //     }
-                    //     _ => eprintln!("unknown SETFONTCOLOR param len"),
-                    // }
                 }
                 "TIMERSET" => {
                     let value = parser.read_value()?;
                     fmt.write_value(value);
                 }
                 "TIMEREND" => {
-                    if let Ok(value) = parser.read_value() {
+                    if !legacy {
+                        let value = parser.read_value()?;
                         fmt.write_value(value);
                     }
                 }
@@ -876,32 +860,20 @@ fn main() {
         }
 
         let code_offset = 8 + (labels.subroutines.len() * size_of::<u32>());
-        let md = IsfMetadata {
-            bytecode_offset: code_offset as u32,
-            version: [0x95, 0x97],
-            xor_key: 0,
-            _reserved: 0,
-        };
+        md.code_offset = code_offset;
 
-        let mut out = BufWriter::new(File::create_new(outpath)?);
+        let mut out = BufWriter::new(File::create(outpath)?);
 
-        out.put_le(md.bytecode_offset)?;
-        out.put_le(md.version)?;
-        out.put_le(md.xor_key)?;
-        out.put_le(md._reserved)?;
-
-        fn encrypt(data: &mut [u8]) {
-            data.iter_mut().for_each(|byte| *byte = byte.rotate_left(2));
-        }
+        out.put_bytes(&md.serialize())?;
 
         for sub in labels.subroutines {
             let mut bytes = sub.to_le_bytes();
-            encrypt(&mut bytes);
+            md.encrypt(&mut bytes);
             out.put_bytes(bytes)?;
         }
 
         let mut code = code.into_inner();
-        encrypt(&mut code);
+        md.encrypt(&mut code);
         out.put_bytes(code)?;
 
         Ok(())
@@ -928,6 +900,67 @@ fn parse_all_labels(scenario: &str, line_num: &mut Option<usize>) -> anyhow::Res
     }
 
     Ok(labels)
+}
+
+fn parse_metadata(
+    scenario: &str,
+    line_num: &mut Option<usize>,
+) -> anyhow::Result<(ScenarioMetadata, bool)> {
+    let mut legacy = false;
+    let mut metadata = ScenarioMetadata {
+        code_offset: 0,
+        version: reikura_gdl::ScenarioVersion::FU,
+    };
+    let mut xor = false;
+
+    for (i, line) in scenario.lines().map(str::trim).enumerate() {
+        *line_num = Some(i + 1);
+
+        if line.is_empty() {
+            continue;
+        }
+
+        if let Some(preprocess) = line.strip_prefix('%') {
+            let mut preprocess_iter = preprocess.split_whitespace();
+
+            dbg!(preprocess);
+            match preprocess_iter.next() {
+                Some("version") => {
+                    match preprocess_iter.next() {
+                        Some("風") => metadata.version = reikura_gdl::ScenarioVersion::FU,
+                        Some("林") => metadata.version = reikura_gdl::ScenarioVersion::RIN,
+                        Some("火") => metadata.version = reikura_gdl::ScenarioVersion::KA(0),
+                        Some("桜") => bail!("unsupported version 桜"),
+                        Some(other) => bail!("invalid version: {other}"),
+                        None => bail!("missing version value"),
+                    };
+                }
+                Some("xor") => {
+                    match preprocess_iter.next() {
+                        Some(n) => {
+                            let Ok(key) = u8::from_str(n) else {
+                                bail!("invalid xor key {n}")
+                            };
+                            metadata.version = reikura_gdl::ScenarioVersion::KA(key);
+                            xor = true;
+                        }
+                        None => bail!("missing xor key"),
+                    };
+                }
+                Some("legacy") => legacy = true,
+                Some(other) => bail!("invalid preprocess directive: {other}"),
+                None => bail!("illegal input"),
+            }
+        } else {
+            break;
+        }
+    }
+
+    if matches!(metadata.version, ScenarioVersion::KA(_)) && !xor {
+        bail!("missing xor directive for 火 version");
+    }
+
+    Ok((metadata, legacy))
 }
 
 struct Labels {
@@ -1226,6 +1259,57 @@ impl<'a> ParamParser<'a> {
         let _ = self.next();
         Ok(string)
     }
+}
+
+#[test]
+fn metadata_parsing() {
+    use reikura_gdl::ScenarioVersion::*;
+
+    let mut line_num = None;
+    let text = r#"
+        %version 風
+    "#
+    .trim();
+
+    let (md, legacy) = parse_metadata(text, &mut line_num).unwrap();
+    assert_eq!(md.version, FU);
+    assert!(!legacy);
+
+    let text = r#"
+        %version 林
+        %legacy
+    "#
+    .trim();
+
+    let (md, legacy) = parse_metadata(text, &mut line_num).unwrap();
+    assert_eq!(md.version, RIN);
+    assert!(legacy);
+
+    let text = r#"
+        %version 火
+        %xor 67
+    "#
+    .trim();
+
+    let (md, _) = parse_metadata(text, &mut line_num).unwrap();
+    assert_eq!(md.version, KA(67));
+
+    let text = r#"
+        %version 桜
+    "#
+    .trim();
+
+    let res = parse_metadata(text, &mut line_num);
+    assert!(res.is_err());
+    assert!(line_num == Some(1));
+
+    let text = r#"
+        %version 火
+    "#
+    .trim();
+
+    let res = parse_metadata(text, &mut line_num);
+    assert!(res.is_err());
 }
 
 #[test]
