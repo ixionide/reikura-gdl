@@ -937,9 +937,9 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
         writeln!(out, "%legacy")?;
     }
 
-    write!(out, "\n\n")?;
+    writeln!(out)?;
     let buf_inner = buf.into_inner()?;
-    out.write(&buf_inner)?;
+    out.write_all(&buf_inner)?;
 
     Ok(())
 }

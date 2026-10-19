@@ -864,7 +864,7 @@ fn main() {
 
         let mut out = BufWriter::new(File::create(outpath)?);
 
-        out.put_bytes(&md.serialize())?;
+        out.put_bytes(md.serialize())?;
 
         for sub in labels.subroutines {
             let mut bytes = sub.to_le_bytes();
@@ -923,7 +923,6 @@ fn parse_metadata(
         if let Some(preprocess) = line.strip_prefix('%') {
             let mut preprocess_iter = preprocess.split_whitespace();
 
-            dbg!(preprocess);
             match preprocess_iter.next() {
                 Some("version") => {
                     match preprocess_iter.next() {
@@ -948,8 +947,12 @@ fn parse_metadata(
                     };
                 }
                 Some("legacy") => legacy = true,
-                Some(other) => bail!("invalid preprocess directive: {other}"),
+                Some(other) => bail!("invalid preprocess: {other}"),
                 None => bail!("illegal input"),
+            }
+
+            if preprocess_iter.next().is_some() {
+                bail!("invalid suffixes on preprocess: {preprocess}");
             }
         } else {
             break;
@@ -1153,8 +1156,12 @@ impl<'a> ParamParser<'a> {
             }
         };
 
-        self.params = &strip[end..];
-        let _ = self.next();
+        self.params = &strip[end + 1..];
+        if let Some(suffixes) = self.next()
+            && !suffixes.trim().is_empty()
+        {
+            bail!("invalid suffixes string literal: {suffixes}");
+        }
         Ok(string)
     }
 
@@ -1255,8 +1262,12 @@ impl<'a> ParamParser<'a> {
             }
         };
 
-        self.params = &strip[end..];
-        let _ = self.next();
+        self.params = &strip[end + 1..];
+        if let Some(suffixes) = self.next()
+            && !suffixes.trim().is_empty()
+        {
+            bail!("invalid suffixes message string literal: {suffixes}");
+        }
         Ok(string)
     }
 }
