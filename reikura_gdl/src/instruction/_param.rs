@@ -48,9 +48,12 @@ pub enum Value {
 
 impl Value {
     // signed 30bit integer
-    pub const REG_TAG: u32 = 2 << 30;
-    pub const RNG_TAG: u32 = 1 << 30;
-    const TAG_MASK: u32 = Self::REG_TAG | Self::RNG_TAG;
+    pub const MASK: i32 = (1 << 30) - 1;
+    pub const REG_BIT: i32 = 1 << 31;
+    pub const RNG_BIT: i32 = 1 << 30;
+    pub const NEG_BIT: i32 = 1 << 29;
+    pub const MIN: i32 = Self::REG_BIT | Self::RNG_BIT | Self::NEG_BIT;
+    pub const MAX: i32 = !Self::MIN;
 
     pub fn is_random(&self) -> bool {
         if let Self::Random(_) = self {
@@ -77,17 +80,24 @@ impl Value {
 
 impl Parameters for Value {
     fn parse(parser: &mut ScenarioParser) -> Result<Self> {
-        let raw: u32 = parser.get_le()?;
-        let tag = raw & Self::TAG_MASK;
+        let raw: i32 = parser.get_le()?;
+        let mut value = raw & Self::MASK;
 
-        let unsigned_payload = raw & !Self::TAG_MASK;
-        let signed_payload = ((raw as i32) << 2) >> 2;
+        if (value & Self::NEG_BIT) != 0 {
+            value = ((value) << 2) >> 2;
+        }
 
         let value = {
-            match tag {
-                Self::REG_TAG => Self::Register(unsigned_payload as usize),
-                Self::RNG_TAG => Self::Random(signed_payload),
-                _ => Self::Literal(signed_payload),
+            if (raw & Self::REG_BIT) != 0 {
+                if value.is_negative() {
+                    Self::Literal(0)
+                } else {
+                    Self::Register(value as usize)
+                }
+            } else if (raw & Self::RNG_BIT) != 0 {
+                Self::Random(value)
+            } else {
+                Self::Literal(value)
             }
         };
 

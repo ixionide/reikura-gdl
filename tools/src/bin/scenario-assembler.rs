@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fmt::Display,
     fs::File,
     io::{BufWriter, Cursor, Write},
@@ -57,10 +57,16 @@ fn main() {
         opcodes: &HashMap<String, u8>,
         line_num: &mut Option<usize>,
     ) -> anyhow::Result<()> {
-        let (mut md, legacy) = parse_metadata(scenario, line_num)?;
+        let (mut md, use_legacy) = parse_metadata(scenario, line_num)?;
         let mut labels = parse_all_labels(scenario, line_num)?;
         let mut code = Cursor::new(Vec::with_capacity(1 << 20));
         let mut code_len: usize = 0;
+
+        for inst in &use_legacy {
+            if !opcodes.contains_key(inst) {
+                bail!("unknown instruction in use_legacy directive: {inst}")
+            }
+        }
 
         for (i, line) in scenario.lines().map(str::trim).enumerate() {
             *line_num = Some(i + 1);
@@ -81,6 +87,8 @@ fn main() {
             };
 
             let mut fmt = Serializer::new(opcode);
+
+            let legacy = use_legacy.contains(&inst.to_lowercase());
 
             match inst {
                 "ED" | "SRET" | "RT" => (),
@@ -905,8 +913,8 @@ fn parse_all_labels(scenario: &str, line_num: &mut Option<usize>) -> anyhow::Res
 fn parse_metadata(
     scenario: &str,
     line_num: &mut Option<usize>,
-) -> anyhow::Result<(ScenarioMetadata, bool)> {
-    let mut legacy = false;
+) -> anyhow::Result<(ScenarioMetadata, HashSet<String>)> {
+    let mut use_legacy = HashSet::new();
     let mut metadata = ScenarioMetadata {
         code_offset: 0,
         version: reikura_gdl::ScenarioVersion::FU,
@@ -946,7 +954,17 @@ fn parse_metadata(
                         None => bail!("missing xor key"),
                     };
                 }
-                Some("legacy") => legacy = true,
+                Some("use_legacy") => {
+                    for inst in preprocess_iter {
+                        use_legacy.insert(inst.to_lowercase());
+                    }
+
+                    if use_legacy.is_empty() {
+                        bail!("empty use_legacy");
+                    }
+
+                    continue;
+                }
                 Some(other) => bail!("invalid preprocess: {other}"),
                 None => bail!("illegal input"),
             }
@@ -963,7 +981,7 @@ fn parse_metadata(
         bail!("missing xor directive for 火 version");
     }
 
-    Ok((metadata, legacy))
+    Ok((metadata, use_legacy))
 }
 
 struct Labels {
@@ -1041,9 +1059,9 @@ impl Serializer {
 
     fn write_value(&mut self, value: Value) -> &mut Self {
         match value {
-            Value::Literal(num) => self.params.put_le(num),
-            Value::Register(idx) => self.params.put_le(idx as u32 | Value::REG_TAG),
-            Value::Random(max) => self.params.put_le(max | Value::RNG_TAG as i32),
+            Value::Literal(num) => self.params.put_le(num & Value::MASK),
+            Value::Register(idx) => self.params.put_le(idx as u32 | Value::REG_BIT as u32),
+            Value::Random(max) => self.params.put_le(max | Value::RNG_BIT),
         }
         .unwrap();
 
@@ -1284,17 +1302,17 @@ fn metadata_parsing() {
 
     let (md, legacy) = parse_metadata(text, &mut line_num).unwrap();
     assert_eq!(md.version, FU);
-    assert!(!legacy);
+    assert!(legacy.is_empty());
 
     let text = r#"
         %version 林
-        %legacy
+        %use_legacy IC
     "#
     .trim();
 
     let (md, legacy) = parse_metadata(text, &mut line_num).unwrap();
     assert_eq!(md.version, RIN);
-    assert!(legacy);
+    assert!(legacy.contains("ic"));
 
     let text = r#"
         %version 火

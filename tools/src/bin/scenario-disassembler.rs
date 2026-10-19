@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     fmt::{Display, Write as _},
     fs::File,
     io::{BufWriter, Write as _},
@@ -80,11 +81,11 @@ fn main() {
 }
 
 fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
-    let mut legacy: Option<bool> = None;
+    let mut use_legacy: BTreeMap<String, bool> = BTreeMap::new();
     let mut parser = ScenarioParser::new(scenario);
     let mut sub_index = 0;
     let mut buf = BufWriter::new(Vec::new());
-    let mut out = File::create(outpath)?;
+    let mut out = BufWriter::new(File::create(outpath)?);
 
     while Some(parser.ip) == parser.scenario.sub_offset(sub_index) {
         writeln!(buf, "#LABEL_{sub_index:04}:")?;
@@ -101,6 +102,8 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
         }
 
         let mut fmt = Formatter::new(&inst)?;
+
+        let legacy = use_legacy.get(inst.name).copied();
 
         match inst.name {
             "ED" | "SRET" | "RT" => (),
@@ -169,8 +172,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let bytes = parser.read_bytes(inst_info.param_len - 18)?;
                 let string = sjis_to_utf8(bytes)?;
 
-                let stripped = string.strip_circumfix('"', '"').unwrap_or(&string);
-                fmt.add_param(display_string(stripped));
+                fmt.add_param(display_string(&string));
             }
             "CWO" => {
                 let par1: u8 = parser.read_param()?;
@@ -526,13 +528,13 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
 
                 if inst_info.param_len == 5 {
                     assert!(matches!(legacy, None | Some(false)));
-                    legacy = Some(false);
+                    use_legacy.insert(inst.name.to_owned(), false);
 
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
                 } else {
                     assert!(matches!(legacy, None | Some(true)));
-                    legacy = Some(true);
+                    use_legacy.insert(inst.name.to_owned(), true);
                 }
             }
             "MF" => {
@@ -552,13 +554,13 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
 
                 if inst_info.param_len == 8 {
                     assert!(matches!(legacy, None | Some(false)));
-                    legacy = Some(false);
+                    use_legacy.insert(inst.name.to_owned(), false);
 
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
                 } else {
                     assert!(matches!(legacy, None | Some(true)));
-                    legacy = Some(true);
+                    use_legacy.insert(inst.name.to_owned(), true);
                 }
             }
             "SED" => {
@@ -596,14 +598,14 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             "IC" => match inst_info.param_len {
                 1 => {
                     assert!(matches!(legacy, None | Some(true)));
-                    legacy = Some(true);
+                    use_legacy.insert(inst.name.to_owned(), true);
 
                     let par: u8 = parser.read_param()?;
                     fmt.add_param(par);
                 }
                 4 => {
                     assert!(matches!(legacy, None | Some(false)));
-                    legacy = Some(false);
+                    use_legacy.insert(inst.name.to_owned(), false);
 
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
@@ -688,13 +690,13 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
 
                 if inst_info.param_len == 9 {
                     assert!(matches!(legacy, None | Some(false)));
-                    legacy = Some(false);
+                    use_legacy.insert(inst.name.to_owned(), false);
 
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
                 } else {
                     assert!(matches!(legacy, None | Some(true)));
-                    legacy = Some(true);
+                    use_legacy.insert(inst.name.to_owned(), true);
                 }
             }
             "DAS" => {
@@ -861,7 +863,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 match inst_info.param_len {
                     5 => {
                         assert!(matches!(legacy, None | Some(true)));
-                        legacy = Some(true);
+                        use_legacy.insert(inst.name.to_owned(), true);
 
                         for _ in 0..3 {
                             let par: u8 = parser.read_param()?;
@@ -870,7 +872,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     }
                     14 => {
                         assert!(matches!(legacy, None | Some(false)));
-                        legacy = Some(false);
+                        use_legacy.insert(inst.name.to_owned(), false);
 
                         for _ in 0..3 {
                             let value = parser.read_param()?;
@@ -887,13 +889,13 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             "TIMEREND" => {
                 if inst_info.param_len == 4 {
                     assert!(matches!(legacy, None | Some(false)));
-                    legacy = Some(false);
+                    use_legacy.insert(inst.name.to_owned(), false);
 
                     let value = parser.read_param()?;
                     fmt.add_param(display_value(value));
                 } else {
                     assert!(matches!(legacy, None | Some(true)));
-                    legacy = Some(true);
+                    use_legacy.insert(inst.name.to_owned(), true);
                 }
             }
             "TIMERGET" => {
@@ -933,8 +935,20 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
         ScenarioVersion::SAKURA => writeln!(out, "%version 桜")?,
     };
 
-    if legacy == Some(true) {
-        writeln!(out, "%legacy")?;
+    let use_legacy: Vec<_> = use_legacy
+        .iter()
+        .filter(|it| *it.1)
+        .map(|it| it.0)
+        .collect();
+
+    if !use_legacy.is_empty() {
+        write!(out, "%use_legacy")?;
+
+        for inst in use_legacy {
+            write!(out, " {inst}")?;
+        }
+
+        writeln!(out)?;
     }
 
     writeln!(out)?;
