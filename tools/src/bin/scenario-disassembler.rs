@@ -87,7 +87,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
     let mut buf = BufWriter::new(Vec::new());
     let mut out = BufWriter::new(File::create(outpath)?);
 
-    while Some(parser.ip) == parser.scenario.sub_offset(sub_index) {
+    while parser.scenario.sub_offset(sub_index) == Some(0) {
         writeln!(buf, "#LABEL_{sub_index:04}:")?;
         sub_index += 1;
     }
@@ -98,7 +98,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
 
         // terminator
         if inst_info.len == 0 {
-            return Ok(());
+            break;
         }
 
         let mut fmt = Formatter::new(&inst)?;
@@ -914,7 +914,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
         fmt.write(&mut buf)?;
 
         let mut first = true;
-        while Some(parser.ip) == parser.scenario.sub_offset(sub_index) {
+        while parser.scenario.sub_offset(sub_index) == Some(parser.ip) {
             writeln!(
                 buf,
                 "{}#LABEL_{sub_index:04}:",
@@ -926,14 +926,12 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
     }
 
     match parser.scenario.metadata.version {
-        ScenarioVersion::FU => writeln!(out, "%version 風")?,
-        ScenarioVersion::RIN => writeln!(out, "%version 林")?,
-        ScenarioVersion::KA(key) => {
-            writeln!(out, "%version 火")?;
-            writeln!(out, "%xor {key}")?;
-        }
-        ScenarioVersion::SAKURA => writeln!(out, "%version 桜")?,
-    };
+        ScenarioVersion::Fu => writeln!(out, "%version 風")?,
+        ScenarioVersion::Rin => writeln!(out, "%version 林")?,
+        ScenarioVersion::Ka => writeln!(out, "%version 火")?,
+        ScenarioVersion::Sakura => writeln!(out, "%version 桜")?,
+    }
+    writeln!(out, "%xor {}", parser.scenario.metadata.xor_key)?;
 
     let use_legacy: Vec<_> = use_legacy
         .iter()

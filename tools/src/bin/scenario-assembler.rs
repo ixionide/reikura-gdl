@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::{Context, anyhow, bail};
 use reikura_gdl::{
-    AssetName, ScenarioMetadata, ScenarioVersion,
+    AssetName, ScenarioMetadata,
     instruction::{INSTRUCTIONS, Value},
 };
 use reikura_util::{
@@ -915,11 +915,7 @@ fn parse_metadata(
     line_num: &mut Option<usize>,
 ) -> anyhow::Result<(ScenarioMetadata, HashSet<String>)> {
     let mut use_legacy = HashSet::new();
-    let mut metadata = ScenarioMetadata {
-        code_offset: 0,
-        version: reikura_gdl::ScenarioVersion::FU,
-    };
-    let mut xor = false;
+    let mut metadata = ScenarioMetadata::default();
 
     for (i, line) in scenario.lines().map(str::trim).enumerate() {
         *line_num = Some(i + 1);
@@ -934,9 +930,9 @@ fn parse_metadata(
             match preprocess_iter.next() {
                 Some("version") => {
                     match preprocess_iter.next() {
-                        Some("風") => metadata.version = reikura_gdl::ScenarioVersion::FU,
-                        Some("林") => metadata.version = reikura_gdl::ScenarioVersion::RIN,
-                        Some("火") => metadata.version = reikura_gdl::ScenarioVersion::KA(0),
+                        Some("風") => metadata.version = reikura_gdl::ScenarioVersion::Fu,
+                        Some("林") => metadata.version = reikura_gdl::ScenarioVersion::Rin,
+                        Some("火") => metadata.version = reikura_gdl::ScenarioVersion::Ka,
                         Some("桜") => bail!("unsupported version 桜"),
                         Some(other) => bail!("invalid version: {other}"),
                         None => bail!("missing version value"),
@@ -948,8 +944,7 @@ fn parse_metadata(
                             let Ok(key) = u8::from_str(n) else {
                                 bail!("invalid xor key {n}")
                             };
-                            metadata.version = reikura_gdl::ScenarioVersion::KA(key);
-                            xor = true;
+                            metadata.xor_key = key;
                         }
                         None => bail!("missing xor key"),
                     };
@@ -975,10 +970,6 @@ fn parse_metadata(
         } else {
             break;
         }
-    }
-
-    if matches!(metadata.version, ScenarioVersion::KA(_)) && !xor {
-        bail!("missing xor directive for 火 version");
     }
 
     Ok((metadata, use_legacy))
@@ -1301,7 +1292,7 @@ fn metadata_parsing() {
     .trim();
 
     let (md, legacy) = parse_metadata(text, &mut line_num).unwrap();
-    assert_eq!(md.version, FU);
+    assert_eq!(md.version, Fu);
     assert!(legacy.is_empty());
 
     let text = r#"
@@ -1311,7 +1302,8 @@ fn metadata_parsing() {
     .trim();
 
     let (md, legacy) = parse_metadata(text, &mut line_num).unwrap();
-    assert_eq!(md.version, RIN);
+    assert_eq!(md.version, Rin);
+    assert_eq!(md.xor_key, 0);
     assert!(legacy.contains("ic"));
 
     let text = r#"
@@ -1321,7 +1313,8 @@ fn metadata_parsing() {
     .trim();
 
     let (md, _) = parse_metadata(text, &mut line_num).unwrap();
-    assert_eq!(md.version, KA(67));
+    assert_eq!(md.version, Ka);
+    assert_eq!(md.xor_key, 67);
 
     let text = r#"
         %version 桜
@@ -1331,14 +1324,6 @@ fn metadata_parsing() {
     let res = parse_metadata(text, &mut line_num);
     assert!(res.is_err());
     assert!(line_num == Some(1));
-
-    let text = r#"
-        %version 火
-    "#
-    .trim();
-
-    let res = parse_metadata(text, &mut line_num);
-    assert!(res.is_err());
 }
 
 #[test]

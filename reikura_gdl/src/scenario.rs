@@ -48,7 +48,7 @@ impl Scenario {
             return true;
         }
 
-        self.metadata.version == ScenarioVersion::SAKURA
+        self.metadata.version == ScenarioVersion::Sakura
     }
 
     pub fn sub_offset(&self, index: usize) -> Option<usize> {
@@ -56,10 +56,11 @@ impl Scenario {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ScenarioMetadata {
     pub code_offset: usize,
     pub version: ScenarioVersion,
+    pub xor_key: u8,
 }
 
 impl TryFrom<IsfMetadata> for ScenarioMetadata {
@@ -67,16 +68,17 @@ impl TryFrom<IsfMetadata> for ScenarioMetadata {
 
     fn try_from(md: IsfMetadata) -> Result<Self, Self::Error> {
         let version = match md.version {
-            風 => ScenarioVersion::FU,
-            林 => ScenarioVersion::RIN,
-            火 => ScenarioVersion::KA(md.xor_key),
-            桜 => ScenarioVersion::SAKURA,
+            風 => ScenarioVersion::Fu,
+            林 => ScenarioVersion::Rin,
+            火 => ScenarioVersion::Ka,
+            桜 => ScenarioVersion::Sakura,
             invalid => return Err(InvalidScenarioVersion(invalid)),
         };
 
         Ok(Self {
             code_offset: md.bytecode_offset as usize,
             version,
+            xor_key: md.xor_key,
         })
     }
 }
@@ -85,20 +87,28 @@ impl ScenarioMetadata {
     pub fn decrypt(&self, data: &mut [u8]) {
         let data = data.iter_mut();
         match self.version {
-            ScenarioVersion::FU => data.for_each(|byte| *byte = byte.rotate_right(2)),
-            ScenarioVersion::RIN => data.for_each(|byte| *byte = !*byte),
-            ScenarioVersion::KA(key) => data.for_each(|byte| *byte ^= key),
-            ScenarioVersion::SAKURA => (), // debug version, no encryption
+            ScenarioVersion::Fu => data.for_each(|byte| *byte = byte.rotate_right(2)),
+            ScenarioVersion::Rin => data.for_each(|byte| *byte = !*byte),
+            ScenarioVersion::Ka => {
+                if self.xor_key != 0 {
+                    data.for_each(|byte| *byte ^= self.xor_key);
+                }
+            }
+            ScenarioVersion::Sakura => (), // debug version, no encryption
         }
     }
 
     pub fn encrypt(&self, data: &mut [u8]) {
         let data = data.iter_mut();
         match self.version {
-            ScenarioVersion::FU => data.for_each(|byte| *byte = byte.rotate_left(2)),
-            ScenarioVersion::RIN => data.for_each(|byte| *byte = !*byte),
-            ScenarioVersion::KA(key) => data.for_each(|byte| *byte ^= key),
-            ScenarioVersion::SAKURA => (), // debug version, no encryption
+            ScenarioVersion::Fu => data.for_each(|byte| *byte = byte.rotate_left(2)),
+            ScenarioVersion::Rin => data.for_each(|byte| *byte = !*byte),
+            ScenarioVersion::Ka => {
+                if self.xor_key != 0 {
+                    data.for_each(|byte| *byte ^= self.xor_key);
+                }
+            }
+            ScenarioVersion::Sakura => (), // debug version, no encryption
         }
     }
 
@@ -108,23 +118,12 @@ impl ScenarioMetadata {
 
         _ = s.put_le(self.code_offset as u32);
         match self.version {
-            ScenarioVersion::FU => {
-                _ = s.put_bytes(風);
-                _ = s.put_bytes([0; 2]);
-            }
-            ScenarioVersion::RIN => {
-                _ = s.put_bytes(林);
-                _ = s.put_bytes([0; 2]);
-            }
-            ScenarioVersion::KA(key) => {
-                _ = s.put_bytes(火);
-                _ = s.put_bytes([key, 0]);
-            }
-            ScenarioVersion::SAKURA => {
-                _ = s.put_bytes(桜);
-                _ = s.put_bytes([0; 2]);
-            }
+            ScenarioVersion::Fu => _ = s.put_bytes(風),
+            ScenarioVersion::Rin => _ = s.put_bytes(林),
+            ScenarioVersion::Ka => _ = s.put_bytes(火),
+            ScenarioVersion::Sakura => _ = s.put_bytes(桜),
         };
+        _ = s.put_bytes([self.xor_key, 0]);
 
         serialized
     }
@@ -141,10 +140,11 @@ impl std::fmt::Display for InvalidScenarioVersion {
 
 impl std::error::Error for InvalidScenarioVersion {}
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum ScenarioVersion {
-    FU,
-    RIN,
-    KA(u8),
-    SAKURA,
+    #[default]
+    Fu,
+    Rin,
+    Ka,
+    Sakura,
 }
