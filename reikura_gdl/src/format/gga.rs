@@ -10,6 +10,13 @@ use crate::image::ImageDecoder;
 
 pub struct Gga;
 
+#[allow(unused)]
+impl Gga {
+    const FLAG_ALPHA: u8 = 1 << 0;
+    const FLAG_UNKNOWN: u8 = 1 << 4;
+    const FLAG_PARTS: u8 = 1 << 4;
+}
+
 pub struct GgaMetadata {
     magic: [u8; 8],
     width: u16,
@@ -19,6 +26,8 @@ pub struct GgaMetadata {
     flags: u8,
     pixel_offset: u32,
     compressed_len: u32,
+    _parts_offset: u32,
+    _parts_length: u32,
 }
 
 impl ImageDecoder for Gga {
@@ -35,6 +44,8 @@ impl ImageDecoder for Gga {
             flags: data.get_le()?,
             pixel_offset: data.get_le()?,
             compressed_len: data.get_le()?,
+            _parts_offset: data.get_le()?,
+            _parts_length: data.get_le()?,
         })
     }
 
