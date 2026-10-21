@@ -238,13 +238,13 @@ impl AssetManager {
 
 #[derive(Debug, Clone, Copy)]
 pub struct AssetName {
-    buffer: [u8; Self::LEN],
+    buffer: [u8; Self::BUFFER_LEN],
     ext: Option<usize>,
     end: usize,
 }
 
 impl AssetName {
-    pub const LEN: usize = 12;
+    pub const BUFFER_LEN: usize = 12;
 
     pub const START: Self = Self {
         buffer: *b"START.ISF\0\0\0",
@@ -252,8 +252,8 @@ impl AssetName {
         end: 9,
     };
 
-    pub fn from_buffer(buffer: [u8; Self::LEN]) -> Self {
-        let mut end = Self::LEN;
+    pub fn from_buffer(buffer: [u8; Self::BUFFER_LEN]) -> Self {
+        let mut end = Self::BUFFER_LEN;
         let mut ext = None;
 
         for (i, &b) in buffer.iter().enumerate() {
@@ -284,8 +284,8 @@ impl AssetName {
 
 impl crate::instruction::Parameters for AssetName {
     fn parse(scene: &mut crate::ScenarioParser) -> Result<Self> {
-        let mut buffer = [0; Self::LEN];
-        let mut end = Self::LEN;
+        let mut buffer = [0; Self::BUFFER_LEN];
+        let mut end = Self::BUFFER_LEN;
         let mut ext = None;
 
         for (i, b) in buffer.iter_mut().enumerate() {

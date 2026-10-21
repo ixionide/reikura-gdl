@@ -84,7 +84,7 @@ impl TryFrom<Sm2mpx10Entry> for ArchiveEntry {
             .filename
             .iter()
             .position(|b| *b == 0)
-            .unwrap_or(AssetName::LEN);
+            .unwrap_or(AssetName::BUFFER_LEN);
 
         let filename = sjis_to_utf8(&entry.filename[..end])?;
 

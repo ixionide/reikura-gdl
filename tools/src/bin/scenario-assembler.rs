@@ -57,14 +57,14 @@ fn main() {
         opcodes: &HashMap<String, u8>,
         line_num: &mut Option<usize>,
     ) -> anyhow::Result<()> {
-        let (mut md, use_legacy) = parse_metadata(scenario, line_num)?;
+        let (mut md, legacies) = parse_metadata(scenario, line_num)?;
         let mut labels = parse_all_labels(scenario, line_num)?;
         let mut code = Cursor::new(Vec::with_capacity(1 << 20));
         let mut code_len: usize = 0;
 
-        for inst in &use_legacy {
+        for inst in &legacies {
             if !opcodes.contains_key(inst) {
-                bail!("unknown instruction in use_legacy directive: {inst}")
+                bail!("unknown instruction in legacy directive: {inst}")
             }
         }
 
@@ -88,7 +88,7 @@ fn main() {
 
             let mut fmt = Serializer::new(opcode);
 
-            let legacy = use_legacy.contains(&inst.to_lowercase());
+            let legacy = legacies.contains(&inst.to_lowercase());
 
             match inst {
                 "ED" | "SRET" | "RT" => (),
@@ -914,7 +914,7 @@ fn parse_metadata(
     scenario: &str,
     line_num: &mut Option<usize>,
 ) -> anyhow::Result<(ScenarioMetadata, HashSet<String>)> {
-    let mut use_legacy = HashSet::new();
+    let mut legacies = HashSet::new();
     let mut metadata = ScenarioMetadata::default();
 
     for (i, line) in scenario.lines().map(str::trim).enumerate() {
@@ -949,13 +949,13 @@ fn parse_metadata(
                         None => bail!("missing xor key"),
                     };
                 }
-                Some("use_legacy") => {
+                Some("legacy") => {
                     for inst in preprocess_iter {
-                        use_legacy.insert(inst.to_lowercase());
+                        legacies.insert(inst.to_lowercase());
                     }
 
-                    if use_legacy.is_empty() {
-                        bail!("empty use_legacy");
+                    if legacies.is_empty() {
+                        bail!("empty legacy");
                     }
 
                     continue;
@@ -972,7 +972,7 @@ fn parse_metadata(
         }
     }
 
-    Ok((metadata, use_legacy))
+    Ok((metadata, legacies))
 }
 
 struct Labels {
@@ -1124,10 +1124,10 @@ impl<'a> ParamParser<'a> {
     fn read_assetname(&mut self) -> anyhow::Result<Vec<u8>> {
         let string = self.read_sjis()?;
 
-        if string.len() > AssetName::LEN {
+        if string.len() > AssetName::BUFFER_LEN {
             bail!(
                 "asset name is too long: {string:?}, max length is {} bytes",
-                AssetName::LEN
+                AssetName::BUFFER_LEN
             );
         }
 
@@ -1297,7 +1297,7 @@ fn metadata_parsing() {
 
     let text = r#"
         %version 林
-        %use_legacy IC
+        %legacy IC
     "#
     .trim();
 
