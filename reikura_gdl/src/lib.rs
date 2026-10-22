@@ -21,7 +21,7 @@ pub use self::{
     audio::{Audio, AudioManager},
     cache::CacheManager,
     config::Config,
-    graphic::GraphicManager,
+    graphic::Graphics,
     image::{Image, ImageDecoder},
     input::{HitMask, HotSpot, InputManager, KeyMap},
     manifest::Manifest,

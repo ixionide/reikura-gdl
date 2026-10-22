@@ -1,6 +1,6 @@
 use anyhow::bail;
 use reikura_util::{
-    image::{blend_color, blend_premultiplied_color, mul_alpha, premultiply_color},
+    image::{blend_color, blend_premultiplied_color, mul_alpha_color, premultiply_color},
     rect::Rect,
 };
 
@@ -223,7 +223,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
                 match alpha_channel(src_color) {
                     0x00 => continue,
                     _ => {
-                        let src_color = mul_alpha(src_color, alpha);
+                        let src_color = mul_alpha_color(src_color, alpha);
                         *dst_color = blend_color(*dst_color, src_color);
                     }
                 }
