@@ -11,7 +11,7 @@ use kira::{
     track::{TrackBuilder, TrackHandle},
 };
 
-pub const SFX_SLOT: usize = 32;
+const SFX_SLOT: usize = 32;
 
 const MIDI_SIGNATURE: &[u8] = b"MThd";
 
@@ -32,7 +32,6 @@ fn tween_duration(duration: Duration) -> Tween {
 pub struct Audio {
     pub name: Rc<str>,
     pub data: Arc<[u8]>,
-    pub volume: Option<f32>,
 }
 
 impl Audio {
@@ -40,7 +39,6 @@ impl Audio {
         Ok(Self {
             name: name.into(),
             data: data.into(),
-            volume: None,
         })
     }
 
@@ -52,9 +50,9 @@ impl Audio {
 pub struct AudioManager {
     _manager: kira::AudioManager,
     pub track: AllTrack,
-    pub bgm: Option<Audio>,
-    pub sfx: [Option<Audio>; SFX_SLOT],
-    pub voice: Option<Audio>,
+    bgm: Option<Audio>,
+    sfx: [Option<Audio>; SFX_SLOT],
+    voice: Option<Audio>,
 }
 
 impl AudioManager {
@@ -74,6 +72,11 @@ impl AudioManager {
 }
 
 impl AudioManager {
+    pub fn set_bgm(&mut self, audio: Audio) {
+        self.stop_bgm(None);
+        self.bgm = Some(audio);
+    }
+
     pub fn play_bgm(&mut self, looping: bool, fade_duration: Option<Duration>) -> Result<()> {
         let Some(audio) = self.bgm.take() else {
             bail!("no bgm loaded");
@@ -81,10 +84,6 @@ impl AudioManager {
 
         // TODO: handle midi bgm
         let mut data = StreamingSoundData::from_cursor(Cursor::new(audio.data))?;
-
-        if let Some(volume) = audio.volume {
-            data = data.volume(volume);
-        }
 
         if looping {
             data = data.loop_region(..);
@@ -103,8 +102,13 @@ impl AudioManager {
         self.track.bgm.stop_audio(fade_duration.map(tween_duration));
     }
 
+    pub fn set_sfx(&mut self, slot: usize, audio: Audio) {
+        self.stop_sfx(slot, None);
+        self.sfx[slot % SFX_SLOT] = Some(audio);
+    }
+
     pub fn play_sfx(&mut self, slot: usize, fade_duration: Option<Duration>) -> Result<()> {
-        let Some(audio) = self.sfx[slot].take() else {
+        let Some(audio) = self.sfx[slot % SFX_SLOT].take() else {
             bail!("no sfx loaded at slot: {slot}");
         };
 
@@ -122,7 +126,12 @@ impl AudioManager {
     pub fn stop_sfx(&mut self, slot: usize, fade_duration: Option<Duration>) {
         self.track
             .sfx
-            .stop_audio_slot(slot, fade_duration.map(tween_duration));
+            .stop_audio_slot(slot % SFX_SLOT, fade_duration.map(tween_duration));
+    }
+
+    pub fn set_voice(&mut self, audio: Audio) {
+        self.stop_voice(None);
+        self.voice = Some(audio);
     }
 
     pub fn play_voice(&mut self, fade_duration: Option<Duration>) -> Result<()> {
@@ -131,10 +140,6 @@ impl AudioManager {
         };
 
         let mut data = StreamingSoundData::from_cursor(Cursor::new(audio.data))?;
-
-        if let Some(volume) = audio.volume {
-            data = data.volume(volume);
-        }
 
         if let Some(fade_tween) = fade_duration.map(tween_duration) {
             data = data.fade_in_tween(fade_tween);
@@ -161,9 +166,9 @@ pub struct AllTrack {
 
 impl AllTrack {
     pub fn new(kira_manager: &mut kira::AudioManager, volume: AllVolume) -> Result<Self> {
-        let bgm = Track::new(kira_manager, &volume.bgm)?;
-        let sfx = Track::new(kira_manager, &volume.sfx)?;
-        let voice = Track::new(kira_manager, &volume.voice)?;
+        let bgm = Track::new(kira_manager, &volume.bgm, Some(&volume.bgm_inside))?;
+        let sfx = Track::new(kira_manager, &volume.sfx, None)?;
+        let voice = Track::new(kira_manager, &volume.voice, Some(&volume.voice_inside))?;
 
         Ok(Self {
             bgm,
@@ -179,6 +184,7 @@ type SoundHandle = StreamingSoundHandle<FromFileError>;
 
 pub struct Track<const SLOT: usize> {
     track_handle: TrackHandle,
+    _inside_handle: Option<TrackHandle>,
     handle_slots: [Option<SoundHandle>; SLOT],
 }
 
@@ -197,39 +203,39 @@ impl Track<1> {
 }
 
 impl<const SLOT: usize> Track<SLOT> {
-    pub fn new(kira_manager: &mut kira::AudioManager, volume: &Volume) -> Result<Self> {
-        let handle = kira_manager.add_sub_track(TrackBuilder::new().volume(volume.modulator()))?;
+    pub fn new(
+        kira_manager: &mut kira::AudioManager,
+        volume: &Volume,
+        inside_volume: Option<&Volume>,
+    ) -> Result<Self> {
+        let mut handle =
+            kira_manager.add_sub_track(TrackBuilder::new().volume(volume.modulator()))?;
+        let inside_handle = inside_volume
+            .map(|vol| handle.add_sub_track(TrackBuilder::new().volume(vol.modulator())))
+            .transpose()?;
+
         Ok(Self {
             track_handle: handle,
+            _inside_handle: inside_handle,
             handle_slots: [const { None }; SLOT],
         })
     }
 
     pub fn play_audio_slot(&mut self, slot: usize, sound_data: SoundData) -> Result<()> {
-        let index = slot % SLOT;
-
-        if let Some(old_handle) = &mut self.handle_slots[index] {
-            old_handle.stop(DEFAULT_TWEEN);
-        }
-
         let new_handle = self.track_handle.play(sound_data)?;
-        self.handle_slots[index] = Some(new_handle);
+        self.handle_slots[slot] = Some(new_handle);
 
         Ok(())
     }
 
     pub fn stop_audio_slot(&mut self, slot: usize, fade_duration: Option<Tween>) {
-        let index = slot % SLOT;
-
-        if let Some(mut handle) = self.handle_slots[index].take() {
+        if let Some(mut handle) = self.handle_slots[slot].take() {
             handle.stop(fade_duration.unwrap_or(DEFAULT_TWEEN));
         }
     }
 
     pub fn is_audio_slot_finished(&self, slot: usize) -> bool {
-        let index = slot % SLOT;
-
-        self.handle_slots[index]
+        self.handle_slots[slot]
             .as_ref()
             .map(SoundHandle::state)
             .is_none_or(|state| !state.is_advancing())
@@ -246,8 +252,10 @@ impl<const SLOT: usize> Track<SLOT> {
 
 pub struct AllVolume {
     pub bgm: Volume,
+    pub bgm_inside: Volume,
     pub sfx: Volume,
     pub voice: Volume,
+    pub voice_inside: Volume,
 }
 
 impl AllVolume {
@@ -259,8 +267,10 @@ impl AllVolume {
     ) -> Result<Self> {
         Ok(Self {
             bgm: Volume::new(kira_manager, bgm)?,
+            bgm_inside: Volume::new(kira_manager, 1.0)?,
             sfx: Volume::new(kira_manager, sfx)?,
             voice: Volume::new(kira_manager, voice)?,
+            voice_inside: Volume::new(kira_manager, 1.0)?,
         })
     }
 }

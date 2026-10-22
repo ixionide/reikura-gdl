@@ -35,7 +35,7 @@ pub fn dap(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
 
     let bgm = vm.assets.load_cdda(track_num)?;
 
-    vm.audio.bgm = Some(bgm);
+    vm.audio.set_bgm(bgm);
     vm.audio.play_bgm(looping, fade)?;
 
     Ok(())

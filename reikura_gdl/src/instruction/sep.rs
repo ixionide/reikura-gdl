@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use crate::{
     Vm,
-    audio::SFX_SLOT,
     instruction::{InstructionInfo, Value},
 };
 
@@ -15,7 +14,7 @@ pub fn sep(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
         fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
     }
 
-    vm.audio.play_sfx(slot % SFX_SLOT, fade)?;
+    vm.audio.play_sfx(slot, fade)?;
 
     Ok(())
 }

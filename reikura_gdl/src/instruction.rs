@@ -302,12 +302,21 @@ impl Instruction {
             return Ok(());
         }
 
-        (self.exec_fn)(vm, info)?;
+        let result = (self.exec_fn)(vm, info);
+
+        if vm.parser.scenario.is_debug_version() {
+            if let Err(err) = result {
+                dbg!(err);
+                vm.parser.state.ip = next_ip
+            }
+        } else {
+            result?;
+        }
 
         // TODO: log something is wrong
         if vm.parser.state.ip != next_ip {
             vm.parser.state.ip = next_ip;
-        };
+        }
 
         Ok(())
     }

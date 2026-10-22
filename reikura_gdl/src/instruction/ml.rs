@@ -16,7 +16,7 @@ pub fn ml(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let cmd: u8 = vm.parser.read_param()?;
     let bgm = vm.assets.load_bgm(name)?;
 
-    vm.audio.bgm = Some(bgm);
+    vm.audio.set_bgm(bgm);
 
     match cmd {
         AUTO_PLAY => vm.audio.play_bgm(true, None)?,

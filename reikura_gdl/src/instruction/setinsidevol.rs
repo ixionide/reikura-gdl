@@ -19,19 +19,15 @@ pub fn setinsidevol(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         .evaluate(&vm.ctx)
         .try_into()?;
 
-    let (audio, track) = {
+    {
+        let settings = &mut vm.audio.track.volume;
+        let volume = f64::from(volume.min(100)) / f64::from(100_u8);
         match track {
-            VOICE => (vm.audio.voice.as_mut(), "voice"),
-            BGM => (vm.audio.bgm.as_mut(), "bgm"),
+            VOICE => settings.voice_inside.set(volume),
+            BGM => settings.bgm_inside.set(volume),
             _ => bail!("invalid SETINSIDEVOL track: {track}"),
         }
-    };
-
-    let Some(audio) = audio else {
-        bail!("{track} isn't loaded yet");
-    };
-
-    audio.volume = Some(f32::from(volume) / f32::from(u8::MAX));
+    }
 
     Ok(())
 }

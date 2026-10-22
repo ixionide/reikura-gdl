@@ -71,24 +71,7 @@ impl Vm {
     pub fn update(&mut self) -> anyhow::Result<()> {
         match self.state {
             State::Exit => todo!(),
-            State::Running => {
-                let ip = self.parser.state.ip;
-                let op = self.parser.read_opcode()?;
-                let inst = INSTRUCTIONS[op as usize];
-                inst.execute(self, ip)?;
-
-                // #[cfg(debug_assertions)]
-                // {
-                //     let next_ip = self.parser.state.ip + info.param_len;
-                //     if let Err(err) = inst(self, info) {
-                //         dbg!(err);
-                //         self.parser.state.ip = next_ip
-                //     }
-                // }
-
-                // #[cfg(not(debug_assertions))]
-                // inst(self, info)?;
-            }
+            State::Running => self.tick()?,
             State::Wait { start, duration } => {
                 let elapsed = start.elapsed();
 
@@ -111,6 +94,16 @@ impl Vm {
             }
             State::WaitVideo => todo!(),
         }
+
+        Ok(())
+    }
+
+    pub fn tick(&mut self) -> anyhow::Result<()> {
+        let ip = self.parser.state.ip;
+        let op = self.parser.read_opcode()?;
+        let inst = INSTRUCTIONS[op as usize];
+
+        inst.execute(self, ip)?;
 
         Ok(())
     }

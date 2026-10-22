@@ -14,7 +14,7 @@ pub struct Gga;
 impl Gga {
     const FLAG_ALPHA: u8 = 1 << 0;
     const FLAG_UNKNOWN: u8 = 1 << 4;
-    const FLAG_PARTS: u8 = 1 << 4;
+    const FLAG_PARTS: u8 = 1 << 5;
 }
 
 pub struct GgaMetadata {
