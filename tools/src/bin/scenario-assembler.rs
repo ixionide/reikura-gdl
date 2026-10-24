@@ -1051,7 +1051,7 @@ impl Serializer {
     fn write_value(&mut self, value: Value) -> &mut Self {
         match value {
             Value::Literal(num) => self.params.put_le(num & Value::MASK),
-            Value::Register(idx) => self.params.put_le(idx as u32 | Value::REG_BIT as u32),
+            Value::Register(idx) => self.params.put_le(idx | Value::REG_BIT),
             Value::Random(max) => self.params.put_le(max | Value::RNG_BIT),
         }
         .unwrap();
@@ -1196,15 +1196,31 @@ impl<'a> ParamParser<'a> {
             .next()
             .ok_or_else(|| anyhow!("unexpected end of param"))?;
 
+        fn parse_value(param: &str) -> anyhow::Result<i32> {
+            let value = param
+                .parse::<i32>()
+                .context("invalid value param: {param}")?;
+
+            if !(Value::MIN..=Value::MAX).contains(&value) {
+                bail!("value out of range");
+            }
+
+            Ok(value)
+        }
+
         let value = {
             if let Some(idx) = param.strip_prefix('@') {
-                idx.parse().map(Value::Register).context("parse register")?
+                parse_value(idx)
+                    .map(Value::Register)
+                    .context("parse register")?
             } else if let Some(max) = param.strip_prefix('~') {
-                max.parse().map(Value::Random).context("parse random")?
-            } else if let Ok(num) = param.parse::<i32>() {
-                Value::Literal(num)
+                parse_value(max)
+                    .map(Value::Random)
+                    .context("parse random")?
             } else {
-                bail!("invalid value param: {param}");
+                parse_value(param)
+                    .map(Value::Literal)
+                    .context("parse literal")?
             }
         };
 

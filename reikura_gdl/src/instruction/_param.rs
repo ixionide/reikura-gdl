@@ -42,7 +42,7 @@ impl<T: ReadEndian> Parameters for T {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Value {
     Literal(i32),
-    Register(usize),
+    Register(i32),
     Random(i32),
 }
 
@@ -66,7 +66,13 @@ impl Value {
     pub fn evaluate(&self, ctx: &VmContext) -> i32 {
         match *self {
             Value::Literal(value) => value,
-            Value::Register(index) => ctx.registers.get(index),
+            Value::Register(index) => {
+                if index.is_negative() {
+                    return 0;
+                }
+
+                ctx.registers.get(index as usize)
+            }
             Value::Random(modulo) => {
                 if modulo == 0 {
                     return 0;
@@ -89,11 +95,7 @@ impl Parameters for Value {
 
         let value = {
             if (raw & Self::REG_BIT) != 0 {
-                if value.is_negative() {
-                    Self::Literal(0)
-                } else {
-                    Self::Register(value as usize)
-                }
+                Self::Register(value)
             } else if (raw & Self::RNG_BIT) != 0 {
                 Self::Random(value)
             } else {

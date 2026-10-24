@@ -33,6 +33,7 @@ impl VmContext {
 }
 
 pub struct Vm {
+    pub last_update: Option<Instant>,
     pub manifest: Manifest,
     pub assets: AssetManager,
     pub parser: Parser,
@@ -55,6 +56,7 @@ impl Vm {
             .context("failed to load start script")?;
 
         Ok(Self {
+            last_update: None,
             manifest,
             assets,
             parser: Parser::new(start_scene),
@@ -69,6 +71,10 @@ impl Vm {
     }
 
     pub fn update(&mut self) -> anyhow::Result<()> {
+        let now = Instant::now();
+        let _dt = self.last_update.map(|last| now.duration_since(last));
+        self.last_update = Some(now);
+
         match self.state {
             State::Exit => todo!(),
             State::Running => self.tick()?,

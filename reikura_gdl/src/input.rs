@@ -50,7 +50,7 @@ impl InputManager {
                 continue;
             };
 
-            if hot_spot.is_hovered(x, y) || hot_spot.is_id_equal(hovered_id) {
+            if hot_spot.is_hovered(x, y) || hovered_id == Some(hot_spot.id) {
                 return hot_spot.id as i32;
             }
         }
@@ -97,10 +97,6 @@ impl HotSpot {
     pub fn is_hovered(&self, x: i32, y: i32) -> bool {
         let [left, top, right, bottom] = self.rect;
         x >= left && x <= right && y >= top && y <= bottom
-    }
-
-    pub fn is_id_equal(&self, id: Option<u8>) -> bool {
-        id.is_some_and(|id| self.id == id)
     }
 }
 
