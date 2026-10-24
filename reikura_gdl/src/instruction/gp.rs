@@ -14,6 +14,7 @@ reikura_util::const_iota! {
     BLIT_BLEND,
 }
 
+#[allow(unused)]
 pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let cmd: u8 = vm.parser.read_param()?;
 
@@ -46,16 +47,16 @@ pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     match cmd {
         BLIT_COPY => {
             param.dst_id = dst_id as u8;
-            vm.gfx.blit_copy_image(param)?;
+            // vm.gfx.blit_copy_image(param)?;
         }
         BLIT_BLEND => {
             param.dst_id = dst_id as u8;
-            vm.gfx.blit_blend_image(param)?;
+            // vm.gfx.blit_blend_image(param)?;
         }
         // TODO: another gp cmd
         _ if cmd < 30 => {
             let _duration = Duration::from_millis(dst_id as u64);
-            vm.gfx.blit_blend_image(param)?;
+            // vm.gfx.blit_blend_image(param)?;
         }
         _ => bail!("invalid or unsupported GP cmd: {cmd}"),
     }

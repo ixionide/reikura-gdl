@@ -12,7 +12,7 @@ pub fn vset(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let w: u32 = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
     let h: u32 = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
 
-    vm.gfx.new_image(id, w, h)?;
+    vm.gfx.new_image(id, w, h);
 
     Ok(())
 }

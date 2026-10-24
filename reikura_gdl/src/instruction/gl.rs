@@ -13,7 +13,7 @@ pub fn gl(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let image = vm.assets.load_image(image_name)?;
 
     vm.gfx
-        .load_image(id, image.width, image.height, &image.data)?;
+        .set_image(id, image.width, image.height, &image.data)?;
 
     Ok(())
 }

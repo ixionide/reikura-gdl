@@ -4,6 +4,18 @@ use reikura_util::{
     rect::Rect,
 };
 
+pub mod color {
+    pub const TRANSPARENT: u32 = 0x00_00_00_00;
+    pub const RED: u32 = 0xFF_00_00_FF;
+    pub const GREEN: u32 = 0xFF_00_FF_00;
+    pub const BLUE: u32 = 0xFF_FF_00_00;
+    pub const BLACK: u32 = 0xFF_00_00_00;
+    pub const BLACK_50: u32 = 0x7F_00_00_00;
+    pub const WHITE: u32 = 0xFF_FF_FF_FF;
+    pub const GRAY: u32 = reikura_util::image::blend_color(WHITE, BLACK_50);
+    pub const NAVY: u32 = reikura_util::image::blend_color(BLUE, BLACK_50);
+}
+
 #[inline]
 fn alpha_channel(color: u32) -> u8 {
     (color >> 24) as u8
@@ -353,17 +365,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    const TRANSPARENT: u32 = 0x00_00_00_00;
-    const RED: u32 = 0xFF_00_00_FF;
-    const GREEN: u32 = 0xFF_00_FF_00;
-    const BLUE: u32 = 0xFF_FF_00_00;
-    const BLACK: u32 = 0xFF_00_00_00;
-    const BLACK_50: u32 = 0x7F_00_00_00;
-    const WHITE: u32 = 0xFF_FF_FF_FF;
-    const GRAY: u32 = blend_color(WHITE, BLACK_50);
-    const NAVY: u32 = blend_color(BLUE, BLACK_50);
+    use super::{color::*, *};
 
     fn create_test_surface(width: u32, height: u32, color: u32) -> Surface {
         let mut surface = Surface::new(width, height);
