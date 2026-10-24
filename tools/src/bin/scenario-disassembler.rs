@@ -389,7 +389,42 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let par: u16 = parser.read_param()?;
                 fmt.add_param(par);
             }
-            // "CALC"
+            "CALC" => {
+                reikura_util::const_iota! {
+                    u8 = iota,
+                    ADD,
+                    MIN,
+                    MUL,
+                    DIV,
+                    MOD,
+                    END,
+                }
+
+                let mut buf = String::with_capacity(128);
+                let reg_index: u16 = parser.read_param()?;
+                write!(buf, "@{reg_index} = ")?;
+                let op = parser.read_param::<u8>()?;
+                assert!(op == ADD);
+                let value = parser.read_param::<Value>()?;
+                buf.push_str(&display_value(value));
+
+                loop {
+                    match parser.read_param::<u8>()? {
+                        ADD => buf.push_str(" + "),
+                        MIN => buf.push_str(" - "),
+                        MUL => buf.push_str(" * "),
+                        DIV => buf.push_str(" / "),
+                        MOD => buf.push_str(" % "),
+                        END => break,
+                        unk => bail!("unknown operator: {unk}"),
+                    }
+
+                    let rhs = parser.read_param::<Value>()?;
+                    buf.push_str(&display_value(rhs));
+                }
+
+                fmt.add_param(buf);
+            }
             "HSG" => {
                 for _ in 0..2 {
                     let par: u16 = parser.read_param()?;

@@ -371,7 +371,84 @@ fn main() {
                     let par: u16 = parser.read_num()?;
                     fmt.write_num(par);
                 }
-                // "CALC"
+                "CALC" => {
+                    reikura_util::const_iota! {
+                        u8 = iota,
+                        ADD,
+                        MIN,
+                        MUL,
+                        DIV,
+                        MOD,
+                        END,
+                    }
+
+                    let params = parser.params;
+                    parser.params = "";
+
+                    let Some((reg, calc)) = params.split_once('=') else {
+                        bail!("invalid calc params");
+                    };
+
+                    let reg = {
+                        let value = ParamParser::new(reg.trim()).read_value()?;
+                        let Value::Register(reg) = value else {
+                            bail!("invalid calc params");
+                        };
+                        u16::try_from(reg).context("calc register out of range")?
+                    };
+
+                    fmt.write_num(reg);
+                    fmt.write_num(ADD);
+
+                    let mut params = calc.trim().chars();
+                    let mut num_buf = String::with_capacity(16);
+
+                    fn read_op(num_buf: &mut String, params: &mut std::str::Chars) -> Option<char> {
+                        num_buf.clear();
+                        for char in params.by_ref() {
+                            if !num_buf.is_empty() && ['+', '-', '*', '/', '%'].contains(&char) {
+                                return Some(char);
+                            } else {
+                                num_buf.push(char);
+                            }
+                        }
+                        None
+                    }
+
+                    loop {
+                        let op = read_op(&mut num_buf, &mut params);
+
+                        if num_buf.is_empty() {
+                            bail!("invalid calc params");
+                        }
+
+                        let value = ParamParser::new(num_buf.trim()).read_value()?;
+                        fmt.write_value(value);
+
+                        match op {
+                            Some('+') => {
+                                fmt.write_num(ADD);
+                            }
+                            Some('-') => {
+                                fmt.write_num(MIN);
+                            }
+                            Some('*') => {
+                                fmt.write_num(MUL);
+                            }
+                            Some('/') => {
+                                fmt.write_num(DIV);
+                            }
+                            Some('%') => {
+                                fmt.write_num(MOD);
+                            }
+                            None => {
+                                fmt.write_num(END);
+                                break;
+                            }
+                            Some(_) => unreachable!(),
+                        }
+                    }
+                }
                 "HSG" => {
                     for _ in 0..2 {
                         let par: u16 = parser.read_num()?;
