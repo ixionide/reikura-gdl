@@ -1,6 +1,8 @@
+#![allow(clippy::too_many_arguments)]
+
 use anyhow::bail;
 use reikura_util::{
-    image::{blend_color, blend_premultiplied_color, mul_alpha_color, premul_color},
+    image::{blend_color, blend_premultiplied_color, get_alpha, mul_alpha_color, premul_color},
     rect::Rect,
 };
 
@@ -16,29 +18,24 @@ pub mod color {
     pub const NAVY: u32 = reikura_util::image::blend_color(BLUE, BLACK_50);
 }
 
-#[inline]
-fn alpha_channel(color: u32) -> u8 {
-    (color >> 24) as u8
-}
-
-pub struct Surface<P = Vec<u32>> {
+pub struct Image<P = Vec<u32>> {
     pub width: u32,
     pub height: u32,
     pixels: P,
 }
 
-impl<P> Surface<P> {
+impl<P> Image<P> {
     pub fn rect(&self) -> Rect {
         Rect::from_xywh(0, 0, self.width, self.height)
     }
 }
 
-impl Surface {
+impl Image {
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
             height,
-            pixels: vec![0; width as usize * height as usize],
+            pixels: vec![color::BLACK; width as usize * height as usize],
         }
     }
 
@@ -65,7 +62,7 @@ impl Surface {
     }
 }
 
-impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
+impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
     pub fn from_pixels(width: u32, height: u32, pixels: P) -> anyhow::Result<Self> {
         if pixels.as_ref().len() != width as usize * height as usize {
             bail!("invalid pixels length");
@@ -99,7 +96,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
 
     #[inline]
     pub fn draw_rect(&mut self, x: u32, y: u32, w: u32, h: u32, mut color: u32) {
-        match alpha_channel(color) {
+        match get_alpha(color) {
             0x00 => return,
             0xFF => {
                 self.clear_rect(x, y, w, h, color);
@@ -123,7 +120,6 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
     }
 
     #[inline]
-    #[allow(clippy::too_many_arguments)]
     pub fn blit_copy<T: AsRef<[u32]>>(
         &mut self,
         src_x: u32,
@@ -132,7 +128,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         blit_h: u32,
         dst_x: u32,
         dst_y: u32,
-        src: &Surface<T>,
+        src: &Image<T>,
     ) {
         let src_pixels = src.pixels.as_ref();
         let dst_pixels = self.pixels.as_mut();
@@ -155,7 +151,6 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
     }
 
     #[inline]
-    #[allow(clippy::too_many_arguments)]
     pub fn blit_blend<T: AsRef<[u32]>>(
         &mut self,
         src_x: u32,
@@ -164,7 +159,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         blit_h: u32,
         dst_x: u32,
         dst_y: u32,
-        src: &Surface<T>,
+        src: &Image<T>,
     ) {
         let src_pixels = src.pixels.as_ref();
         let dst_pixels = self.pixels.as_mut();
@@ -186,7 +181,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
             let dst_row = dst_row.iter_mut();
 
             for (dst_color, src_color) in dst_row.zip(src_row) {
-                match alpha_channel(src_color) {
+                match get_alpha(src_color) {
                     0x00 => continue,
                     0xFF => *dst_color = src_color,
                     _ => *dst_color = blend_color(*dst_color, src_color),
@@ -196,7 +191,6 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
     }
 
     #[inline]
-    #[allow(clippy::too_many_arguments)]
     pub fn blit_blend_alpha<T: AsRef<[u32]>>(
         &mut self,
         src_x: u32,
@@ -206,7 +200,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         dst_x: u32,
         dst_y: u32,
         alpha: u8,
-        src: &Surface<T>,
+        src: &Image<T>,
     ) {
         if alpha == 0xFF {
             self.blit_blend(src_x, src_y, blit_w, blit_h, dst_x, dst_y, src);
@@ -232,7 +226,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
             let dst_row = dst_row.iter_mut();
 
             for (dst_color, src_color) in dst_row.zip(src_row) {
-                match alpha_channel(src_color) {
+                match get_alpha(src_color) {
                     0x00 => continue,
                     _ => {
                         let src_color = mul_alpha_color(src_color, alpha);
@@ -247,7 +241,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface<T>,
+        src: &Image<T>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -303,7 +297,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
         &mut self,
         src_rect: Rect,
         dst_rect: Rect,
-        src: &Surface<T>,
+        src: &Image<T>,
     ) -> anyhow::Result<()> {
         if !self.rect().contains(dst_rect) || !src.rect().contains(src_rect) {
             bail!("rect is outside of surface");
@@ -346,7 +340,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
                 let src_color = src_pixels[src_row * src_stride + src_start_x + srcx];
 
                 // if transparent
-                if alpha_channel(src_color) == 0x00 {
+                if get_alpha(src_color) == 0x00 {
                     posx += incx;
                     continue;
                 }
@@ -367,15 +361,15 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Surface<P> {
 mod tests {
     use super::{color::*, *};
 
-    fn create_test_surface(width: u32, height: u32, color: u32) -> Surface {
-        let mut surface = Surface::new(width, height);
+    fn create_test_image(width: u32, height: u32, color: u32) -> Image {
+        let mut surface = Image::new(width, height);
         surface.clear(color);
         surface
     }
 
     #[test]
     fn test_clear_rect() {
-        let mut dst = create_test_surface(4, 4, BLUE);
+        let mut dst = create_test_image(4, 4, BLUE);
 
         dst.clear_rect(1, 1, 2, 2, GRAY);
 
@@ -392,7 +386,7 @@ mod tests {
 
     #[test]
     fn test_draw_rect() {
-        let mut dst = create_test_surface(4, 4, BLUE);
+        let mut dst = create_test_image(4, 4, BLUE);
 
         dst.draw_rect(1, 1, 2, 2, BLACK_50);
 
@@ -409,8 +403,8 @@ mod tests {
 
     #[test]
     fn test_blit_copy() {
-        let src = create_test_surface(4, 4, RED);
-        let mut dst = create_test_surface(4, 4, BLUE);
+        let src = create_test_image(4, 4, RED);
+        let mut dst = create_test_image(4, 4, BLUE);
 
         dst.blit_copy(0, 0, 2, 2, 0, 0, &src);
 
@@ -427,9 +421,9 @@ mod tests {
 
     #[test]
     fn test_blit_blend() {
-        let mut src = create_test_surface(3, 4, BLACK_50);
+        let mut src = create_test_image(3, 4, BLACK_50);
         src.clear_rect(0, 0, 1, 1, BLACK);
-        let mut dst = create_test_surface(3, 4, WHITE);
+        let mut dst = create_test_image(3, 4, WHITE);
 
         dst.blit_blend(0, 0, 1, 2, 1, 1, &src);
 
@@ -446,8 +440,8 @@ mod tests {
 
     #[test]
     fn test_blit_blend_transparrent() {
-        let src = create_test_surface(3, 4, TRANSPARENT);
-        let mut dst = create_test_surface(3, 4, GREEN);
+        let src = create_test_image(3, 4, TRANSPARENT);
+        let mut dst = create_test_image(3, 4, GREEN);
 
         dst.blit_blend(0, 0, 2, 2, 0, 0, &src);
 
@@ -468,8 +462,8 @@ mod tests {
 
     #[test]
     fn test_blit_scale_copy() {
-        let src = create_test_surface(4, 4, BLACK);
-        let mut dst = create_test_surface(8, 8, WHITE);
+        let src = create_test_image(4, 4, BLACK);
+        let mut dst = create_test_image(8, 8, WHITE);
 
         let src_rect = Rect::from_xywh(0, 0, 4, 4);
         let dst_rect = Rect::from_xywh(1, 1, 3, 2);
@@ -493,9 +487,9 @@ mod tests {
 
     #[test]
     fn test_blit_scale_blend() {
-        let mut src = create_test_surface(4, 4, BLACK_50);
+        let mut src = create_test_image(4, 4, BLACK_50);
         src.clear_rect(0, 0, 1, 1, GREEN);
-        let mut dst = create_test_surface(8, 8, WHITE);
+        let mut dst = create_test_image(8, 8, WHITE);
 
         let src_rect = Rect::from_xywh(0, 0, 2, 2);
         let dst_rect = Rect::from_xywh(3, 4, 4, 4);

@@ -24,6 +24,11 @@ pub const fn unpack_color(color: u32) -> [u8; 4] {
 }
 
 #[inline]
+pub fn get_alpha(color: u32) -> u8 {
+    unpack_color(color)[3]
+}
+
+#[inline]
 pub const fn mul_alpha_color(color: u32, alpha: u8) -> u32 {
     let [r, g, b, a] = unpack_color(color);
     rgba_color(r, g, b, mul_div_255(a, alpha))

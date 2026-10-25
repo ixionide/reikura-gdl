@@ -1,19 +1,19 @@
-mod surface;
+mod image;
 
 use anyhow::{Result, bail};
 use reikura_util::image::rgb_color;
 
-pub use self::surface::{Surface, color};
+pub use self::image::{Image, color};
 
 pub const MAX_IMAGE: usize = 128;
 
 pub struct Images {
     main: Option<u8>,
-    images: [Option<Surface>; MAX_IMAGE],
+    images: [Option<Image>; MAX_IMAGE],
 }
 
 impl Images {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             main: None,
             images: std::array::from_fn(|_| None),
@@ -21,30 +21,31 @@ impl Images {
     }
 
     #[inline]
-    pub fn unset_main(&mut self) {
+    fn unset_main(&mut self) {
         self.main = None;
     }
 
     #[inline]
-    pub fn set_main(&mut self, id: u8) {
+    fn set_main(&mut self, id: u8) {
         self.main = Some(id & MAX_IMAGE as u8);
     }
 
     #[inline]
-    pub fn get_ref(&self, id: u8) -> Option<&Surface> {
+    #[allow(dead_code)]
+    fn get_ref(&self, id: u8) -> Option<&Image> {
         self.images[id as usize & MAX_IMAGE].as_ref()
     }
 
     #[inline]
-    pub fn get_mut(&mut self, id: u8) -> Option<&mut Surface> {
+    fn get_mut(&mut self, id: u8) -> Option<&mut Image> {
         self.images[id as usize & MAX_IMAGE].as_mut()
     }
 
     #[inline]
-    pub fn set(&mut self, id: u8, width: u32, height: u32, data: Option<&[u8]>) -> Result<()> {
+    fn set(&mut self, id: u8, width: u32, height: u32, data: Option<&[u8]>) -> Result<()> {
         let image = match data {
-            Some(bytes) => Surface::from_bytes(width, height, bytes)?,
-            None => Surface::new(width, height),
+            Some(bytes) => Image::from_bytes(width, height, bytes)?,
+            None => Image::new(width, height),
         };
 
         self.images[id as usize & MAX_IMAGE] = Some(image);
@@ -53,21 +54,23 @@ impl Images {
     }
 
     #[inline]
-    pub fn get_main_ref(&mut self) -> Option<&Surface> {
+    fn get_main_ref(&mut self) -> Option<&Image> {
         self.images[self.main? as usize].as_ref()
     }
 
     #[inline]
-    pub fn get_main_mut(&mut self) -> Option<&mut Surface> {
+    #[allow(dead_code)]
+    fn get_main_mut(&mut self) -> Option<&mut Image> {
         self.images[self.main? as usize].as_mut()
     }
 
     #[inline]
-    pub fn get_image_pair(
+    #[allow(dead_code)]
+    fn get_image_pair(
         &mut self,
         src_id: u8,
         dst_id: Option<u8>,
-    ) -> Option<(&mut Surface, &mut Surface)> {
+    ) -> Option<(&mut Image, &mut Image)> {
         let indices = [src_id as usize, dst_id.or(self.main)? as usize];
 
         match self.images.get_disjoint_mut(indices) {
@@ -78,8 +81,8 @@ impl Images {
 }
 
 pub struct Graphics {
-    pub display: Surface,
-    _main_temp: Surface,
+    pub display: Image,
+    _main_temp: Image,
     _x: u32,
     _y: u32,
     images: Images,
@@ -89,8 +92,8 @@ pub struct Graphics {
 impl Graphics {
     pub fn new(view_width: u32, view_height: u32) -> Self {
         Self {
-            display: Surface::new(view_width, view_height),
-            _main_temp: Surface::new(view_width, view_height),
+            display: Image::new(view_width, view_height),
+            _main_temp: Image::new(view_width, view_height),
             _x: 0,
             _y: 0,
             images: Images::new(),
