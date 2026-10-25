@@ -2,7 +2,6 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::anyhow;
 use reikura_gdl::{Manifest, Vm};
-use reikura_gfx::GraphicEngine;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -30,7 +29,7 @@ impl ReikuraApp {
             .map(|it| it.path())
             .filter(|it| it.is_file())
             .find(suf_ext)
-            .ok_or(anyhow!("no suf file found"))?;
+            .ok_or(anyhow!("no .suf found"))?;
 
         let manifest = Manifest::parse(suf_path)?;
 
@@ -60,10 +59,10 @@ impl ApplicationHandler for ReikuraApp {
                 .into();
 
             // TODO: logging
-            let (w, h) = self.manifest.view_size;
-            let gfx = GraphicEngine::new(window.clone(), w, h);
-            let gfx = gfx.expect("failed to start gfx context");
-            let vm = Vm::new(self.manifest.clone(), gfx).expect("failed to start vm");
+            // let (w, h) = self.manifest.view_size;
+            // let gfx = GraphicEngine::new(window.clone(), w, h);
+            // let gfx = gfx.expect("failed to start gfx context");
+            let vm = Vm::new(self.manifest.clone()).expect("failed to start vm");
 
             window.set_visible(true);
             window.request_redraw();
@@ -73,25 +72,25 @@ impl ApplicationHandler for ReikuraApp {
     }
 
     fn can_create_surfaces(&mut self, _event_loop: &dyn ActiveEventLoop) {
-        let Some(window) = &self.window else {
+        let Some(_window) = &self.window else {
             return;
         };
 
-        let Some(vm) = &mut self.vm else {
+        let Some(_vm) = &mut self.vm else {
             return;
         };
 
-        vm.gfx
-            ._create_surface(window.clone())
-            .expect("failed to create surface");
+        // vm.gfx
+        //     ._create_surface(window.clone())
+        //     .expect("failed to create surface");
     }
 
     fn destroy_surfaces(&mut self, _event_loop: &dyn ActiveEventLoop) {
-        let Some(vm) = &mut self.vm else {
+        let Some(_vm) = &mut self.vm else {
             return;
         };
 
-        vm.gfx._destroy_surface();
+        // vm.gfx._destroy_surface();
     }
 
     fn window_event(
@@ -103,15 +102,10 @@ impl ApplicationHandler for ReikuraApp {
         let Some(window) = &self.window else {
             return;
         };
-
         if window.id() != window_id {
             return;
         }
-
         let Some(vm) = &mut self.vm else {
-            if event == WindowEvent::CloseRequested {
-                event_loop.exit();
-            }
             return;
         };
 
@@ -119,11 +113,11 @@ impl ApplicationHandler for ReikuraApp {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::RedrawRequested => {
                 vm.update().unwrap();
-                vm.gfx._render().unwrap();
+                // vm.gfx._render().unwrap();
                 window.request_redraw();
             }
             WindowEvent::SurfaceResized(size) => {
-                vm.gfx._resized(size.width, size.height).unwrap();
+                // vm.gfx._resized(size.width, size.height).unwrap();
                 vm.input._resized(size.into());
             }
             WindowEvent::PointerMoved { position, .. } => {

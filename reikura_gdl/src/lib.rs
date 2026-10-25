@@ -3,6 +3,7 @@ mod asset;
 mod audio;
 mod cache;
 pub mod format;
+pub mod graphic;
 mod image;
 mod input;
 pub mod instruction;

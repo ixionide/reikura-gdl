@@ -1,5 +1,5 @@
 use reikura_app::ReikuraApp;
-use winit::event_loop::EventLoopBuilder;
+use winit::event_loop::EventLoop;
 
 fn main() {
     let app_path = {
@@ -8,7 +8,8 @@ fn main() {
     };
 
     let reikura_app = ReikuraApp::new(app_path).unwrap();
-    let event_loop = EventLoopBuilder::default().build().unwrap();
+    let event_loop = EventLoop::new().unwrap();
 
+    event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
     event_loop.run_app(reikura_app).unwrap();
 }

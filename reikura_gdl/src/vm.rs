@@ -1,15 +1,14 @@
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
-use reikura_gfx::GraphicEngine;
 use reikura_util::{flag::Flag, register::Register};
 
 use crate::{
     AssetManager, AssetName, AudioManager, InputManager, Manifest, Parser, SaveContext, UserSetup,
-    instruction::INSTRUCTIONS,
+    graphic::Graphics, instruction::INSTRUCTIONS,
 };
 
-pub const FRAME_INTERVAL: Duration = Duration::from_millis(16);
+pub const FRAME_INTERVAL: Duration = Duration::from_millis(17);
 
 pub struct VmContext {
     pub flags: Flag,
@@ -38,7 +37,7 @@ pub struct Vm {
     pub assets: AssetManager,
     pub parser: Parser,
     pub audio: AudioManager,
-    pub gfx: GraphicEngine,
+    pub gfx: Graphics,
     pub ctx: VmContext,
     pub save: Option<SaveContext>,
     pub user_setup: UserSetup,
@@ -47,8 +46,9 @@ pub struct Vm {
 }
 
 impl Vm {
-    pub fn new(manifest: Manifest, gfx: GraphicEngine) -> anyhow::Result<Self> {
+    pub fn new(manifest: Manifest) -> anyhow::Result<Self> {
         let mut assets = AssetManager::new(&manifest)?;
+        let (view_w, view_h) = manifest.view_size;
         let input = InputManager::new(manifest.view_size);
         let config_path = manifest.game_path().join("user_setup");
         let start_scene = assets
@@ -61,7 +61,7 @@ impl Vm {
             assets,
             parser: Parser::new(start_scene),
             audio: AudioManager::new(1.0, 1.0, 1.0)?,
-            gfx,
+            gfx: Graphics::new(view_w, view_h),
             ctx: VmContext::new(),
             save: None,
             user_setup: UserSetup::open(config_path)?,
