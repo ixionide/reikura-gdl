@@ -108,7 +108,7 @@ impl Graphics {
         };
 
         self.display
-            .blit_copy(0, 0, main_image.width, main_image.height, 0, 0, main_image);
+            .blit_copy(main_image, 0, 0, 0, 0, main_image.width, main_image.height);
         self.request_redraw = true
     }
 

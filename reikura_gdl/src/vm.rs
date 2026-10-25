@@ -53,7 +53,6 @@ impl Vm {
         let (view_w, view_h) = manifest.view_size;
         let user_setup_path = manifest.game_path().join("user_setup");
 
-        let input = InputManager::new(view_w, view_h);
         let mut assets = AssetManager::new(&manifest)?;
         let start_scene = assets
             .load_scene(AssetName::START)
@@ -69,7 +68,7 @@ impl Vm {
             ctx: VmContext::new(now),
             save: None,
             user_setup: UserSetup::open(user_setup_path)?,
-            input,
+            input: InputManager::new(),
             state: State::Running,
         })
     }

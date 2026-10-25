@@ -18,10 +18,10 @@ pub mod color {
     pub const NAVY: u32 = reikura_util::image::blend_color(BLUE, BLACK_50);
 }
 
-pub struct Image<P = Vec<u32>> {
+pub struct Image<B = Vec<u32>> {
     pub width: u32,
     pub height: u32,
-    pixels: P,
+    buffer: B,
 }
 
 impl<P> Image<P> {
@@ -35,7 +35,7 @@ impl Image {
         Self {
             width,
             height,
-            pixels: vec![color::BLACK; width as usize * height as usize],
+            buffer: vec![color::BLACK; width as usize * height as usize],
         }
     }
 
@@ -44,7 +44,7 @@ impl Image {
             bail!("invalid bytes length");
         }
 
-        let pixels = unsafe {
+        let buffer = unsafe {
             let ptr = bytes.as_ptr().cast::<u32>();
             let len = bytes.len() / size_of::<u32>();
             std::slice::from_raw_parts(ptr, len).to_vec()
@@ -53,7 +53,7 @@ impl Image {
         Ok(Self {
             width,
             height,
-            pixels,
+            buffer,
         })
     }
 
@@ -63,27 +63,27 @@ impl Image {
 }
 
 impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
-    pub fn from_pixels(width: u32, height: u32, pixels: P) -> anyhow::Result<Self> {
-        if pixels.as_ref().len() != width as usize * height as usize {
-            bail!("invalid pixels length");
+    pub fn from_buffer(width: u32, height: u32, buffer: P) -> anyhow::Result<Self> {
+        if buffer.as_ref().len() != width as usize * height as usize {
+            bail!("invalid buffer length");
         }
 
         Ok(Self {
             width,
             height,
-            pixels,
+            buffer,
         })
     }
 
     #[inline]
     pub fn clear(&mut self, color: u32) {
-        self.pixels.as_mut().fill(color);
+        self.buffer.as_mut().fill(color);
     }
 
     #[inline]
-    pub fn clear_rect(&mut self, x: u32, y: u32, w: u32, h: u32, color: u32) {
-        let pixels = self.pixels.as_mut();
-        let rows = pixels
+    pub fn clear_rect(&mut self, color: u32, x: u32, y: u32, w: u32, h: u32) {
+        let buffer = self.buffer.as_mut();
+        let rows = buffer
             .chunks_exact_mut(self.width as usize)
             .skip(y as usize)
             .take(h as usize)
@@ -95,18 +95,18 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
     }
 
     #[inline]
-    pub fn draw_rect(&mut self, x: u32, y: u32, w: u32, h: u32, mut color: u32) {
+    pub fn draw_rect(&mut self, mut color: u32, x: u32, y: u32, w: u32, h: u32) {
         match get_alpha(color) {
             0x00 => return,
             0xFF => {
-                self.clear_rect(x, y, w, h, color);
+                self.clear_rect(color, x, y, w, h);
                 return;
             }
             _ => color = premul_color(color),
         }
 
-        let pixels = self.pixels.as_mut();
-        let rows = pixels
+        let buffer = self.buffer.as_mut();
+        let rows = buffer
             .chunks_exact_mut(self.width as usize)
             .skip(y as usize)
             .take(h as usize)
@@ -122,24 +122,24 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
     #[inline]
     pub fn blit_copy<T: AsRef<[u32]>>(
         &mut self,
+        src: &Image<T>,
         src_x: u32,
         src_y: u32,
-        blit_w: u32,
-        blit_h: u32,
         dst_x: u32,
         dst_y: u32,
-        src: &Image<T>,
+        blit_w: u32,
+        blit_h: u32,
     ) {
-        let src_pixels = src.pixels.as_ref();
-        let dst_pixels = self.pixels.as_mut();
+        let src_buffer = src.buffer.as_ref();
+        let dst_buffer = self.buffer.as_mut();
 
-        let src_rows = src_pixels
+        let src_rows = src_buffer
             .chunks_exact(src.width as usize)
             .skip(src_y as usize)
             .take(blit_h as usize)
             .map(|row| &row[src_x as usize..][..blit_w as usize]);
 
-        let dst_rows = dst_pixels
+        let dst_rows = dst_buffer
             .chunks_exact_mut(src.width as usize)
             .skip(dst_y as usize)
             .take(blit_h as usize)
@@ -153,24 +153,24 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
     #[inline]
     pub fn blit_blend<T: AsRef<[u32]>>(
         &mut self,
+        src: &Image<T>,
         src_x: u32,
         src_y: u32,
-        blit_w: u32,
-        blit_h: u32,
         dst_x: u32,
         dst_y: u32,
-        src: &Image<T>,
+        blit_w: u32,
+        blit_h: u32,
     ) {
-        let src_pixels = src.pixels.as_ref();
-        let dst_pixels = self.pixels.as_mut();
+        let src_buffer = src.buffer.as_ref();
+        let dst_buffer = self.buffer.as_mut();
 
-        let src_rows = src_pixels
+        let src_rows = src_buffer
             .chunks_exact(src.width as usize)
             .skip(src_y as usize)
             .take(blit_h as usize)
             .map(|row| &row[src_x as usize..][..blit_w as usize]);
 
-        let dst_rows = dst_pixels
+        let dst_rows = dst_buffer
             .chunks_exact_mut(src.width as usize)
             .skip(dst_y as usize)
             .take(blit_h as usize)
@@ -193,29 +193,29 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
     #[inline]
     pub fn blit_blend_alpha<T: AsRef<[u32]>>(
         &mut self,
+        src: &Image<T>,
         src_x: u32,
         src_y: u32,
-        blit_w: u32,
-        blit_h: u32,
         dst_x: u32,
         dst_y: u32,
+        blit_w: u32,
+        blit_h: u32,
         alpha: u8,
-        src: &Image<T>,
     ) {
         if alpha == 0xFF {
-            self.blit_blend(src_x, src_y, blit_w, blit_h, dst_x, dst_y, src);
+            self.blit_blend(src, src_x, src_y, dst_x, dst_y, blit_w, blit_h);
         }
 
-        let src_pixels = src.pixels.as_ref();
-        let dst_pixels = self.pixels.as_mut();
+        let src_buffer = src.buffer.as_ref();
+        let dst_buffer = self.buffer.as_mut();
 
-        let src_rows = src_pixels
+        let src_rows = src_buffer
             .chunks_exact(src.width as usize)
             .skip(src_y as usize)
             .take(blit_h as usize)
             .map(|row| &row[src_x as usize..][..blit_w as usize]);
 
-        let dst_rows = dst_pixels
+        let dst_rows = dst_buffer
             .chunks_exact_mut(src.width as usize)
             .skip(dst_y as usize)
             .take(blit_h as usize)
@@ -256,8 +256,8 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
             return Ok(());
         }
 
-        let src_pixels = src.pixels.as_ref();
-        let dst_pixels = self.pixels.as_mut();
+        let src_buffer = src.buffer.as_ref();
+        let dst_buffer = self.buffer.as_mut();
 
         let src_stride = src.width as usize;
         let dst_stride = self.width as usize;
@@ -283,7 +283,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
                 let src_idx = src_row * src_stride + src_start_x + srcx;
                 let dst_idx = dst_row * dst_stride + dst_start_x + dx;
 
-                dst_pixels[dst_idx] = src_pixels[src_idx];
+                dst_buffer[dst_idx] = src_buffer[src_idx];
                 posx += incx;
             }
 
@@ -312,8 +312,8 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
             return Ok(());
         }
 
-        let src_pixels = src.pixels.as_ref();
-        let dst_pixels = self.pixels.as_mut();
+        let src_buffer = src.buffer.as_ref();
+        let dst_buffer = self.buffer.as_mut();
 
         let src_stride = src.width as usize;
         let dst_stride = self.width as usize;
@@ -337,7 +337,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
             for dx in 0..dst_w as usize {
                 let srcx = (posx >> 16) as usize;
 
-                let src_color = src_pixels[src_row * src_stride + src_start_x + srcx];
+                let src_color = src_buffer[src_row * src_stride + src_start_x + srcx];
 
                 // if transparent
                 if get_alpha(src_color) == 0x00 {
@@ -345,7 +345,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
                     continue;
                 }
 
-                let dst_color = &mut dst_pixels[dst_row * dst_stride + dst_start_x + dx];
+                let dst_color = &mut dst_buffer[dst_row * dst_stride + dst_start_x + dx];
                 *dst_color = blend_color(*dst_color, src_color);
                 posx += incx;
             }
@@ -371,7 +371,7 @@ mod tests {
     fn test_clear_rect() {
         let mut dst = create_test_image(4, 4, BLUE);
 
-        dst.clear_rect(1, 1, 2, 2, GRAY);
+        dst.clear_rect(GRAY, 1, 1, 2, 2);
 
         #[rustfmt::skip]
         let expected = [
@@ -381,14 +381,14 @@ mod tests {
             BLUE, BLUE, BLUE, BLUE,
         ];
 
-        assert_eq!(dst.pixels, expected);
+        assert_eq!(dst.buffer, expected);
     }
 
     #[test]
     fn test_draw_rect() {
         let mut dst = create_test_image(4, 4, BLUE);
 
-        dst.draw_rect(1, 1, 2, 2, BLACK_50);
+        dst.draw_rect(BLACK_50, 1, 1, 2, 2);
 
         #[rustfmt::skip]
         let expected = [
@@ -398,7 +398,7 @@ mod tests {
             BLUE, BLUE, BLUE, BLUE,
         ];
 
-        assert_eq!(dst.pixels, expected);
+        assert_eq!(dst.buffer, expected);
     }
 
     #[test]
@@ -406,7 +406,7 @@ mod tests {
         let src = create_test_image(4, 4, RED);
         let mut dst = create_test_image(4, 4, BLUE);
 
-        dst.blit_copy(0, 0, 2, 2, 0, 0, &src);
+        dst.blit_copy(&src, 0, 0, 0, 0, 2, 2);
 
         #[rustfmt::skip]
         let expected = [
@@ -416,16 +416,16 @@ mod tests {
             BLUE, BLUE, BLUE, BLUE,
         ];
 
-        assert_eq!(dst.pixels, expected);
+        assert_eq!(dst.buffer, expected);
     }
 
     #[test]
     fn test_blit_blend() {
         let mut src = create_test_image(3, 4, BLACK_50);
-        src.clear_rect(0, 0, 1, 1, BLACK);
+        src.clear_rect(BLACK, 0, 0, 1, 1);
         let mut dst = create_test_image(3, 4, WHITE);
 
-        dst.blit_blend(0, 0, 1, 2, 1, 1, &src);
+        dst.blit_blend(&src, 0, 0, 1, 1, 1, 2);
 
         #[rustfmt::skip]
         let expected = [
@@ -435,7 +435,7 @@ mod tests {
             WHITE, WHITE, WHITE,
         ];
 
-        assert_eq!(dst.pixels, expected);
+        assert_eq!(dst.buffer, expected);
     }
 
     #[test]
@@ -443,7 +443,7 @@ mod tests {
         let src = create_test_image(3, 4, TRANSPARENT);
         let mut dst = create_test_image(3, 4, GREEN);
 
-        dst.blit_blend(0, 0, 2, 2, 0, 0, &src);
+        dst.blit_blend(&src, 0, 0, 0, 0, 2, 2);
 
         #[rustfmt::skip]
         let expected = [
@@ -453,7 +453,7 @@ mod tests {
             GREEN, GREEN, GREEN,
         ];
 
-        assert_eq!(dst.pixels, expected);
+        assert_eq!(dst.buffer, expected);
     }
 
     // #[test]
@@ -482,13 +482,13 @@ mod tests {
             WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
         ];
 
-        assert_eq!(dst.pixels, expected);
+        assert_eq!(dst.buffer, expected);
     }
 
     #[test]
     fn test_blit_scale_blend() {
         let mut src = create_test_image(4, 4, BLACK_50);
-        src.clear_rect(0, 0, 1, 1, GREEN);
+        src.clear_rect(GREEN, 0, 0, 1, 1);
         let mut dst = create_test_image(8, 8, WHITE);
 
         let src_rect = Rect::from_xywh(0, 0, 2, 2);
@@ -508,6 +508,6 @@ mod tests {
             WHITE, WHITE, WHITE, GRAY, GRAY, GRAY, GRAY, WHITE,
         ];
 
-        assert_eq!(dst.pixels, expected);
+        assert_eq!(dst.buffer, expected);
     }
 }

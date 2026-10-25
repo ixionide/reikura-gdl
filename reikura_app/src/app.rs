@@ -1,7 +1,7 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{ops::DerefMut, path::PathBuf, sync::Arc};
 
 use anyhow::anyhow;
-use reikura_gdl::{Manifest, Vm};
+use reikura_gdl::{Manifest, Vm, graphic};
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -10,10 +10,18 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
+use crate::{Renderer, Viewport};
+
+pub struct ReikuraContext {
+    pub window: Arc<dyn Window>,
+    pub renderer: Renderer,
+    pub vm: Vm,
+}
+
 pub struct ReikuraApp {
     manifest: Manifest,
-    window: Option<Arc<dyn Window>>,
-    vm: Option<Vm>,
+    viewport: Viewport,
+    context: Option<ReikuraContext>,
 }
 
 impl ReikuraApp {
@@ -32,11 +40,12 @@ impl ReikuraApp {
             .ok_or(anyhow!("no .suf found"))?;
 
         let manifest = Manifest::parse(suf_path)?;
+        let (w, h) = manifest.view_size;
 
         Ok(Self {
             manifest,
-            window: None,
-            vm: None,
+            viewport: Viewport::new(w, h),
+            context: None,
         })
     }
 
@@ -53,44 +62,42 @@ impl ApplicationHandler for ReikuraApp {
     fn new_events(&mut self, event_loop: &dyn ActiveEventLoop, cause: StartCause) {
         if cause == StartCause::Init {
             let attr = self.window_attributes();
+            let display_handle = event_loop.owned_display_handle();
             let window: Arc<dyn Window> = event_loop
                 .create_window(attr)
                 .expect("failed to create window")
                 .into();
-
-            // TODO: logging
-            // let (w, h) = self.manifest.view_size;
-            // let gfx = GraphicEngine::new(window.clone(), w, h);
-            // let gfx = gfx.expect("failed to start gfx context");
             let vm = Vm::new(self.manifest.clone()).expect("failed to start vm");
+            let renderer =
+                Renderer::new(display_handle).expect("failed to create renderer context");
 
             window.set_visible(true);
             window.request_redraw();
-            self.window = Some(window);
-            self.vm = Some(vm);
+
+            self.context = Some(ReikuraContext {
+                window,
+                renderer,
+                vm,
+            })
         }
     }
 
     fn can_create_surfaces(&mut self, _event_loop: &dyn ActiveEventLoop) {
-        let Some(_window) = &self.window else {
+        let Some(ctx) = &mut self.context else {
             return;
         };
 
-        let Some(_vm) = &mut self.vm else {
-            return;
-        };
-
-        // vm.gfx
-        //     ._create_surface(window.clone())
-        //     .expect("failed to create surface");
+        ctx.renderer
+            .create_surface(Arc::clone(&ctx.window))
+            .unwrap();
     }
 
     fn destroy_surfaces(&mut self, _event_loop: &dyn ActiveEventLoop) {
-        let Some(_vm) = &mut self.vm else {
+        let Some(ctx) = &mut self.context else {
             return;
         };
 
-        // vm.gfx._destroy_surface();
+        ctx.renderer.destroy_surface();
     }
 
     fn window_event(
@@ -99,32 +106,58 @@ impl ApplicationHandler for ReikuraApp {
         window_id: WindowId,
         event: WindowEvent,
     ) {
-        let Some(window) = &self.window else {
+        let Some(ctx) = &mut self.context else {
             return;
         };
+
+        let ReikuraContext {
+            window,
+            renderer,
+            vm,
+        } = ctx;
+
         if window.id() != window_id {
             return;
         }
-        let Some(vm) = &mut self.vm else {
-            return;
-        };
 
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::RedrawRequested => {
+                if vm.gfx.request_redraw {
+                    let vwpt = &self.viewport;
+                    let surface = renderer.get_surface().unwrap();
+                    let mut surface_buffer = surface.buffer_mut().unwrap();
+                    let (width, height) = window.surface_size().into();
+
+                    let mut surface_image =
+                        graphic::Image::from_buffer(width, height, surface_buffer.deref_mut())
+                            .unwrap();
+
+                    surface_image.clear(graphic::color::BLACK);
+                    surface_image.blit_copy(&vm.gfx.display, 0, 0, vwpt.x, vwpt.y, vwpt.w, vwpt.h);
+
+                    vm.gfx.request_redraw = false;
+                }
+
                 vm.update().unwrap();
-                // vm.gfx._render().unwrap();
                 window.request_redraw();
             }
             WindowEvent::SurfaceResized(size) => {
-                // vm.gfx._resized(size.width, size.height).unwrap();
-                vm.input._resized(size.into());
+                if [size.width, size.height].contains(&0) {
+                    return;
+                }
+
+                renderer.resize_surface(size).unwrap();
+                self.viewport = Viewport::letterbox(size.into(), self.manifest.view_size);
+                vm.gfx.request_redraw = true;
             }
             WindowEvent::PointerMoved { position, .. } => {
-                let pos = (position.x as i32, position.y as i32);
-                vm.input._mouse_moved(pos);
+                let mouse_pos = self
+                    .viewport
+                    .map_position(self.manifest.view_size, position.into());
+                vm.input.mouse_pos = Some(mouse_pos);
             }
-            WindowEvent::PointerLeft { .. } => {
+            WindowEvent::PointerLeft { .. } | WindowEvent::Focused(false) => {
                 vm.input.mouse_pos = None;
             }
             _ => (),
