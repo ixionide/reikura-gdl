@@ -1,4 +1,3 @@
-pub mod bitset;
 pub mod collections;
 pub mod encoding;
 pub mod flag;

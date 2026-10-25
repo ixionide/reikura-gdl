@@ -79,7 +79,7 @@ impl AssetManager {
                 let deobfuscator = get_known_filter(&title_id).map(Deobfuscator::new);
                 deobfuscator.or_else(|| {
                     let exe_data = std::fs::read(exe_path?).ok()?;
-                    Deobfuscator::try_filter_search(&exe_data)
+                    Deobfuscator::find_filter(&exe_data)
                 })
             };
 
@@ -310,7 +310,10 @@ impl crate::instruction::Parameters for AssetName {
 impl Eq for AssetName {}
 impl PartialEq for AssetName {
     fn eq(&self, other: &Self) -> bool {
-        if self.end != other.end {
+        let end = self.ext.unwrap_or(self.end);
+        let other_end = other.ext.unwrap_or(other.end);
+
+        if end != other_end {
             return false;
         }
 

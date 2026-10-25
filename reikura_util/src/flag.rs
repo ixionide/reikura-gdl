@@ -1,4 +1,4 @@
-use crate::bitset::BitSet;
+use crate::collections::BitSet;
 
 pub struct Flag<B: AsRef<[u8]> + AsMut<[u8]> = Vec<u8>> {
     inner: BitSet<B>,

@@ -1,6 +1,6 @@
 pub struct Deobfuscator {
     key: Vec<u8>,
-    filter: [u8; 2048],
+    filter: Box<[u8; 2048]>,
 }
 
 impl Deobfuscator {
@@ -8,7 +8,10 @@ impl Deobfuscator {
         decode(&mut filter);
         let key = get_key(&filter);
 
-        Self { key, filter }
+        Self {
+            key,
+            filter: Box::from(filter),
+        }
     }
 
     pub fn find_filter(executable: &[u8]) -> Option<Self> {

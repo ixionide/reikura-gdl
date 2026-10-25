@@ -71,29 +71,3 @@ impl Rect {
         (self.width(), self.height())
     }
 }
-
-pub fn surface_rect(window_size: (u32, u32), view_size: (u32, u32)) -> Rect {
-    let window_w = window_size.0 as f32;
-    let window_h = window_size.1 as f32;
-    let view_w = view_size.0 as f32;
-    let view_h = view_size.1 as f32;
-
-    let window_scale = window_w / window_h;
-    let view_scale = view_w / view_h;
-
-    if window_scale < view_scale {
-        let w = window_w as u32;
-        let h = (window_w / view_scale) as u32;
-        let x = 0;
-        let y = (window_size.1 - h) / 2;
-
-        Rect::from_xywh(x, y, w, h)
-    } else {
-        let w = (window_h * view_scale) as u32;
-        let h = window_h as u32;
-        let x = (window_size.0 - w) / 2;
-        let y = 0;
-
-        Rect::from_xywh(x, y, w, h)
-    }
-}

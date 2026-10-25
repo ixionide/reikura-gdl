@@ -1,10 +1,105 @@
-use std::{array, mem::MaybeUninit};
-
 use std::io::{Error, ErrorKind, Read, Result, Write};
 use std::marker::PhantomData;
 use std::ops::Deref;
 
 use crate::io::{ReadEndian, WriteEndian};
+
+pub struct BitSet<B: AsRef<[u8]> + AsMut<[u8]> = Vec<u8>> {
+    inner: B,
+    count: usize,
+}
+
+impl BitSet<Vec<u8>> {
+    pub fn new(bit_count: usize) -> Self {
+        // let byte_count = (count - 1) / 8 + 1;
+        // let byte_count = (count + 7) / 8;
+        let byte_count = bit_count.div_ceil(8);
+
+        Self {
+            inner: vec![0; byte_count],
+            count: bit_count,
+        }
+    }
+
+    pub fn resize(&mut self, count: usize) {
+        if count < self.count {
+            return;
+        }
+
+        let byte_count = count.div_ceil(8);
+        self.count = count;
+
+        if byte_count > self.inner.len() {
+            self.inner.resize(byte_count, 0);
+        }
+    }
+}
+
+impl<B: AsRef<[u8]> + AsMut<[u8]>> BitSet<B> {
+    pub fn from_raw(bytes: B, bit_count: usize) -> Self {
+        let byte_count = bit_count.div_ceil(8);
+
+        assert!(byte_count == bytes.as_ref().len());
+
+        Self {
+            inner: bytes,
+            count: bit_count,
+        }
+    }
+
+    pub fn as_slice(&self) -> &[u8] {
+        self.inner.as_ref()
+    }
+
+    pub fn len(&self) -> usize {
+        self.count
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.count == 0
+    }
+
+    pub fn get(&self, index: usize) -> Option<bool> {
+        if index >= self.count {
+            return None;
+        }
+
+        let byte_index = index / 8;
+        let bitmask = 1 << (index & 7);
+        let byte = self.inner.as_ref().get(byte_index)?;
+
+        Some(byte & bitmask != 0)
+    }
+
+    pub fn set(&mut self, index: usize, value: bool) -> Option<bool> {
+        if index >= self.count {
+            return None;
+        }
+
+        let byte_index = index / 8;
+        let bitmask = 1 << (index & 7);
+        let byte = self.inner.as_mut().get_mut(byte_index)?;
+        match value {
+            true => *byte |= bitmask,
+            false => *byte &= !bitmask,
+        }
+
+        Some(value)
+    }
+
+    pub fn toggle(&mut self, index: usize) -> Option<bool> {
+        if index >= self.count {
+            return None;
+        }
+
+        let byte_index = index / 8;
+        let bitmask = 1 << (index & 7);
+        let byte = self.inner.as_mut().get_mut(byte_index)?;
+        *byte ^= bitmask;
+
+        Some((*byte & bitmask) != 0)
+    }
+}
 
 pub struct LenVec<L: Into<usize>, T>(Vec<T>, PhantomData<L>);
 
@@ -114,8 +209,7 @@ impl std::fmt::Display for StackError {
 impl std::error::Error for StackError {}
 
 pub struct Stack<T, const N: usize> {
-    len: usize,
-    items: [MaybeUninit<T>; N],
+    inner: Vec<T>,
 }
 
 impl<T, const N: usize> Default for Stack<T, N> {
@@ -127,8 +221,7 @@ impl<T, const N: usize> Default for Stack<T, N> {
 impl<T, const N: usize> Stack<T, N> {
     pub fn new() -> Self {
         Self {
-            len: 0,
-            items: array::from_fn(|_| MaybeUninit::uninit()),
+            inner: Vec::with_capacity(N),
         }
     }
 
@@ -137,11 +230,11 @@ impl<T, const N: usize> Stack<T, N> {
     }
 
     pub fn len(&self) -> usize {
-        self.len
+        self.inner.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len == 0
+        self.inner.is_empty()
     }
 
     pub fn push(&mut self, value: T) -> StackResult<()> {
@@ -149,37 +242,16 @@ impl<T, const N: usize> Stack<T, N> {
             return Err(StackError::Overflow);
         }
 
-        self.items[self.len].write(value);
-        self.len += 1;
+        self.inner.push(value);
 
         Ok(())
     }
 
     pub fn pop(&mut self) -> StackResult<T> {
-        if self.len == 0 {
-            return Err(StackError::Underflow);
-        }
-
-        self.len -= 1;
-
-        unsafe { Ok(self.items[self.len].assume_init_read()) }
+        self.inner.pop().ok_or(StackError::Underflow)
     }
 
     pub fn clear(&mut self) {
-        let ptr = self.items.as_mut_ptr() as *mut T;
-        let len = self.len();
-
-        self.len = 0;
-
-        unsafe {
-            let items = std::slice::from_raw_parts_mut(ptr, len);
-            std::ptr::drop_in_place(items);
-        }
-    }
-}
-
-impl<T, const N: usize> Drop for Stack<T, N> {
-    fn drop(&mut self) {
-        self.clear();
+        self.inner.clear();
     }
 }
