@@ -8,23 +8,25 @@ use crate::{
     graphic::Graphics, instruction::INSTRUCTIONS,
 };
 
-pub const FRAME_INTERVAL: Duration = Duration::from_millis(17);
+pub const _FRAME_INTERVAL: Duration = Duration::from_millis(17);
 
 pub struct VmContext {
     pub flags: Flag,
     pub registers: Register,
-    pub wait_duration: Option<Duration>,
+    pub current_time: Instant,
+    pub wait_time: Option<Instant>,
     pub timer: Option<Timer>,
     // TODO: this make much more sense stored in the text renderer struct
     pub char_names: [Option<String>; 256],
 }
 
 impl VmContext {
-    pub fn new() -> Self {
+    pub fn new(current_time: Instant) -> Self {
         Self {
             flags: Flag::new(2048),
             registers: Register::new(2048),
-            wait_duration: None,
+            current_time,
+            wait_time: None,
             timer: None,
             char_names: [const { None }; 256],
         }
@@ -32,7 +34,7 @@ impl VmContext {
 }
 
 pub struct Vm {
-    pub last_update: Option<Instant>,
+    last_update: Instant,
     pub manifest: Manifest,
     pub assets: AssetManager,
     pub parser: Parser,
@@ -47,69 +49,69 @@ pub struct Vm {
 
 impl Vm {
     pub fn new(manifest: Manifest) -> anyhow::Result<Self> {
-        let mut assets = AssetManager::new(&manifest)?;
+        let now = Instant::now();
         let (view_w, view_h) = manifest.view_size;
-        let input = InputManager::new(manifest.view_size);
-        let config_path = manifest.game_path().join("user_setup");
+        let user_setup_path = manifest.game_path().join("user_setup");
+
+        let input = InputManager::new(view_w, view_h);
+        let mut assets = AssetManager::new(&manifest)?;
         let start_scene = assets
             .load_scene(AssetName::START)
-            .context("failed to load start script")?;
+            .context("failed to load start scenario")?;
 
         Ok(Self {
-            last_update: None,
+            last_update: now,
             manifest,
             assets,
             parser: Parser::new(start_scene),
             audio: AudioManager::new(1.0, 1.0, 1.0)?,
             gfx: Graphics::new(view_w, view_h),
-            ctx: VmContext::new(),
+            ctx: VmContext::new(now),
             save: None,
-            user_setup: UserSetup::open(config_path)?,
+            user_setup: UserSetup::open(user_setup_path)?,
             input,
             state: State::Running,
         })
     }
 
-    pub fn update(&mut self) -> anyhow::Result<()> {
-        let now = Instant::now();
-        let _dt = self.last_update.map(|last| now.duration_since(last));
-        self.last_update = Some(now);
-
-        match self.state {
-            State::Exit => todo!(),
-            State::Running => self.tick()?,
-            State::Wait { start, duration } => {
-                let elapsed = start.elapsed();
-
-                if elapsed > duration {
-                    self.state.run();
-                    return Ok(());
-                }
-
-                let time_remaining = duration.saturating_sub(elapsed);
-                let sleep_duration = FRAME_INTERVAL.min(time_remaining);
-                std::thread::sleep(sleep_duration);
-            }
+    fn should_tick(&mut self, now: Instant) -> bool {
+        let tick = match self.state {
+            State::Exit => false,
+            State::Running => true,
+            State::Wait { time } => now > time,
             State::WaitClick => todo!(),
             State::WaitText => todo!(),
             State::WaitTransition => todo!(),
-            State::WaitVoice => {
-                if self.audio.track.voice.is_audio_finished() {
-                    self.state.run();
-                }
-            }
+            State::WaitVoice => self.audio.track.voice.is_audio_finished(),
             State::WaitVideo => todo!(),
+        };
+
+        if tick {
+            self.state.run()
         }
 
-        Ok(())
+        tick
     }
 
-    pub fn tick(&mut self) -> anyhow::Result<()> {
+    fn tick(&mut self) -> anyhow::Result<()> {
         let ip = self.parser.state.ip;
         let op = self.parser.read_opcode()?;
         let inst = INSTRUCTIONS[op as usize];
 
         inst.execute(self, ip)?;
+
+        Ok(())
+    }
+
+    pub fn update(&mut self) -> anyhow::Result<()> {
+        let now = Instant::now();
+        let _dt = now - self.last_update;
+        self.last_update = now;
+        self.ctx.current_time = now;
+
+        if self.should_tick(now) {
+            self.tick()?;
+        }
 
         Ok(())
     }
@@ -138,7 +140,7 @@ impl Timer {
 pub enum State {
     Exit,
     Running,
-    Wait { start: Instant, duration: Duration },
+    Wait { time: Instant },
     WaitClick,
     WaitText,
     WaitTransition,
@@ -155,11 +157,8 @@ impl State {
         *self = Self::Running;
     }
 
-    pub fn wait(&mut self, duration: Duration) {
-        *self = Self::Wait {
-            start: Instant::now(),
-            duration,
-        }
+    pub fn wait(&mut self, time: Instant) {
+        *self = Self::Wait { time }
     }
 
     pub fn wait_click(&mut self) {

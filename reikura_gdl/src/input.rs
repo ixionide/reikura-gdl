@@ -21,7 +21,7 @@ pub struct InputManager {
 }
 
 impl InputManager {
-    pub fn new(view_size: (u32, u32)) -> Self {
+    pub fn new(view_width: u32, view_height: u32) -> Self {
         Self {
             focused: None,
             default_key_map: None,
@@ -29,8 +29,8 @@ impl InputManager {
             hot_spots: [const { None }; MAX_HOTSPOTS],
             hit_mask: None,
             mouse_pos: None,
-            surface_rect: Rect::from_xywh(0, 0, view_size.0, view_size.1),
-            view_size,
+            surface_rect: Rect::from_xywh(0, 0, view_width, view_height),
+            view_size: (view_width, view_height),
         }
     }
 
