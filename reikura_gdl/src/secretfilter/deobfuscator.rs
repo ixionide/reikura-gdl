@@ -11,7 +11,7 @@ impl Deobfuscator {
         Self { key, filter }
     }
 
-    pub fn try_filter_search(executable: &[u8]) -> Option<Self> {
+    pub fn find_filter(executable: &[u8]) -> Option<Self> {
         let mut filter = [0; 2048];
         let start = executable
             .array_windows::<8>()

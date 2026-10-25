@@ -44,7 +44,7 @@ fn main() {
                     .expect("missing an argument for parameter executable");
                 let exe_data = std::fs::read(&exe_path).expect("invalid executable path");
 
-                deopfuscator = Deobfuscator::try_filter_search(&exe_data);
+                deopfuscator = Deobfuscator::find_filter(&exe_data);
             }
             _ => {
                 let path = Path::new(&arg);
