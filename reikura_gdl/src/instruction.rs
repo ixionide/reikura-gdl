@@ -17,6 +17,8 @@ inst! {
     //
     fln, sk, sks, hf, ft, sp, hp,
     //
+    es, ec,
+    //
     hn, hxp,
     hln, hs, hinc, hdec, calc, hsg, ht,
     r#if,
@@ -78,7 +80,7 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x24] = stub("CN");
     insts[0x25] = Inst::new("CNS", cns);
     insts[0x26] = stub("PF");
-    insts[0x27] = stub("PB"); // set text window fontsize?
+    insts[0x27] = stub("PB"); // set text window fontsize
     insts[0x28] = stub("PJ"); // set text window fontstyle?
     insts[0x29] = stub("WO"); // show text window
     insts[0x2A] = stub("WC"); // hide text window
@@ -94,8 +96,8 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x35] = Inst::new("SP", sp);
     insts[0x36] = Inst::new("HP", hp);
     insts[0x37] = stub("STS");
-    insts[0x38] = stub("ES");
-    insts[0x39] = stub("EC");
+    insts[0x38] = Inst::new("ES", es);
+    insts[0x39] = Inst::new("EC", ec);
     insts[0x3A] = stub("STC");
     insts[0x3B] = Inst::new("HN", hn);
     insts[0x3C] = Inst::new("HXP", hxp);
@@ -158,7 +160,7 @@ pub const INSTRUCTIONS: [Instruction; 256] = const {
     insts[0x80] = stub("IM");
     insts[0x81] = stub("IC");
     insts[0x82] = stub("IMS");
-    insts[0x83] = stub("IXY");
+    insts[0x83] = stub("IXY"); // move mouse cursor
     insts[0x84] = Inst::new("IH", ih);
     insts[0x85] = stub("IG");
     insts[0x86] = Inst::new_skipped("IGINIT");
