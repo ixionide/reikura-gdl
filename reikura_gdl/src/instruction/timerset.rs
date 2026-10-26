@@ -5,7 +5,7 @@ use crate::{
 };
 
 pub fn timerset(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-    let delay = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+    let delay = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
 
     vm.ctx.timer = Some(Timer::new(delay));
 

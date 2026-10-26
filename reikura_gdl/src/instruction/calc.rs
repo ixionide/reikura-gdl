@@ -23,28 +23,28 @@ pub fn calc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     loop {
         match vm.parser.read_param::<u8>()? {
             ADD => {
-                let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+                let rhs = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
 
                 if let Some(num) = tmp.replace(rhs) {
                     result += num;
                 }
             }
             MIN => {
-                let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+                let rhs = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
 
                 if let Some(num) = tmp.replace(-rhs) {
                     result += num;
                 }
             }
             MUL => {
-                let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+                let rhs = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
 
                 if let Some(lhs) = &mut tmp {
                     *lhs *= rhs
                 }
             }
             DIV => {
-                let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+                let rhs = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
 
                 if let Some(lhs) = &mut tmp
                     && rhs != 0
@@ -53,7 +53,7 @@ pub fn calc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
                 }
             }
             MOD => {
-                let rhs = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+                let rhs = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
 
                 if let Some(lhs) = &mut tmp
                     && rhs != 0

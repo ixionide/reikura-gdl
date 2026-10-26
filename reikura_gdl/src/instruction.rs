@@ -296,6 +296,12 @@ impl Instruction {
         let info: InstructionInfo = vm.parser.read_param()?;
         let next_ip = ip + info.len;
 
+        // dbg!(&vm.parser.scenario.name);
+        // dbg!(self.name);
+        // let offset = ip + vm.parser.scenario.metadata.code_offset;
+        // dbg!(ip);
+        // dbg!(offset);
+
         // end of scenario
         if info.len == 0 {
             vm.state.exit();
@@ -311,11 +317,6 @@ impl Instruction {
             }
         } else {
             result?;
-        }
-
-        // TODO: log something is wrong
-        if vm.parser.state.ip != next_ip {
-            vm.parser.state.ip = next_ip;
         }
 
         Ok(())

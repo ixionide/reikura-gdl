@@ -41,12 +41,12 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let check_cond = |&(lhs, op, rhs): &(Value, u8, Value)| {
         let ctx = &vm.ctx;
         match op {
-            EQ => lhs.evaluate(ctx) == rhs.evaluate(ctx),
-            LT => lhs.evaluate(ctx) < rhs.evaluate(ctx),
-            LE => lhs.evaluate(ctx) <= rhs.evaluate(ctx),
-            GT => lhs.evaluate(ctx) > rhs.evaluate(ctx),
-            GE => lhs.evaluate(ctx) >= rhs.evaluate(ctx),
-            NE => lhs.evaluate(ctx) != rhs.evaluate(ctx),
+            EQ => lhs.eval(ctx) == rhs.eval(ctx),
+            LT => lhs.eval(ctx) < rhs.eval(ctx),
+            LE => lhs.eval(ctx) <= rhs.eval(ctx),
+            GT => lhs.eval(ctx) > rhs.eval(ctx),
+            GE => lhs.eval(ctx) >= rhs.eval(ctx),
+            NE => lhs.eval(ctx) != rhs.eval(ctx),
             _ => unreachable!(),
         }
     };
@@ -70,7 +70,7 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
                 end = vm.parser.read_param()?;
 
                 if conds.iter().all(check_cond) {
-                    let reg_value = reg_value.evaluate(&vm.ctx);
+                    let reg_value = reg_value.eval(&vm.ctx);
                     vm.ctx.registers.set(reg_index, reg_value);
                 }
             }

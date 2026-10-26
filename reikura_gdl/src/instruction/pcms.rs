@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn pcms(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-    let ms = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+    let ms = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
     let fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
 
     vm.audio.stop_voice(fade);

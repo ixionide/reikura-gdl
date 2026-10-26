@@ -22,6 +22,7 @@ pub struct ReikuraApp {
     manifest: Manifest,
     viewport: Viewport,
     context: Option<ReikuraContext>,
+    request_redraw: bool,
 }
 
 impl ReikuraApp {
@@ -46,6 +47,7 @@ impl ReikuraApp {
             manifest,
             viewport: Viewport::new(w, h),
             context: None,
+            request_redraw: true,
         })
     }
 
@@ -123,7 +125,7 @@ impl ApplicationHandler for ReikuraApp {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::RedrawRequested => {
-                if vm.gfx.request_redraw {
+                if vm.gfx.request_redraw || self.request_redraw {
                     let vwpt = &self.viewport;
                     let surface = renderer.get_surface().unwrap();
                     let mut surface_buffer = surface.buffer_mut().unwrap();
@@ -136,7 +138,9 @@ impl ApplicationHandler for ReikuraApp {
                     surface_image.clear(graphic::color::BLACK);
                     surface_image.blit_copy(&vm.gfx.display, 0, 0, vwpt.x, vwpt.y, vwpt.w, vwpt.h);
 
+                    surface_buffer.present().unwrap();
                     vm.gfx.request_redraw = false;
+                    self.request_redraw = false;
                 }
 
                 vm.update().unwrap();
@@ -149,7 +153,7 @@ impl ApplicationHandler for ReikuraApp {
 
                 renderer.resize_surface(size).unwrap();
                 self.viewport = Viewport::letterbox(size.into(), self.manifest.view_size);
-                vm.gfx.request_redraw = true;
+                self.request_redraw = true;
             }
             WindowEvent::PointerMoved { position, .. } => {
                 let mouse_pos = self

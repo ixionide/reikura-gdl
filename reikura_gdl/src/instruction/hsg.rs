@@ -13,12 +13,12 @@ pub fn hsg(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     if reg_value.is_random() {
         for index in range {
             // generate random number every iteration
-            let random_value = reg_value.evaluate(&vm.ctx);
+            let random_value = reg_value.eval(&vm.ctx);
             vm.ctx.registers.set(index, random_value);
         }
     } else {
         // evaluate once
-        let value = reg_value.evaluate(&vm.ctx);
+        let value = reg_value.eval(&vm.ctx);
         for index in range {
             vm.ctx.registers.set(index, value);
         }

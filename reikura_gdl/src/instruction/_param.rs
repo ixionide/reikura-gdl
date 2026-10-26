@@ -63,7 +63,7 @@ impl Value {
         }
     }
 
-    pub fn evaluate(&self, ctx: &VmContext) -> i32 {
+    pub fn eval(&self, ctx: &VmContext) -> i32 {
         match *self {
             Value::Literal(value) => value,
             Value::Register(index) => {
@@ -144,12 +144,12 @@ pub struct Rect<T> {
 }
 
 impl Rect<Value> {
-    pub fn evaluate(&self, ctx: &VmContext) -> Rect<i32> {
+    pub fn eval(&self, ctx: &VmContext) -> Rect<i32> {
         Rect {
-            x: self.x.evaluate(ctx),
-            y: self.y.evaluate(ctx),
-            w: self.w.evaluate(ctx),
-            h: self.h.evaluate(ctx),
+            x: self.x.eval(ctx),
+            y: self.y.eval(ctx),
+            w: self.w.eval(ctx),
+            h: self.h.eval(ctx),
         }
     }
 }

@@ -15,44 +15,42 @@ reikura_util::const_iota! {
 
 #[allow(unused)]
 pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-    let cmd: u8 = vm.parser.read_param()?;
+    let (ctx, parser) = (&vm.ctx, &mut vm.parser);
+    let cmd: u8 = parser.read_param()?;
 
-    let src_id = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
-    let rect: [_; _] = vm
-        .parser
-        .read_param::<Rect<Value>>()?
-        .evaluate(&vm.ctx)
-        .into();
-    let [src_x, src_y, width, height] = rect.map(|it| it as u32);
-    let dst_id = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
-    let dst_x = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
-    let dst_y = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u32;
+    let src_id = parser.read_param::<Value>()?.eval(ctx);
+    let src_rect = parser.read_param::<Rect<Value>>()?.eval(ctx);
 
-    // let mut param = BlitParam {
-    //     src_id,
-    //     dst_id: 0,
-    //     src_x,
-    //     src_y,
-    //     width,
-    //     height,
-    //     dst_x,
-    //     dst_y,
-    // };
+    let dst_id = parser.read_param::<Value>()?.eval(ctx);
+    let dst_x = parser.read_param::<Value>()?.eval(ctx);
+    let dst_y = parser.read_param::<Value>()?.eval(ctx);
 
+    let src_id = u8::try_from(src_id)?;
     match cmd {
         BLIT_COPY => {
-            // param.dst_id = dst_id as u8;
-            // vm.gfx.blit_copy_image(param)?;
+            let dst_id = Some(u8::try_from(dst_id)?);
+
+            vm.gfx.blit_copy_image(
+                src_id, dst_id, src_rect.x, src_rect.y, src_rect.w, src_rect.h, dst_x, dst_y,
+            )?;
         }
         BLIT_BLEND => {
-            // param.dst_id = dst_id as u8;
-            // vm.gfx.blit_blend_image(param)?;
+            let dst_id = Some(u8::try_from(dst_id)?);
+
+            vm.gfx.blit_blend_image(
+                src_id, dst_id, src_rect.x, src_rect.y, src_rect.w, src_rect.h, dst_x, dst_y,
+            )?;
         }
-        // TODO: another gp cmd
-        _ if cmd < 30 => {
+        19 => {
             let _duration = Duration::from_millis(dst_id as u64);
-            // vm.gfx.blit_blend_image(param)?;
+
+            // TODO
+            vm.gfx.blit_blend_image(
+                src_id, None, src_rect.x, src_rect.y, src_rect.w, src_rect.h, dst_x, dst_y,
+            )?;
         }
+        // TODO: another cmd
+        _ if cmd < 30 => bail!("unimplemented cmd: {cmd}"),
         _ => bail!("invalid or unsupported cmd: {cmd}"),
     }
 

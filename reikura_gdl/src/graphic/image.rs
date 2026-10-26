@@ -1,10 +1,12 @@
 #![allow(clippy::too_many_arguments)]
 
-use anyhow::bail;
+use anyhow::{Result, bail};
 use reikura_util::{
     image::{blend_color, blend_premultiplied_color, get_alpha, mul_alpha_color, premul_color},
     rect::Rect,
 };
+
+pub const MAX_IMAGE: usize = 128;
 
 pub mod color {
     pub const TRANSPARENT: u32 = 0x00_00_00_00;
@@ -354,6 +356,78 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
         }
 
         Ok(())
+    }
+}
+
+pub struct Images {
+    pub main: Option<u8>,
+    images: [Option<Image>; MAX_IMAGE],
+}
+
+impl Images {
+    pub fn new() -> Self {
+        Self {
+            main: None,
+            images: std::array::from_fn(|_| None),
+        }
+    }
+
+    #[inline]
+    pub fn unset_main(&mut self) {
+        self.main = None;
+    }
+
+    #[inline]
+    pub fn set_main(&mut self, id: u8) {
+        self.main = Some(id % MAX_IMAGE as u8);
+    }
+
+    #[inline]
+    #[allow(dead_code)]
+    pub fn get_ref(&self, id: u8) -> Option<&Image> {
+        self.images[id as usize % MAX_IMAGE].as_ref()
+    }
+
+    #[inline]
+    pub fn get_mut(&mut self, id: u8) -> Option<&mut Image> {
+        self.images[id as usize % MAX_IMAGE].as_mut()
+    }
+
+    #[inline]
+    pub fn set(&mut self, id: u8, width: u32, height: u32, data: Option<&[u8]>) -> Result<()> {
+        let image = match data {
+            Some(bytes) => Image::from_bytes(width, height, bytes)?,
+            None => Image::new(width, height),
+        };
+
+        self.images[id as usize % MAX_IMAGE] = Some(image);
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn get_main_ref(&mut self) -> Option<&Image> {
+        self.images[self.main? as usize].as_ref()
+    }
+
+    #[inline]
+    #[allow(dead_code)]
+    pub fn get_main_mut(&mut self) -> Option<&mut Image> {
+        self.images[self.main? as usize].as_mut()
+    }
+
+    #[inline]
+    #[allow(dead_code)]
+    pub fn get_pair(&mut self, src_id: u8, dst_id: Option<u8>) -> Option<(&mut Image, &mut Image)> {
+        let indices = [
+            src_id as usize % MAX_IMAGE,
+            dst_id.or(self.main)? as usize % MAX_IMAGE,
+        ];
+
+        match self.images.get_disjoint_mut(indices) {
+            Ok([Some(src), Some(dst)]) => Some((src, dst)),
+            _ => None,
+        }
     }
 }
 

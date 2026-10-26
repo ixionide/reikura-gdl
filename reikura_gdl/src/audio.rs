@@ -103,12 +103,16 @@ impl AudioManager {
     }
 
     pub fn set_sfx(&mut self, slot: usize, audio: Audio) {
+        let slot = slot % SFX_SLOT;
+
         self.stop_sfx(slot, None);
-        self.sfx[slot % SFX_SLOT] = Some(audio);
+        self.sfx[slot] = Some(audio);
     }
 
     pub fn play_sfx(&mut self, slot: usize, fade_duration: Option<Duration>) -> Result<()> {
-        let Some(audio) = self.sfx[slot % SFX_SLOT].take() else {
+        let slot = slot % SFX_SLOT;
+
+        let Some(audio) = self.sfx[slot].take() else {
             bail!("no sfx loaded at slot: {slot}");
         };
 
@@ -124,9 +128,11 @@ impl AudioManager {
     }
 
     pub fn stop_sfx(&mut self, slot: usize, fade_duration: Option<Duration>) {
+        let slot = slot % SFX_SLOT;
+
         self.track
             .sfx
-            .stop_audio_slot(slot % SFX_SLOT, fade_duration.map(tween_duration));
+            .stop_audio_slot(slot, fade_duration.map(tween_duration));
     }
 
     pub fn set_voice(&mut self, audio: Audio) {

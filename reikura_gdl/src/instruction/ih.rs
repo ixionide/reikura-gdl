@@ -29,7 +29,7 @@ pub fn ih(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
 
     vm.input.hot_spots[index] = Some(HotSpot {
         id,
-        rect: rect.evaluate(&vm.ctx).into(),
+        rect: rect.eval(&vm.ctx).into(),
         state_storage,
         state_index,
         _unknown,

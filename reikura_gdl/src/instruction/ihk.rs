@@ -7,8 +7,8 @@ use crate::{
 pub fn ihk(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let id: u8 = vm.parser.read_param()?;
     let index = id as usize % MAX_HOTSPOTS;
-    let map1 = vm.parser.read_param::<Rect<Value>>()?.evaluate(&vm.ctx);
-    let map2 = vm.parser.read_param::<Rect<Value>>()?.evaluate(&vm.ctx);
+    let map1 = vm.parser.read_param::<Rect<Value>>()?.eval(&vm.ctx);
+    let map2 = vm.parser.read_param::<Rect<Value>>()?.eval(&vm.ctx);
     let map: [u8; 8] = [
         map1.x.try_into()?,
         map1.y.try_into()?,

@@ -14,7 +14,7 @@ reikura_util::const_iota! {
 }
 
 pub fn dap(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
-    let track_num = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as u8;
+    let track_num = vm.parser.read_param::<Value>()?.eval(&vm.ctx) as u8;
     let cmd: u8 = vm.parser.read_param()?;
     let mut fade = None;
 
@@ -29,7 +29,7 @@ pub fn dap(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
     };
 
     if info.param_len == 11 {
-        let ms = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+        let ms = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
         fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
     }
 

@@ -19,15 +19,15 @@ pub fn exs(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         bail!("save context is not initialized yet");
     };
 
-    let save_ctx_pos = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
-    let vm_ctx_pos = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
-    let count = vm.parser.read_param::<Value>()?.evaluate(ctx) as usize;
+    let save_ctx_pos = vm.parser.read_param::<Value>()?.eval(ctx) as usize;
+    let vm_ctx_pos = vm.parser.read_param::<Value>()?.eval(ctx) as usize;
+    let count = vm.parser.read_param::<Value>()?.eval(ctx) as usize;
 
     match vm.parser.read_param::<u8>()? {
         COPY_FLAG => {
             let bound_count = min(
-                ctx.flags.len() - vm_ctx_pos,
-                save.flags.len() - save_ctx_pos,
+                ctx.flags.len().saturating_sub(vm_ctx_pos),
+                save.flags.len().saturating_sub(save_ctx_pos),
             );
 
             for i in 0..count.min(bound_count) {
@@ -37,8 +37,8 @@ pub fn exs(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         }
         COPY_REGISTER => {
             let bound_count = min(
-                ctx.registers.len() - vm_ctx_pos,
-                save.registers.len() - save_ctx_pos,
+                ctx.registers.len().saturating_sub(vm_ctx_pos),
+                save.registers.len().saturating_sub(save_ctx_pos),
             );
 
             for i in 0..count.min(bound_count) {

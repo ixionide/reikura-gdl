@@ -16,7 +16,7 @@ pub fn setinsidevol(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let volume: u8 = vm
         .parser
         .read_param::<Value>()?
-        .evaluate(&vm.ctx)
+        .eval(&vm.ctx)
         .try_into()?;
 
     {

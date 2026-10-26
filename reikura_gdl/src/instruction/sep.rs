@@ -6,11 +6,11 @@ use crate::{
 };
 
 pub fn sep(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
-    let slot = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx) as usize;
+    let slot = vm.parser.read_param::<Value>()?.eval(&vm.ctx) as usize;
     let mut fade = None;
 
     if info.param_len == 5 {
-        let ms = vm.parser.read_param::<Value>()?.evaluate(&vm.ctx);
+        let ms = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
         fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
     }
 
