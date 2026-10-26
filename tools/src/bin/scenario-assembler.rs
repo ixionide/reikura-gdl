@@ -740,7 +740,7 @@ fn main() {
                     let value = parser.read_value()?;
                     fmt.write_num(par).write_value(value);
                 }
-                // "KIDCLR"
+                "KIDCLR" => (),
                 // "KIDMOJI"
                 // "KIDPAGE"
                 // "KIDSET"
