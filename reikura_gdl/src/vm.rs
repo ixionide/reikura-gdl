@@ -45,6 +45,7 @@ pub struct Vm {
     pub user_setup: UserSetup,
     pub input: InputManager,
     pub state: State,
+    pub wait_until: Option<Instant>,
 }
 
 impl Vm {
@@ -70,15 +71,16 @@ impl Vm {
             save: SaveContext::new(save_path),
             user_setup: UserSetup::open(user_setup_path)?,
             input: InputManager::new(),
-            state: State::Running,
+            state: State::Run,
+            wait_until: None,
         })
     }
 
     fn should_tick(&mut self, now: Instant) -> bool {
         let tick = match self.state {
             State::Exit => false,
-            State::Running => true,
-            State::Wait { time } => now > time,
+            State::Run => true,
+            State::Wait => self.wait_until.is_none_or(|until| now > until),
             State::WaitClick => todo!(),
             State::WaitText => todo!(),
             State::WaitTransition => todo!(),
@@ -139,8 +141,8 @@ impl Timer {
 
 pub enum State {
     Exit,
-    Running,
-    Wait { time: Instant },
+    Run,
+    Wait,
     WaitClick,
     WaitText,
     WaitTransition,
@@ -154,11 +156,11 @@ impl State {
     }
 
     pub fn run(&mut self) {
-        *self = Self::Running;
+        *self = Self::Run;
     }
 
-    pub fn wait(&mut self, time: Instant) {
-        *self = Self::Wait { time }
+    pub fn wait(&mut self) {
+        *self = Self::Wait;
     }
 
     pub fn wait_click(&mut self) {
