@@ -142,7 +142,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
             .map(|row| &row[src_x as usize..][..blit_w as usize]);
 
         let dst_rows = dst_buffer
-            .chunks_exact_mut(src.width as usize)
+            .chunks_exact_mut(self.width as usize)
             .skip(dst_y as usize)
             .take(blit_h as usize)
             .map(|row| &mut row[dst_x as usize..][..blit_w as usize]);
@@ -173,7 +173,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
             .map(|row| &row[src_x as usize..][..blit_w as usize]);
 
         let dst_rows = dst_buffer
-            .chunks_exact_mut(src.width as usize)
+            .chunks_exact_mut(self.width as usize)
             .skip(dst_y as usize)
             .take(blit_h as usize)
             .map(|row| &mut row[dst_x as usize..][..blit_w as usize]);
@@ -218,7 +218,7 @@ impl<P: AsRef<[u32]> + AsMut<[u32]>> Image<P> {
             .map(|row| &row[src_x as usize..][..blit_w as usize]);
 
         let dst_rows = dst_buffer
-            .chunks_exact_mut(src.width as usize)
+            .chunks_exact_mut(self.width as usize)
             .skip(dst_y as usize)
             .take(blit_h as usize)
             .map(|row| &mut row[dst_x as usize..][..blit_w as usize]);

@@ -34,8 +34,15 @@ impl Graphics {
             panic!("main image is unset");
         };
 
-        self.display
-            .blit_copy(main_image, 0, 0, 0, 0, main_image.width, main_image.height);
+        self.display.blit_copy(
+            main_image,
+            0,
+            0,
+            0,
+            0,
+            self.display.width,
+            self.display.height,
+        );
         self.request_redraw = true
     }
 
