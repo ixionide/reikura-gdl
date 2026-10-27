@@ -13,20 +13,16 @@ pub const _FRAME_INTERVAL: Duration = Duration::from_millis(17);
 pub struct VmContext {
     pub flags: Flag,
     pub registers: Register,
-    pub current_time: Instant,
-    pub wait_time: Option<Instant>,
     pub timer: Option<Timer>,
     // TODO: this make much more sense stored in the text renderer struct
     pub char_names: [Option<String>; 256],
 }
 
 impl VmContext {
-    pub fn new(current_time: Instant) -> Self {
+    pub fn new() -> Self {
         Self {
             flags: Flag::new(2048),
             registers: Register::new(2048),
-            current_time,
-            wait_time: None,
             timer: None,
             char_names: [const { None }; 256],
         }
@@ -67,7 +63,7 @@ impl Vm {
             parser: Parser::new(start_scene),
             audio: AudioManager::new(1.0, 1.0, 1.0)?,
             gfx: Graphics::new(view_w, view_h),
-            ctx: VmContext::new(now),
+            ctx: VmContext::new(),
             save: SaveContext::new(save_path),
             user_setup: UserSetup::open(user_setup_path)?,
             input: InputManager::new(),
@@ -109,7 +105,6 @@ impl Vm {
         let now = Instant::now();
         let _dt = now - self.last_update;
         self.last_update = now;
-        self.ctx.current_time = now;
 
         if self.should_tick(now) {
             self.tick()?;
