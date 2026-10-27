@@ -9,44 +9,49 @@ use crate::{
 
 reikura_util::const_iota! {
     u8 = iota,
-    COPY_FLAG,
-    COPY_REGISTER,
+    LOAD_FLAG,
+    LOAD_REGISTER,
 }
 
 pub fn exc(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-    let ctx = &mut vm.ctx;
-    let Some(save) = &mut vm.save else {
-        bail!("save context is not initialized yet");
-    };
-
-    let save_ctx_pos = vm.parser.read_param::<Value>()?.eval(ctx) as usize;
-    let vm_ctx_pos = vm.parser.read_param::<Value>()?.eval(ctx) as usize;
-    let count = vm.parser.read_param::<Value>()?.eval(ctx) as usize;
+    let save_pos = vm.parser.read_param::<Value>()?.eval(&vm.ctx) as usize;
+    let vm_pos = vm.parser.read_param::<Value>()?.eval(&vm.ctx) as usize;
+    let count = vm.parser.read_param::<Value>()?.eval(&vm.ctx) as usize;
 
     match vm.parser.read_param::<u8>()? {
-        COPY_FLAG => {
+        LOAD_FLAG => {
+            let vm_flags = &mut vm.ctx.flags;
+            let Some(save_flags) = &vm.save.flags else {
+                return Ok(());
+            };
+
             let bound_count = min(
-                save.flags.len().saturating_sub(save_ctx_pos),
-                ctx.flags.len().saturating_sub(vm_ctx_pos),
+                save_flags.len().saturating_sub(save_pos),
+                vm_flags.len().saturating_sub(vm_pos),
             );
 
             for i in 0..count.min(bound_count) {
-                let flag = save.flags.get(save_ctx_pos + i);
-                ctx.flags.set(vm_ctx_pos + i, flag);
+                let flag = save_flags.get(save_pos + i);
+                vm_flags.set(vm_pos + i, flag);
             }
         }
-        COPY_REGISTER => {
+        LOAD_REGISTER => {
+            let vm_registers = &mut vm.ctx.registers;
+            let Some(save_registers) = &vm.save.registers else {
+                return Ok(());
+            };
+
             let bound_count = min(
-                save.registers.len().saturating_sub(save_ctx_pos),
-                ctx.registers.len().saturating_sub(vm_ctx_pos),
+                save_registers.len().saturating_sub(save_pos),
+                vm_registers.len().saturating_sub(vm_pos),
             );
 
             for i in 0..count.min(bound_count) {
-                let value = save.registers.get(save_ctx_pos + i);
-                ctx.registers.set(vm_ctx_pos + i, value);
+                let value = save_registers.get(save_pos + i);
+                vm_registers.set(vm_pos + i, value);
             }
         }
-        _ => bail!("invalid copy"),
+        _ => bail!("invalid load"),
     }
 
     Ok(())

@@ -41,7 +41,7 @@ pub struct Vm {
     pub audio: AudioManager,
     pub gfx: Graphics,
     pub ctx: VmContext,
-    pub save: Option<SaveContext>,
+    pub save: SaveContext,
     pub user_setup: UserSetup,
     pub input: InputManager,
     pub state: State,
@@ -51,6 +51,7 @@ impl Vm {
     pub fn new(manifest: Manifest) -> anyhow::Result<Self> {
         let now = Instant::now();
         let (view_w, view_h) = manifest.view_size;
+        let save_path = manifest.game_path().join("saves");
         let user_setup_path = manifest.game_path().join("user_setup");
 
         let mut assets = AssetManager::new(&manifest)?;
@@ -66,7 +67,7 @@ impl Vm {
             audio: AudioManager::new(1.0, 1.0, 1.0)?,
             gfx: Graphics::new(view_w, view_h),
             ctx: VmContext::new(now),
-            save: None,
+            save: SaveContext::new(save_path),
             user_setup: UserSetup::open(user_setup_path)?,
             input: InputManager::new(),
             state: State::Running,

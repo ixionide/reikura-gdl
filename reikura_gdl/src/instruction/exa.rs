@@ -1,13 +1,13 @@
-use crate::{SaveContext, Vm, instruction::InstructionInfo};
+use crate::{Vm, instruction::InstructionInfo};
 
 pub fn exa(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-    let path = vm.manifest.game_path();
-    let flag_count = vm.parser.read_param::<u16>()? as usize;
-    let reg_count = vm.parser.read_param::<u16>()? as usize;
+    let flag_count: u16 = vm.parser.read_param()?;
+    let reg_count: u16 = vm.parser.read_param()?;
 
-    if vm.save.is_none() {
-        vm.save = Some(SaveContext::new(path, flag_count, reg_count)?);
-    }
+    // don't add by one, this incosistency with kidfn/hln/fln
+    // originate from the original engine
+    vm.save.init_flag(flag_count as usize)?;
+    vm.save.init_register(reg_count as usize)?;
 
     Ok(())
 }

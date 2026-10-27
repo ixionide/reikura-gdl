@@ -3,21 +3,21 @@ use anyhow::bail;
 use crate::{Vm, instruction::InstructionInfo};
 
 pub fn es(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-    let ctx = &vm.ctx;
-    let Some(save) = &mut vm.save else {
-        bail!("save context is not initialized yet");
+    let Some(save_flags) = &mut vm.save.flags else {
+        bail!("saving flag failed");
     };
+    let vm_flags = &mut vm.ctx.flags;
 
     let start = vm.parser.read_param::<u16>()? as usize;
     let end = vm.parser.read_param::<u16>()? as usize;
-    let bound_end = ctx.flags.len() - 1;
+    let bound_end = vm_flags.len() - 1;
 
-    let ctx_range = start..=end.min(bound_end);
-    let save_range = 0..save.flags.len();
+    let vm_range = start..=end.min(bound_end);
+    let save_range = 0..save_flags.len();
 
-    for (ctx_i, save_i) in ctx_range.zip(save_range) {
-        let flag = ctx.flags.get(ctx_i);
-        save.flags.set(save_i, flag);
+    for (vm_pos, save_pos) in vm_range.zip(save_range) {
+        let flag = vm_flags.get(vm_pos);
+        save_flags.set(save_pos, flag);
     }
 
     Ok(())
