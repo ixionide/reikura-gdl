@@ -396,9 +396,7 @@ fn main() {
                         };
                         u16::try_from(reg).context("calc register out of range")?
                     };
-
                     fmt.write_num(reg);
-                    fmt.write_num(ADD);
 
                     let mut params = calc.trim().chars();
                     let mut num_buf = String::with_capacity(16);
@@ -415,9 +413,16 @@ fn main() {
                         None
                     }
 
-                    loop {
-                        let op = read_op(&mut num_buf, &mut params);
+                    let mut op = read_op(&mut num_buf, &mut params);
 
+                    if let Some(num) = num_buf.strip_prefix('-') {
+                        fmt.write_num(MIN);
+                        num_buf = num.to_owned();
+                    } else {
+                        fmt.write_num(ADD);
+                    }
+
+                    loop {
                         if num_buf.is_empty() {
                             bail!("invalid calc params");
                         }
@@ -447,6 +452,8 @@ fn main() {
                             }
                             Some(_) => unreachable!(),
                         }
+
+                        op = read_op(&mut num_buf, &mut params);
                     }
                 }
                 "HSG" => {

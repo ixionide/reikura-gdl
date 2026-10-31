@@ -404,8 +404,16 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 let reg_index: u16 = parser.read_param()?;
                 write!(buf, "@{reg_index} = ")?;
                 let op = parser.read_param::<u8>()?;
-                assert!(op == ADD);
-                let value = parser.read_param::<Value>()?;
+
+                assert!(op == ADD || op == MIN);
+                let mut value = parser.read_param::<Value>()?;
+
+                if op == MIN
+                    && let Value::Literal(val) = &mut value
+                {
+                    *val = -*val;
+                }
+
                 buf.push_str(&display_value(value));
 
                 loop {
