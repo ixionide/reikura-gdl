@@ -37,7 +37,7 @@ impl SaveContext {
         }
     }
 
-    pub fn init_flag(&mut self, flag_count: usize) -> Result<()> {
+    pub fn init_flags(&mut self, flag_count: usize) -> Result<()> {
         if self.flags.is_some() {
             return Ok(());
         }
@@ -57,7 +57,7 @@ impl SaveContext {
         Ok(())
     }
 
-    pub fn init_register(&mut self, register_count: usize) -> Result<()> {
+    pub fn init_registers(&mut self, register_count: usize) -> Result<()> {
         if self.registers.is_some() {
             return Ok(());
         }
@@ -77,7 +77,7 @@ impl SaveContext {
         Ok(())
     }
 
-    pub fn init_message_flag(&mut self, flag_count: usize) -> Result<()> {
+    pub fn init_message_flags(&mut self, flag_count: usize) -> Result<()> {
         if self.message_flags.is_some() {
             return Ok(());
         }

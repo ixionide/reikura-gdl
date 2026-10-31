@@ -6,8 +6,8 @@ pub fn exa(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
 
     // don't add by one, this incosistency with kidfn/hln/fln
     // originate from the original engine
-    vm.save.init_flag(flag_count as usize)?;
-    vm.save.init_register(reg_count as usize)?;
+    vm.save.init_flags(flag_count as usize)?;
+    vm.save.init_registers(reg_count as usize)?;
 
     Ok(())
 }
