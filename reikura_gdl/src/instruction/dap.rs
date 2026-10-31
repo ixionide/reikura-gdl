@@ -18,10 +18,6 @@ pub fn dap(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
     let cmd: u8 = vm.parser.read_param()?;
     let mut fade = None;
 
-    if track_num == 0 {
-        bail!("track_num is zero")
-    }
-
     let looping = match cmd {
         LOOP => true,
         ONCE => false,
@@ -31,6 +27,10 @@ pub fn dap(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
     if info.param_len == 11 {
         let ms = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
         fade = ms.is_positive().then(|| Duration::from_millis(ms as u64));
+    }
+
+    if track_num == 0 {
+        return Ok(());
     }
 
     let bgm = vm.assets.load_cdda(track_num)?;

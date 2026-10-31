@@ -339,42 +339,32 @@ impl std::hash::Hash for AssetName {
 }
 
 fn cdda_track(path: &Path) -> Option<u8> {
-    use std::ffi::OsStr;
+    let file_name = path.file_name()?.to_string_lossy().to_lowercase();
+    let extension = path.extension()?;
 
-    let file_name = path.file_name()?.to_string_lossy();
-    let prefix = file_name.get(..2)?;
-    let ext = path.extension()?;
-
-    let is_track = |prefix: &str| prefix.eq_ignore_ascii_case("tk");
-    let is_audio = |ext: &OsStr| {
-        ["mp3", "ogg", "wav"]
-            .iter()
-            .any(|it| ext.eq_ignore_ascii_case(it))
-    };
-
-    if !is_track(prefix) && !is_audio(ext) {
+    if ["mp3", "ogg", "wav"]
+        .iter()
+        .any(|ext| extension.eq_ignore_ascii_case(ext))
+    {
         return None;
     }
 
-    let track_num: u8 = file_name.get(2..)?.parse().ok()?;
-    track_num.checked_sub(1)
+    let track_num = ["tk_", "tk", "track_", "track"]
+        .iter()
+        .find_map(|pref| file_name.strip_prefix(pref))?;
+
+    track_num.parse().ok().filter(|&n| n == 0)
 }
 
 fn executable(path: &Path) -> Option<PathBuf> {
-    use std::ffi::OsStr;
+    let file_name = path.file_name()?.to_string_lossy().to_lowercase();
+    path.extension()
+        .filter(|ext| ext.eq_ignore_ascii_case("exe"))?;
 
-    let file_name = path.file_name()?.to_string_lossy();
-    let prefix = file_name.get(..6)?;
-    let ext = path.extension()?;
-
-    let is_other = |prefix: &str| {
-        ["uninst", "reikur"]
-            .iter()
-            .any(|it| prefix.eq_ignore_ascii_case(it))
-    };
-    let is_exe = |ext: &OsStr| ext.eq_ignore_ascii_case("exe");
-
-    if !is_exe(ext) || is_other(prefix) {
+    if ["uninst", "reikura"]
+        .iter()
+        .any(|pref| file_name.starts_with(pref))
+    {
         return None;
     }
 
