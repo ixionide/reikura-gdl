@@ -71,7 +71,7 @@ impl ImageDecoder for GgdFull {
                     let count = num - 4;
                     for _ in 0..count {
                         reader.read_exact(&mut buf[..3])?;
-                        buf.swap(0, 2); // convert bgr -> rgb
+                        // buf.swap(0, 2); // convert bgr -> rgb
                         pixels.extend_from_slice(&buf);
                     }
                 }
@@ -125,7 +125,7 @@ impl ImageDecoder for Ggd256g {
         let mut buf = [0xFF; 4];
         for _ in 0..256 {
             palette_bytes.read_exact(&mut buf[0..3])?;
-            buf.swap(0, 2); // convert bgr -> rgb
+            // buf.swap(0, 2); // convert bgr -> rgb
             palette.push(buf);
         }
 

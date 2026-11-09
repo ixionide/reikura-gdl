@@ -5,7 +5,7 @@ mod image;
 pub use self::image::{Image, Images, MAX_IMAGE, color};
 
 use anyhow::{Result, anyhow, bail};
-use reikura_util::image::rgb_color;
+use reikura_util::image::bgr_color;
 
 pub struct Graphics {
     pub display: Image,
@@ -81,7 +81,7 @@ impl Graphics {
     }
 
     pub fn clear_image(&mut self, id: u8, (r, g, b): (u8, u8, u8)) -> Result<()> {
-        let color = rgb_color(r, g, b);
+        let color = bgr_color(b, g, r);
 
         let Some(image) = self.images.get_mut(id) else {
             bail!("failed to get image id: {id}");

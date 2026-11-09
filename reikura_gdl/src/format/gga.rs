@@ -53,10 +53,11 @@ impl ImageDecoder for Gga {
         assert_eq!(md.magic, Self::MAGIC);
         assert_eq!(md.bpp, 32);
 
-        let opaque = (md.flags & 1) == 0;
+        let has_alpha = (md.flags & Self::FLAG_ALPHA) == 0;
         let compressed = &data[md.pixel_offset as usize..][..md.compressed_len as usize];
         let mut pixels = Vec::with_capacity(md.width as usize * md.height as usize * PIXEL_STRIDE);
         let mut cursor = Cursor::new(compressed);
+
         let mut pixel_buf = [0xFF; PIXEL_STRIDE];
 
         while cursor.position() < md.compressed_len as u64 {
@@ -125,13 +126,13 @@ impl ImageDecoder for Gga {
                 num => {
                     let count = num - 11;
                     for _ in 0..count {
-                        cursor.read_exact(&mut pixel_buf)?;
-
-                        pixel_buf.swap(0, 2); // convert bgr -> rgb
-                        if opaque {
-                            pixel_buf[3] = 0xFF;
+                        if has_alpha {
+                            cursor.read_exact(&mut pixel_buf)?;
+                        } else {
+                            cursor.read_exact(&mut pixel_buf[..3])?
                         }
 
+                        // pixel_buf.swap(0, 2); // convert bgr -> rgb
                         pixels.extend_from_slice(&pixel_buf);
                     }
                 }

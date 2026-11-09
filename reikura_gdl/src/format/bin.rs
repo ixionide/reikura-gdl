@@ -18,7 +18,15 @@ impl ImageDecoder for Bin {
         assert_eq!(magic, Self::MAGIC);
 
         let image = image::load_from_memory_with_format(data, image::ImageFormat::Bmp)?;
+        let width = image.width();
+        let height = image.height();
 
-        Ok((image.width(), image.height(), image.to_rgba8().into_vec()))
+        // image crate only give us access in rgba format forced us to make this roundtrip conversion
+        let mut data = image.into_rgba8().into_raw();
+        for pixel in data.as_chunks_mut::<4>().0 {
+            pixel.swap(0, 2); // convert rgb -> bgr
+        }
+
+        Ok((width, height, data))
     }
 }

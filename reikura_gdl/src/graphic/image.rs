@@ -8,16 +8,17 @@ use reikura_util::{
 
 pub const MAX_IMAGE: usize = 128;
 
+#[rustfmt::skip]
 pub mod color {
     pub const TRANSPARENT: u32 = 0x00_00_00_00;
-    pub const RED: u32 = 0xFF_00_00_FF;
-    pub const GREEN: u32 = 0xFF_00_FF_00;
-    pub const BLUE: u32 = 0xFF_FF_00_00;
-    pub const BLACK: u32 = 0xFF_00_00_00;
-    pub const BLACK_50: u32 = 0x7F_00_00_00;
-    pub const WHITE: u32 = 0xFF_FF_FF_FF;
-    pub const GRAY: u32 = reikura_util::image::blend_color(WHITE, BLACK_50);
-    pub const NAVY: u32 = reikura_util::image::blend_color(BLUE, BLACK_50);
+    pub const RED        : u32 = 0xFF_FF_00_00;
+    pub const GREEN      : u32 = 0xFF_00_FF_00;
+    pub const BLUE       : u32 = 0xFF_00_00_FF;
+    pub const BLACK      : u32 = 0xFF_00_00_00;
+    pub const BLACK_50   : u32 = 0x7F_00_00_00;
+    pub const WHITE      : u32 = 0xFF_FF_FF_FF;
+    pub const GRAY       : u32 = reikura_util::image::blend_color(WHITE, BLACK_50);
+    pub const NAVY       : u32 = reikura_util::image::blend_color(BLUE, BLACK_50);
 }
 
 pub struct Image<B = Vec<u32>> {

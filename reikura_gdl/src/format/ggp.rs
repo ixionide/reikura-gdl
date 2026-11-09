@@ -45,7 +45,14 @@ impl ImageDecoder for GgpFaike {
             .for_each(|(byte, key)| *byte ^= key);
 
         let image = image::load_from_memory_with_format(&png_data, image::ImageFormat::Png)?;
+        let width = image.width();
+        let height = image.height();
 
-        Ok((image.width(), image.height(), image.to_rgba8().into_vec()))
+        let mut data = image.into_rgba8().into_raw();
+        for pixel in data.as_chunks_mut::<4>().0 {
+            pixel.swap(0, 2); // convert rgb -> bgr
+        }
+
+        Ok((width, height, data))
     }
 }
