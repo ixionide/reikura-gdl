@@ -2,6 +2,8 @@
 
 mod image;
 
+use crate::vm::FRAME_INTERVAL_MS;
+
 pub use self::image::{Image, Images, MAX_IMAGE, color};
 
 use anyhow::{Result, anyhow, bail};
@@ -44,6 +46,11 @@ impl Graphics {
             self.display.height,
         );
         self.request_redraw = true
+    }
+
+    pub fn update(&mut self, advance: u32) {
+        // let _advance_ms = (advance << 4) + advance;
+        let _advance_ms = advance * FRAME_INTERVAL_MS;
     }
 
     pub fn unset_main_image(&mut self) {

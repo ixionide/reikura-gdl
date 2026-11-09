@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use anyhow::Context;
 use reikura_util::{flag::Flag, register::Register};
@@ -8,7 +8,7 @@ use crate::{
     graphic::Graphics, instruction::INSTRUCTIONS,
 };
 
-pub const _FRAME_INTERVAL: Duration = Duration::from_millis(17);
+pub const FRAME_INTERVAL_MS: u32 = 17;
 
 pub struct VmContext {
     pub flags: Flag,
@@ -30,7 +30,8 @@ impl VmContext {
 }
 
 pub struct Vm {
-    last_update: Instant,
+    accumulator: u32,
+    pub current_time: Instant,
     pub manifest: Manifest,
     pub assets: AssetManager,
     pub parser: Parser,
@@ -57,7 +58,8 @@ impl Vm {
             .context("failed to load start scenario")?;
 
         Ok(Self {
-            last_update: now,
+            accumulator: 0,
+            current_time: now,
             manifest,
             assets,
             parser: Parser::new(start_scene),
@@ -103,8 +105,16 @@ impl Vm {
 
     pub fn update(&mut self) -> anyhow::Result<()> {
         let now = Instant::now();
-        let _dt = now - self.last_update;
-        self.last_update = now;
+        let frame_time = (now - self.current_time).as_millis() as u32 + self.accumulator;
+        self.current_time = now;
+
+        if frame_time >= FRAME_INTERVAL_MS {
+            let advance = frame_time / FRAME_INTERVAL_MS;
+            self.gfx.update(advance);
+            self.accumulator = frame_time % FRAME_INTERVAL_MS;
+        } else {
+            self.accumulator = frame_time;
+        }
 
         if self.should_tick(now) {
             self.tick()?;
