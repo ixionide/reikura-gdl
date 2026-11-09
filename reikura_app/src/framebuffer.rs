@@ -6,12 +6,12 @@ use winit::{dpi::PhysicalSize, event_loop::OwnedDisplayHandle, window::Window};
 type Context = softbuffer::Context<OwnedDisplayHandle>;
 type Surface = softbuffer::Surface<OwnedDisplayHandle, Arc<dyn Window>>;
 
-pub struct Renderer {
+pub struct Framebuffer {
     context: Context,
     surface: Option<Surface>,
 }
 
-impl Renderer {
+impl Framebuffer {
     pub fn new(display_handle: OwnedDisplayHandle) -> Result<Self> {
         Ok(Self {
             context: Context::new(display_handle).map_err(|err| anyhow!("{err}"))?,

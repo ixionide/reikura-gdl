@@ -1,5 +1,5 @@
 mod app;
-mod renderer;
+mod framebuffer;
 mod viewport;
 
-pub use self::{app::ReikuraApp, renderer::Renderer, viewport::Viewport};
+pub use self::{app::ReikuraApp, framebuffer::Framebuffer, viewport::Viewport};

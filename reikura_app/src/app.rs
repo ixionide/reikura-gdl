@@ -10,11 +10,11 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::{Renderer, Viewport};
+use crate::{Framebuffer, Viewport};
 
 pub struct ReikuraContext {
     pub window: Arc<dyn Window>,
-    pub renderer: Renderer,
+    pub fb: Framebuffer,
     pub vm: Vm,
 }
 
@@ -70,17 +70,12 @@ impl ApplicationHandler for ReikuraApp {
                 .expect("failed to create window")
                 .into();
             let vm = Vm::new(self.manifest.clone()).expect("failed to start vm");
-            let renderer =
-                Renderer::new(display_handle).expect("failed to create renderer context");
+            let fb = Framebuffer::new(display_handle).expect("failed to create framebuffer");
 
             window.set_visible(true);
             window.request_redraw();
 
-            self.context = Some(ReikuraContext {
-                window,
-                renderer,
-                vm,
-            })
+            self.context = Some(ReikuraContext { window, fb, vm })
         }
     }
 
@@ -89,9 +84,7 @@ impl ApplicationHandler for ReikuraApp {
             return;
         };
 
-        ctx.renderer
-            .create_surface(Arc::clone(&ctx.window))
-            .unwrap();
+        ctx.fb.create_surface(Arc::clone(&ctx.window)).unwrap();
     }
 
     fn destroy_surfaces(&mut self, _event_loop: &dyn ActiveEventLoop) {
@@ -99,7 +92,7 @@ impl ApplicationHandler for ReikuraApp {
             return;
         };
 
-        ctx.renderer.destroy_surface();
+        ctx.fb.destroy_surface();
     }
 
     fn window_event(
@@ -114,7 +107,7 @@ impl ApplicationHandler for ReikuraApp {
 
         let ReikuraContext {
             window,
-            renderer,
+            fb: framebuffer,
             vm,
         } = ctx;
 
@@ -127,7 +120,7 @@ impl ApplicationHandler for ReikuraApp {
             WindowEvent::RedrawRequested => {
                 if vm.gfx.request_redraw || self.request_redraw {
                     let vwpt = &self.viewport;
-                    let surface = renderer.get_surface().unwrap();
+                    let surface = framebuffer.get_surface().unwrap();
                     let mut surface_buffer = surface.buffer_mut().unwrap();
                     let (width, height) = window.surface_size().into();
 
@@ -151,7 +144,7 @@ impl ApplicationHandler for ReikuraApp {
                     return;
                 }
 
-                renderer.resize_surface(size).unwrap();
+                framebuffer.resize_surface(size).unwrap();
                 self.viewport = Viewport::letterbox(size.into(), self.manifest.view_size);
                 self.request_redraw = true;
             }
