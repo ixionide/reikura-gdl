@@ -1,7 +1,10 @@
 use std::{ops::DerefMut, path::PathBuf, sync::Arc};
 
 use anyhow::anyhow;
-use reikura_gdl::{Manifest, Vm, graphic};
+use reikura_gdl::{
+    Manifest, Vm,
+    graphic::{self, BlitParam},
+};
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -119,7 +122,7 @@ impl ApplicationHandler for ReikuraApp {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::RedrawRequested => {
                 if vm.gfx.request_redraw || self.request_redraw {
-                    let vwpt = &self.viewport;
+                    let _vwpt = &self.viewport;
                     let surface = framebuffer.get_surface().unwrap();
                     let mut surface_buffer = surface.buffer_mut().unwrap();
                     let (width, height) = window.surface_size().into();
@@ -128,8 +131,13 @@ impl ApplicationHandler for ReikuraApp {
                         graphic::Image::from_buffer(width, height, surface_buffer.deref_mut())
                             .unwrap();
 
+                    // TODO: use viewport and blit scale
                     surface_image.clear(graphic::color::BLACK);
-                    surface_image.blit_copy(&vm.gfx.display, 0, 0, vwpt.x, vwpt.y, vwpt.w, vwpt.h);
+                    graphic::blit::copy(
+                        &vm.gfx.display,
+                        &mut surface_image,
+                        BlitParam::new(0, 0, 640, 480, 0, 0),
+                    );
 
                     surface_buffer.present().unwrap();
                     vm.gfx.request_redraw = false;

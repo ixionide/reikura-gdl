@@ -8,7 +8,7 @@ pub fn timerend(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
         _ = vm.parser.read_param::<Value>()?; // XXX: need more research
     }
 
-    vm.ctx.timer = None;
+    vm.runtime.stop_timer();
 
     Ok(())
 }

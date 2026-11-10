@@ -20,9 +20,7 @@ pub fn sp(vm: &mut Vm, info: InstructionInfo) -> anyhow::Result<()> {
         flag_groups.push(flag_group);
     }
 
-    if (group_index as usize) < vm.ctx.flags.groups.len() {
-        vm.ctx.flags.groups[group_index as usize] = Some(flag_groups);
-    }
+    vm.ctx.flag_groups.insert(group_index, flag_groups);
 
     Ok(())
 }

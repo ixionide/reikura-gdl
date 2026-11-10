@@ -41,7 +41,7 @@ inst! {
     timerset, timerend, timerget
 }
 
-pub const INSTRUCTIONS: [Instruction; 256] = const {
+pub const INSTRUCTION_SET: [Instruction; 256] = const {
     type Inst = Instruction;
     let mut insts = [Inst::INVALID; 256];
 
@@ -306,7 +306,7 @@ impl Instruction {
 
         // end of scenario
         if info.len == 0 {
-            vm.state.exit();
+            vm.runtime.state.exit();
             return Ok(());
         }
 

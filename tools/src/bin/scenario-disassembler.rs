@@ -9,7 +9,7 @@ use std::{
 use anyhow::bail;
 use reikura_gdl::{
     AssetName, Scenario, ScenarioParser, ScenarioVersion,
-    instruction::{CHARSET, INSTRUCTIONS, Instruction, InstructionInfo, ParamString, Value},
+    instruction::{CHARSET, INSTRUCTION_SET, Instruction, InstructionInfo, ParamString, Value},
     secretfilter::{Deobfuscator, SIGNATURE, filters::get_known_filter},
 };
 use reikura_util::encoding::sjis_to_utf8;
@@ -93,7 +93,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
     }
 
     while let Ok(opcode) = parser.read_opcode() {
-        let inst = INSTRUCTIONS[opcode as usize];
+        let inst = INSTRUCTION_SET[opcode as usize];
         let inst_info: InstructionInfo = parser.read_param()?;
 
         // terminator

@@ -29,7 +29,7 @@ pub fn get_alpha(color: u32) -> u8 {
 }
 
 #[inline]
-pub const fn mul_alpha_color(color: u32, alpha: u8) -> u32 {
+pub const fn mul_alpha(color: u32, alpha: u8) -> u32 {
     let [r, g, b, a] = unpack_color(color);
     bgra_color(r, g, b, mul_div_255(a, alpha))
 }

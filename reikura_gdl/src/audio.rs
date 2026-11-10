@@ -93,13 +93,13 @@ impl AudioManager {
             data = data.fade_in_tween(fade_tween);
         }
 
-        self.track.bgm.play_audio(data)?;
+        self.track.bgm.play(data)?;
 
         Ok(())
     }
 
     pub fn stop_bgm(&mut self, fade_duration: Option<Duration>) {
-        self.track.bgm.stop_audio(fade_duration.map(tween_duration));
+        self.track.bgm.stop(fade_duration.map(tween_duration));
     }
 
     pub fn set_sfx(&mut self, slot: usize, audio: Audio) {
@@ -122,7 +122,7 @@ impl AudioManager {
             data = data.fade_in_tween(fade_tween);
         }
 
-        self.track.sfx.play_audio_slot(slot, data)?;
+        self.track.sfx.play_slot(slot, data)?;
 
         Ok(())
     }
@@ -132,7 +132,7 @@ impl AudioManager {
 
         self.track
             .sfx
-            .stop_audio_slot(slot, fade_duration.map(tween_duration));
+            .stop_slot(slot, fade_duration.map(tween_duration));
     }
 
     pub fn set_voice(&mut self, audio: Audio) {
@@ -151,15 +151,13 @@ impl AudioManager {
             data = data.fade_in_tween(fade_tween);
         }
 
-        self.track.voice.play_audio(data)?;
+        self.track.voice.play(data)?;
 
         Ok(())
     }
 
     pub fn stop_voice(&mut self, fade_duration: Option<Duration>) {
-        self.track
-            .voice
-            .stop_audio(fade_duration.map(tween_duration));
+        self.track.voice.stop(fade_duration.map(tween_duration));
     }
 }
 
@@ -195,16 +193,16 @@ pub struct Track<const SLOT: usize> {
 }
 
 impl Track<1> {
-    pub fn play_audio(&mut self, sound_data: SoundData) -> Result<()> {
-        self.play_audio_slot(0, sound_data)
+    pub fn play(&mut self, sound_data: SoundData) -> Result<()> {
+        self.play_slot(0, sound_data)
     }
 
-    pub fn stop_audio(&mut self, fade_duration: Option<Tween>) {
-        self.stop_audio_slot(0, fade_duration);
+    pub fn stop(&mut self, fade_duration: Option<Tween>) {
+        self.stop_slot(0, fade_duration);
     }
 
-    pub fn is_audio_finished(&self) -> bool {
-        self.is_audio_slot_finished(0)
+    pub fn is_finished(&self) -> bool {
+        self.is_slot_finished(0)
     }
 }
 
@@ -227,20 +225,20 @@ impl<const SLOT: usize> Track<SLOT> {
         })
     }
 
-    pub fn play_audio_slot(&mut self, slot: usize, sound_data: SoundData) -> Result<()> {
+    pub fn play_slot(&mut self, slot: usize, sound_data: SoundData) -> Result<()> {
         let new_handle = self.track_handle.play(sound_data)?;
         self.handle_slots[slot] = Some(new_handle);
 
         Ok(())
     }
 
-    pub fn stop_audio_slot(&mut self, slot: usize, fade_duration: Option<Tween>) {
+    pub fn stop_slot(&mut self, slot: usize, fade_duration: Option<Tween>) {
         if let Some(mut handle) = self.handle_slots[slot].take() {
             handle.stop(fade_duration.unwrap_or(DEFAULT_TWEEN));
         }
     }
 
-    pub fn is_audio_slot_finished(&self, slot: usize) -> bool {
+    pub fn is_slot_finished(&self, slot: usize) -> bool {
         self.handle_slots[slot]
             .as_ref()
             .map(SoundHandle::state)

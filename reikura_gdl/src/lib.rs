@@ -9,6 +9,7 @@ mod input;
 pub mod instruction;
 mod manifest;
 mod parser;
+mod runtime;
 mod save;
 mod scenario;
 pub mod secretfilter;
@@ -24,6 +25,7 @@ pub use self::{
     input::{HitMask, HotSpot, InputManager, KeyMap},
     manifest::Manifest,
     parser::{Parser, ScenarioParser},
+    runtime::{Runtime, State},
     save::SaveContext,
     scenario::{Scenario, ScenarioMetadata, ScenarioVersion},
     user_setup::UserSetup,

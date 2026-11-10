@@ -2,33 +2,23 @@ use crate::collections::BitSet;
 
 pub struct Flag<B: AsRef<[u8]> + AsMut<[u8]> = Vec<u8>> {
     inner: BitSet<B>,
-    pub groups: [Option<Vec<FlagGroup>>; 100],
 }
 
 pub enum GroupMatch {
     All,
     None,
-    NotAll,
     Any,
+    Missing,
 }
 
 impl Flag {
     pub fn new(count: usize) -> Self {
         Self {
             inner: BitSet::new(count),
-            groups: std::array::from_fn(|_| None),
         }
     }
 
-    pub fn check_group(&self, group_index: usize, group_match: GroupMatch) -> bool {
-        if group_index >= self.groups.len() {
-            return false;
-        }
-
-        let Some(groups) = self.groups[group_index].as_ref() else {
-            return false;
-        };
-
+    pub fn match_group(&self, group_match: GroupMatch, groups: &[FlagGroup]) -> bool {
         let flag_buffer = self.inner.as_slice();
 
         match group_match {
@@ -58,7 +48,7 @@ impl Flag {
 
                 true
             }
-            GroupMatch::NotAll => {
+            GroupMatch::Any => {
                 for group in groups {
                     for (i, &bitmask) in group.bitmasks.iter().enumerate() {
                         let byte = flag_buffer.get(group.byte_pos + i).copied().unwrap_or(0);
@@ -71,7 +61,7 @@ impl Flag {
 
                 false
             }
-            GroupMatch::Any => {
+            GroupMatch::Missing => {
                 for group in groups {
                     for (i, &bitmask) in group.bitmasks.iter().enumerate() {
                         let byte = flag_buffer.get(group.byte_pos + i).copied().unwrap_or(0);
@@ -92,7 +82,6 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> Flag<B> {
     pub fn from_raw(bytes: B, count: usize) -> Self {
         Self {
             inner: BitSet::from_raw(bytes, count),
-            groups: [const { None }; 100],
         }
     }
 

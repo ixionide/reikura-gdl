@@ -1,13 +1,15 @@
+use std::time::Duration;
+
 use crate::{
     Vm,
     instruction::{InstructionInfo, Value},
-    vm::Timer,
 };
 
 pub fn timerset(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
-    let delay = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
+    let ms = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
+    let start = Duration::from_millis(u64::try_from(ms)?);
 
-    vm.ctx.timer = Some(Timer::new(delay));
+    vm.runtime.start_timer(start);
 
     Ok(())
 }

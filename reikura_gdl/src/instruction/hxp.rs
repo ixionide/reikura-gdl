@@ -19,14 +19,17 @@ pub fn hxp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let group_match = match group_match {
         MATCH_ALL => GroupMatch::All,
         MATCH_NONE => GroupMatch::None,
-        MATCH_NOTALL => GroupMatch::NotAll,
-        MATCH_ANY => GroupMatch::Any,
+        MATCH_NOTALL => GroupMatch::Any,
+        MATCH_ANY => GroupMatch::Missing,
         _ => bail!("invalid group match: {group_match}"),
     };
 
-    let should_jump = vm.ctx.flags.check_group(group_index as usize, group_match);
+    // TODO: log
+    let Some(groups) = vm.ctx.flag_groups.get(&group_index) else {
+        return Ok(());
+    };
 
-    if should_jump {
+    if vm.ctx.flags.match_group(group_match, groups) {
         vm.parser.jump_sub(sub_index)?;
     }
 
