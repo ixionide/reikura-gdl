@@ -29,14 +29,20 @@ pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         BLIT_COPY => {
             let dst_id = Some(u8::try_from(value)?);
 
-            vm.gfx
-                .blit_copy_image(src_id, dst_id, BlitParam::new(sx, sy, sw, sh, dx, dy))?;
+            vm.gfx.blit_copy_image(
+                src_id,
+                dst_id,
+                BlitParam::new_offset(sx, sy, sw, sh, dx, dy),
+            )?;
         }
         BLIT_BLEND => {
             let dst_id = Some(u8::try_from(value)?);
 
-            vm.gfx
-                .blit_blend_image(src_id, dst_id, BlitParam::new(sx, sy, sw, sh, dx, dy))?;
+            vm.gfx.blit_blend_image(
+                src_id,
+                dst_id,
+                BlitParam::new_offset(sx, sy, sw, sh, dx, dy),
+            )?;
         }
         TRANSITION_FADE => {
             // let _duration = Duration::from_millis(u64::try_from(value)?);
@@ -44,7 +50,7 @@ pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
 
             // TODO
             vm.gfx
-                .blit_blend_image(src_id, None, BlitParam::new(sx, sy, sw, sh, dx, dy))?
+                .blit_blend_image(src_id, None, BlitParam::new_offset(sx, sy, sw, sh, dx, dy))?
         }
         // TODO: another cmd
         _ if cmd < 30 => bail!("unimplemented cmd: {cmd}"),

@@ -37,12 +37,7 @@ impl Graphics {
         if let Some(main_image) = self.registry.get_main_ref() {
             let w = self.display.width as i32;
             let h = self.display.height as i32;
-
-            blit::copy(
-                main_image,
-                &mut self.display,
-                BlitParam::new(0, 0, w, h, 0, 0),
-            );
+            blit::copy(main_image, &mut self.display, BlitParam::new(0, 0, w, h));
         } else {
             self.display.clear(color::BLACK);
         };
@@ -110,12 +105,21 @@ impl Graphics {
         dst_id: Option<u8>,
         param: BlitParam,
     ) -> Result<()> {
-        let (src, dst) = self
-            .registry
-            .get_pair(src_id, dst_id)
-            .ok_or(anyhow!("failed to get image {src_id} & {dst_id:?}"))?;
+        if dst_id == Some(src_id) {
+            let src = self
+                .registry
+                .get_mut(src_id)
+                .ok_or(anyhow!("failed to get image {src_id}"))?;
 
-        blit::copy(src, dst, param);
+            blit::copy_within(src, param);
+        } else {
+            let (src, dst) = self
+                .registry
+                .get_pair(src_id, dst_id)
+                .ok_or(anyhow!("failed to get image {src_id} & {dst_id:?}"))?;
+
+            blit::copy(src, dst, param);
+        }
 
         if dst_id.is_none() || self.registry.main == dst_id {
             self.update_display();

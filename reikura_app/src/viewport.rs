@@ -1,13 +1,22 @@
+use reikura_gdl::graphic::BlitParam;
+
 pub struct Viewport {
     pub x: u32,
     pub y: u32,
     pub w: u32,
     pub h: u32,
+    pub blit_param: BlitParam,
 }
 
 impl Viewport {
     pub fn new(w: u32, h: u32) -> Self {
-        Self { x: 0, y: 0, w, h }
+        Self {
+            x: 0,
+            y: 0,
+            w,
+            h,
+            blit_param: BlitParam::new(0, 0, w as i32, h as i32),
+        }
     }
 
     pub fn letterbox(window_size: (u32, u32), view_size: (u32, u32)) -> Self {
@@ -19,18 +28,37 @@ impl Viewport {
         let window_scale = window_w / window_h;
         let view_scale = view_w / view_h;
 
-        if window_scale < view_scale {
+        let (x, y, w, h) = if window_scale < view_scale {
             let w = window_w as u32;
             let h = (window_w / view_scale) as u32;
             let x = 0;
             let y = (window_size.1 - h) / 2;
-            Self { x, y, w, h }
+            (x, y, w, h)
         } else {
             let w = (window_h * view_scale) as u32;
             let h = window_h as u32;
             let x = (window_size.0 - w) / 2;
             let y = 0;
-            Self { x, y, w, h }
+            (x, y, w, h)
+        };
+
+        let blit_param = BlitParam::new_scaled(
+            0,
+            0,
+            view_size.0 as i32,
+            view_size.1 as i32,
+            x as i32,
+            y as i32,
+            w as i32,
+            h as i32,
+        );
+
+        Self {
+            x,
+            y,
+            w,
+            h,
+            blit_param,
         }
     }
 
