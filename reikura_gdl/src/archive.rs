@@ -36,6 +36,7 @@ impl VmArchive {
     pub fn get_asset(&mut self, name: &AssetName) -> Result<(String, Vec<u8>)> {
         self.extra
             .iter_mut()
+            .rev()
             .find(|arc| arc.asset_exist(name))
             .unwrap_or(&mut self.main)
             .get_asset(name)
