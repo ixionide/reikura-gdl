@@ -392,12 +392,7 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
             "CALC" => {
                 reikura_util::const_iota! {
                     u8 = iota,
-                    ADD,
-                    MIN,
-                    MUL,
-                    DIV,
-                    MOD,
-                    END,
+                    ADD, MIN, MUL, DIV, MOD, END,
                 }
 
                 let mut buf = String::with_capacity(128);
@@ -448,7 +443,60 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                     fmt.add_param(par);
                 }
             }
-            // "IF"
+            "IF" => {
+                let mut buf = String::with_capacity(128);
+
+                fn read_cond(
+                    parser: &mut ScenarioParser,
+                ) -> anyhow::Result<(Value, &'static str, Value)> {
+                    let lhs: Value = parser.read_param()?;
+                    let op: u8 = parser.read_param()?;
+                    let rhs: Value = parser.read_param()?;
+                    let op = match op {
+                        0 => "==",
+                        1 => "<",
+                        2 => "<=",
+                        3 => ">",
+                        4 => ">=",
+                        5 => "!=",
+                        _ => bail!("unknown if operator: {op}"),
+                    };
+
+                    Ok((lhs, op, rhs))
+                }
+
+                loop {
+                    let (lhs, op, rhs) = read_cond(&mut parser)?;
+                    write!(
+                        buf,
+                        "{} {op} {} THEN ",
+                        display_value(lhs),
+                        display_value(rhs)
+                    )?;
+                    let cmd: u8 = parser.read_param()?;
+                    match cmd {
+                        0 => {
+                            let label: u16 = parser.read_param()?;
+                            buf.write_str(&display_label(label))?;
+                        }
+                        1 => {
+                            let reg_index: u16 = parser.read_param()?;
+                            let reg_value: Value = parser.read_param()?;
+                            write!(buf, "@{reg_index} = {}", display_value(reg_value))?;
+                        }
+                        2 => {
+                            buf.write_str("IF ")?;
+                            continue;
+                        }
+                        _ => bail!("unknown if cmd: {cmd}"),
+                    }
+                    break;
+                }
+
+                let end: u8 = parser.read_param()?;
+                assert!(end == 0xFF);
+                fmt.add_param(buf);
+            }
             "EXA" => {
                 for _ in 0..2 {
                     let par: u16 = parser.read_param()?;

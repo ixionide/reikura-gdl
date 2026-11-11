@@ -472,7 +472,69 @@ fn assemble(
                     fmt.write_num(par);
                 }
             }
-            // "IF"
+            "IF" => {
+                let params = parser.params.to_lowercase();
+                parser.params = "";
+
+                let mut conds: Vec<&str> = params.split("then").map(str::trim).collect();
+                let Some(cmd) = conds.pop() else {
+                    bail!("invalid if instruction syntax")
+                };
+                if conds.is_empty() {
+                    bail!("invalid if instruction syntax")
+                }
+
+                let conds_len = conds.len();
+                'cond: for (i, mut cond) in conds.into_iter().enumerate() {
+                    if i > 0 {
+                        if let Some(strip) = cond.strip_prefix("if").map(str::trim) {
+                            cond = strip;
+                        } else {
+                            bail!("expected if in the condition number {}", i + 1);
+                        }
+                    }
+
+                    for (op_byte, op) in [
+                        (0, "=="),
+                        (2, "<="),
+                        (1, "<"),
+                        (4, ">="),
+                        (3, ">"),
+                        (5u8, "!="),
+                    ] {
+                        if let Some((lhs, rhs)) = cond.split_once(op) {
+                            let lhs = ParamParser::new(lhs.trim()).read_value()?;
+                            let rhs = ParamParser::new(rhs.trim()).read_value()?;
+                            fmt.write_value(lhs).write_num(op_byte).write_value(rhs);
+                            if i + 1 != conds_len {
+                                fmt.write_num(2_u8);
+                            }
+                            continue 'cond;
+                        }
+                    }
+                    bail!("invalid if cond: no operator");
+                }
+
+                if let Some((reg_index, reg_value)) = cmd.split_once('=') {
+                    let reg_index = ParamParser::new(reg_index.trim()).read_value()?;
+                    let reg_value = ParamParser::new(reg_value.trim()).read_value()?;
+                    let Value::Register(reg_index) = reg_index else {
+                        bail!("invalid reg index");
+                    };
+                    fmt.write_num(1_u8)
+                        .write_num(reg_index as u16)
+                        .write_value(reg_value);
+                } else {
+                    if let Ok(label) = ParamParser::new(cmd).read_label() {
+                        let label_index = labels.get_label_index(&label)?;
+                        fmt.write_num(0_u8).write_num(label_index);
+                    } else {
+                        bail!("invalid if cmd")
+                    }
+                }
+
+                fmt.write_num(0xFF_u8);
+            }
             "EXA" => {
                 for _ in 0..2 {
                     let par: u16 = parser.read_num()?;
@@ -1297,7 +1359,7 @@ impl<'a> ParamParser<'a> {
             .next()
             .ok_or_else(|| anyhow!("unexpected end of param"))?;
 
-        if param.starts_with(|a: char| a.is_numeric() || a == '"') {
+        if param.starts_with(|a: char| a.is_numeric() || a == '"') || param.contains(' ') {
             bail!("invalid label {param}");
         }
 
