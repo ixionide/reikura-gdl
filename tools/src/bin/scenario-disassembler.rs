@@ -499,7 +499,36 @@ fn disassemble(outpath: &Path, scenario: Scenario) -> anyhow::Result<()> {
                 fmt.add_param(display_value(value))
                     .add_param(display_assetname(asset)?);
             }
-            // "GP"
+            "GP" => {
+                let cmd: u8 = parser.read_param()?;
+                fmt.add_param(cmd);
+
+                for _ in 0..8 {
+                    let value = parser.read_param()?;
+                    fmt.add_param(display_value(value));
+                }
+
+                match cmd {
+                    0..=14 | 19 | 24..=27 => (),
+                    15..=17 => {
+                        for _ in 0..2 {
+                            let value = parser.read_param()?;
+                            fmt.add_param(display_value(value));
+                        }
+                    }
+                    20 | 21 => {
+                        let value = parser.read_param()?;
+                        fmt.add_param(display_value(value));
+                    }
+                    28 | 29 => {
+                        for _ in 0..4 {
+                            let value = parser.read_param()?;
+                            fmt.add_param(display_value(value));
+                        }
+                    }
+                    _ => bail!("unknown gp cmd {cmd}"),
+                }
+            }
             "GB" => {
                 let value = parser.read_param()?;
                 fmt.add_param(display_value(value));

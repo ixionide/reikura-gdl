@@ -522,7 +522,36 @@ fn assemble(
                 let asset = parser.read_assetname()?;
                 fmt.write_value(value).write_sz_bytes(&asset);
             }
-            // "GP"
+            "GP" => {
+                let cmd: u8 = parser.read_num()?;
+                fmt.write_num(cmd);
+
+                for _ in 0..8 {
+                    let value = parser.read_value()?;
+                    fmt.write_value(value);
+                }
+
+                match cmd {
+                    0..=14 | 19 | 24..=27 => (),
+                    15..=17 => {
+                        for _ in 0..2 {
+                            let value = parser.read_value()?;
+                            fmt.write_value(value);
+                        }
+                    }
+                    20 | 21 => {
+                        let value = parser.read_value()?;
+                        fmt.write_value(value);
+                    }
+                    28 | 29 => {
+                        for _ in 0..4 {
+                            let value = parser.read_value()?;
+                            fmt.write_value(value);
+                        }
+                    }
+                    _ => bail!("invalid gp cmd {cmd}"),
+                }
+            }
             "GB" => {
                 let value = parser.read_value()?;
                 fmt.write_value(value);
