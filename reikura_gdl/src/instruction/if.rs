@@ -24,6 +24,7 @@ reikura_util::const_iota! {
 
 pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let mut conds = Vec::with_capacity(10);
+    let end: u8;
 
     fn read_param_cond(parser: &mut ScenarioParser) -> anyhow::Result<(Value, u8, Value)> {
         let lhs: Value = parser.read_param()?;
@@ -57,6 +58,7 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         match cmd {
             JUMP_SUB => {
                 let sub_index: u16 = vm.parser.read_param()?;
+                end = vm.parser.read_param()?;
 
                 if conds.iter().all(check_cond) {
                     vm.parser.jump_sub(sub_index)?;
@@ -65,6 +67,7 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
             SET_REG => {
                 let reg_index = vm.parser.read_param::<u16>()? as usize;
                 let reg_value: Value = vm.parser.read_param()?;
+                end = vm.parser.read_param()?;
 
                 if conds.iter().all(check_cond) {
                     let reg_value = reg_value.eval(&vm.ctx);
@@ -78,7 +81,6 @@ pub fn r#if(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         break;
     }
 
-    let end: u8 = vm.parser.read_param()?;
     ensure!(end == 255, "IF params isn't terminate properly: {end}");
 
     Ok(())
