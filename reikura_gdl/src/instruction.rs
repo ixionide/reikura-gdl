@@ -41,7 +41,7 @@ inst! {
     timerset, timerend, timerget
 }
 
-pub const INSTRUCTION_SET: [Instruction; 256] = const {
+pub static INSTRUCTION_SET: [Instruction; 256] = const {
     type Inst = Instruction;
     let mut insts = [Inst::INVALID; 256];
 
