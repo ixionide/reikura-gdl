@@ -50,6 +50,10 @@ impl Manifest {
         let mut current_section = &mut root_section;
 
         for line in content.lines().map(str::trim) {
+            if line.is_empty() || line.starts_with(';') {
+                continue;
+            }
+
             if line.starts_with('[') && line.ends_with(']') {
                 current_section = match line {
                     STARTUP_INFO => &mut startup_info_section,
