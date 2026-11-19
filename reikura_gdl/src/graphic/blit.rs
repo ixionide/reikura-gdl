@@ -20,6 +20,9 @@ impl BlitParam {
     pub fn new_scaled(sx: i32, sy: i32, sw: i32, sh: i32, dx: i32, dy: i32, dw: i32, dh: i32) -> Self {
         Self { sx, sy, sw, sh, dx, dy, dw, dh }
     }
+    pub fn dst_region(&self) -> Self {
+        Self::new(self.dx, self.dy, self.dw, self.dh)
+    }
     pub fn is_scaled(&self) -> bool {
         self.sw != self.dw || self.sh != self.dh
     }
@@ -309,7 +312,15 @@ fn blit_scaled<S: AsRef<[u32]>, D: AsMut<[u32]>, const MODE: u8>(
     param: BlitParam,
     alpha: u8,
 ) {
-    if param.sw <= 0 || param.sh <= 0 || param.dw <= 0 || param.dh <= 0 {
+    if param.sx < 0
+        || param.sy < 0
+        || param.sw <= 0
+        || param.sh <= 0
+        || param.dx < 0
+        || param.dy < 0
+        || param.dw <= 0
+        || param.dh <= 0
+    {
         return;
     }
 
@@ -317,34 +328,39 @@ fn blit_scaled<S: AsRef<[u32]>, D: AsMut<[u32]>, const MODE: u8>(
     let dst_buffer = dst.buffer.as_mut();
     let src_stride = src.width as usize;
     let dst_stride = dst.width as usize;
+    let dx = param.dx as usize;
+    let dy = param.dy as usize;
+    let dw = param.dw as usize;
+    let dh = param.dh as usize;
+    let sx = param.sx as usize;
+    let sy = param.sy as usize;
 
-    let dx0 = (param.dx as i64).max(0);
-    let dy0 = (param.dy as i64).max(0);
-    let dx1 = (param.dx as i64 + param.dw as i64).min(dst.width as i64);
-    let dy1 = (param.dy as i64 + param.dh as i64).min(dst.height as i64);
-
-    if dx0 >= dx1 || dy0 >= dy1 {
+    if dx >= dst.width as usize
+        || dy >= dst.height as usize
+        || sx >= src.width as usize
+        || sy >= src.height as usize
+    {
         return;
     }
 
-    let incx = ((param.sw as u64) << 16) / param.dw as u64;
-    let incy = ((param.sh as u64) << 16) / param.dh as u64;
-    let mut posy = incy / 2 + (dy0 - param.dy as i64) as u64 * incy;
+    let w = dw.min(dst.width as usize - dx);
+    let h = dh.min(dst.height as usize - dy);
+    let incx = ((param.sw as u32) << 16) / param.dw as u32;
+    let incy = ((param.sh as u32) << 16) / param.dh as u32;
+    let mut posy = incy / 2;
 
     match MODE {
         COPY => {
-            for dy in dy0..dy1 {
-                let srcy = param.sy as i64 + (posy >> 16) as i64;
-                if srcy >= 0 && srcy < src.height as i64 {
-                    let src_row = srcy as usize * src_stride;
-                    let dst_row = dy as usize * dst_stride;
-                    let mut posx = incx / 2 + (dx0 - param.dx as i64) as u64 * incx;
-                    for dx in dx0..dx1 {
-                        let srcx = param.sx as i64 + (posx >> 16) as i64;
-                        if srcx >= 0 && srcx < src.width as i64 {
-                            let src_idx = src_row + srcx as usize;
-                            let dst_idx = dst_row + dx as usize;
-                            dst_buffer[dst_idx] = src_buffer[src_idx];
+            for y in 0..h {
+                let srcy = sy + (posy >> 16) as usize;
+                if srcy < src.height as usize {
+                    let src_row = srcy * src_stride;
+                    let dst_row = (dy + y) * dst_stride;
+                    let mut posx = incx / 2;
+                    for x in 0..w {
+                        let srcx = sx + (posx >> 16) as usize;
+                        if srcx < src.width as usize {
+                            dst_buffer[dst_row + dx + x] = src_buffer[src_row + srcx];
                         }
                         posx += incx;
                     }
@@ -353,17 +369,17 @@ fn blit_scaled<S: AsRef<[u32]>, D: AsMut<[u32]>, const MODE: u8>(
             }
         }
         BLEND => {
-            for dy in dy0..dy1 {
-                let srcy = param.sy as i64 + (posy >> 16) as i64;
-                if srcy >= 0 && srcy < src.height as i64 {
-                    let src_row = srcy as usize * src_stride;
-                    let dst_row = dy as usize * dst_stride;
-                    let mut posx = incx / 2 + (dx0 - param.dx as i64) as u64 * incx;
-                    for dx in dx0..dx1 {
-                        let srcx = param.sx as i64 + (posx >> 16) as i64;
-                        if srcx >= 0 && srcx < src.width as i64 {
-                            let src_color = src_buffer[src_row + srcx as usize];
-                            let dst_color = &mut dst_buffer[dst_row + dx as usize];
+            for y in 0..h {
+                let srcy = sy + (posy >> 16) as usize;
+                if srcy < src.height as usize {
+                    let src_row = srcy * src_stride;
+                    let dst_row = (dy + y) * dst_stride;
+                    let mut posx = incx / 2;
+                    for x in 0..w {
+                        let srcx = sx + (posx >> 16) as usize;
+                        if srcx < src.width as usize {
+                            let src_color = src_buffer[src_row + srcx];
+                            let dst_color = &mut dst_buffer[dst_row + dx + x];
                             match get_alpha(src_color) {
                                 0x00 => (),
                                 0xFF => *dst_color = src_color,
@@ -377,19 +393,19 @@ fn blit_scaled<S: AsRef<[u32]>, D: AsMut<[u32]>, const MODE: u8>(
             }
         }
         ALPHA => {
-            for dy in dy0..dy1 {
-                let srcy = param.sy as i64 + (posy >> 16) as i64;
-                if srcy >= 0 && srcy < src.height as i64 {
-                    let src_row = srcy as usize * src_stride;
-                    let dst_row = dy as usize * dst_stride;
-                    let mut posx = incx / 2 + (dx0 - param.dx as i64) as u64 * incx;
-                    for dx in dx0..dx1 {
-                        let srcx = param.sx as i64 + (posx >> 16) as i64;
-                        if srcx >= 0 && srcx < src.width as i64 {
-                            let src_color = src_buffer[src_row + srcx as usize];
+            for y in 0..h {
+                let srcy = sy + (posy >> 16) as usize;
+                if srcy < src.height as usize {
+                    let src_row = srcy * src_stride;
+                    let dst_row = (dy + y) * dst_stride;
+                    let mut posx = incx / 2;
+                    for x in 0..w {
+                        let srcx = sx + (posx >> 16) as usize;
+                        if srcx < src.width as usize {
+                            let src_color = src_buffer[src_row + srcx];
                             if get_alpha(src_color) != 0 {
                                 let src_color = mul_alpha(src_color, alpha);
-                                let dst_color = &mut dst_buffer[dst_row + dx as usize];
+                                let dst_color = &mut dst_buffer[dst_row + dx + x];
                                 *dst_color = blend_color(*dst_color, src_color);
                             }
                         }
@@ -404,6 +420,7 @@ fn blit_scaled<S: AsRef<[u32]>, D: AsMut<[u32]>, const MODE: u8>(
 }
 
 #[rustfmt::skip]
+#[inline]
 fn clip_axis(
     mut src: i32, mut dst: i32, mut len: i32, src_end: u32, dst_end: u32,
 ) -> (usize, usize, usize) {

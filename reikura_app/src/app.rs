@@ -152,6 +152,7 @@ impl ApplicationHandler for ReikuraApp {
                 framebuffer.resize_surface(size).unwrap();
                 self.viewport = Viewport::letterbox(size.into(), self.manifest.view_size);
                 self.request_redraw = true;
+                window.request_redraw();
             }
             WindowEvent::PointerMoved { position, .. } => {
                 let mouse_pos = self

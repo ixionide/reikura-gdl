@@ -1,10 +1,9 @@
 #![allow(clippy::too_many_arguments)]
 
 use anyhow::{Result, bail};
-use reikura_util::{
-    image::{blend_premultiplied_color, get_alpha, premul_color},
-    rect::Rect,
-};
+use reikura_util::image::{blend_premultiplied_color, get_alpha, premul_color};
+
+use crate::graphic::BlitParam;
 
 pub const MAX_IMAGE: usize = 128;
 
@@ -15,8 +14,8 @@ pub struct Image<B = Vec<u32>> {
 }
 
 impl<B> Image<B> {
-    pub fn rect(&self) -> Rect {
-        Rect::from_xywh(0, 0, self.width, self.height)
+    pub fn region(&self) -> BlitParam {
+        BlitParam::new(0, 0, self.width as i32, self.height as i32)
     }
 }
 
@@ -135,12 +134,14 @@ impl ImageRegistry {
 
     #[inline]
     #[allow(dead_code)]
-    pub fn get_ref(&self, id: u8) -> Option<&Image> {
+    pub fn get_ref(&self, id: Option<u8>) -> Option<&Image> {
+        let id = id.or(self.main)?;
         self.images[id as usize % MAX_IMAGE].as_ref()
     }
 
     #[inline]
-    pub fn get_mut(&mut self, id: u8) -> Option<&mut Image> {
+    pub fn get_mut(&mut self, id: Option<u8>) -> Option<&mut Image> {
+        let id = id.or(self.main)?;
         self.images[id as usize % MAX_IMAGE].as_mut()
     }
 
@@ -154,16 +155,6 @@ impl ImageRegistry {
         self.images[id as usize % MAX_IMAGE] = Some(image);
 
         Ok(())
-    }
-
-    #[inline]
-    pub fn get_main_ref(&mut self) -> Option<&Image> {
-        self.images[self.main? as usize].as_ref()
-    }
-
-    #[inline]
-    pub fn get_main_mut(&mut self) -> Option<&mut Image> {
-        self.images[self.main? as usize].as_mut()
     }
 
     #[inline]

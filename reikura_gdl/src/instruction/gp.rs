@@ -10,7 +10,6 @@ const BLIT_COPY: u8 = 0;
 const BLIT_BLEND: u8 = 1;
 const TRANSITION_FADE: u8 = 19;
 
-#[allow(unused)]
 pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let (ctx, parser) = (&vm.ctx, &mut vm.parser);
 
@@ -27,30 +26,38 @@ pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let src_id = u8::try_from(src_id_value)?;
     match cmd {
         BLIT_COPY => {
-            let dst_id = Some(u8::try_from(value)?);
-
+            let dst_id = u8::try_from(value)?;
             vm.gfx.blit_copy_image(
                 src_id,
-                dst_id,
+                Some(dst_id),
                 BlitParam::new_offset(sx, sy, sw, sh, dx, dy),
             )?;
         }
         BLIT_BLEND => {
-            let dst_id = Some(u8::try_from(value)?);
-
+            let dst_id = u8::try_from(value)?;
             vm.gfx.blit_blend_image(
                 src_id,
-                dst_id,
+                Some(dst_id),
                 BlitParam::new_offset(sx, sy, sw, sh, dx, dy),
             )?;
         }
         TRANSITION_FADE => {
-            // let _duration = Duration::from_millis(u64::try_from(value)?);
-            let duration = u32::try_from(value)?;
+            let duration_ms = u32::try_from(value)?;
 
-            // TODO
-            vm.gfx
-                .blit_blend_image(src_id, None, BlitParam::new_offset(sx, sy, sw, sh, dx, dy))?
+            if duration_ms != 0 {
+                vm.gfx.start_fade_in_image(
+                    src_id,
+                    BlitParam::new_offset(sx, sy, sw, sh, dx, dy),
+                    duration_ms,
+                )?;
+                vm.runtime.state.wait_transition();
+            } else {
+                vm.gfx.blit_blend_image(
+                    src_id,
+                    None,
+                    BlitParam::new_offset(sx, sy, sw, sh, dx, dy),
+                )?;
+            }
         }
         // TODO: another cmd
         _ if cmd < 30 => bail!("unimplemented cmd: {cmd}"),

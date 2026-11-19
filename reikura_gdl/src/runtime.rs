@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 pub struct Runtime {
-    pub(crate) accumulator: u32,
+    pub(crate) accumulator: Duration,
     pub(crate) current_time: Instant,
     pub(crate) state: State,
     timer: Option<Instant>,
@@ -11,7 +11,7 @@ pub struct Runtime {
 impl Runtime {
     pub fn new() -> Self {
         Self {
-            accumulator: 0,
+            accumulator: Duration::ZERO,
             current_time: Instant::now(),
             state: State::Run,
             timer: None,
@@ -76,6 +76,10 @@ impl State {
 
     pub fn wait_text(&mut self) {
         *self = Self::WaitText;
+    }
+
+    pub fn wait_transition(&mut self) {
+        *self = Self::WaitTransition;
     }
 
     pub fn wait_voice(&mut self) {

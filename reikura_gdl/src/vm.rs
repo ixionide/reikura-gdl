@@ -1,4 +1,7 @@
-use std::{collections::HashMap, time::Instant};
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 
 use anyhow::Context;
 use reikura_util::{
@@ -12,6 +15,7 @@ use crate::{
 };
 
 pub const FRAME_INTERVAL_MS: u32 = 17;
+pub const FRAME_INTERVAL: Duration = Duration::from_millis(FRAME_INTERVAL_MS as u64);
 
 pub struct VmContext {
     pub flags: Flag,
@@ -78,7 +82,7 @@ impl Vm {
             State::Wait => self.runtime.is_wait_finished(),
             State::WaitClick => todo!(),
             State::WaitText => todo!(),
-            State::WaitTransition => todo!(),
+            State::WaitTransition => !self.gfx.is_on_transition(),
             State::WaitVoice => self.audio.track.voice.is_finished(),
             State::WaitVideo => todo!(),
         };
@@ -102,16 +106,15 @@ impl Vm {
 
     pub fn update(&mut self) -> anyhow::Result<()> {
         let now = Instant::now();
-        let frame_time =
-            (now - self.runtime.current_time).as_millis() as u32 + self.runtime.accumulator;
+        self.runtime.accumulator += now - self.runtime.current_time;
         self.runtime.current_time = now;
 
-        if frame_time >= FRAME_INTERVAL_MS {
-            let advance = frame_time / FRAME_INTERVAL_MS;
-            self.gfx.update(advance);
-            self.runtime.accumulator = frame_time % FRAME_INTERVAL_MS;
-        } else {
-            self.runtime.accumulator = frame_time;
+        if self.runtime.accumulator >= FRAME_INTERVAL {
+            let frame_time = self.runtime.accumulator.as_millis() as u32;
+            let frame_step = frame_time / FRAME_INTERVAL_MS;
+            self.gfx.update(frame_step);
+            self.runtime.accumulator =
+                Duration::from_millis((frame_time % FRAME_INTERVAL_MS) as u64);
         }
 
         if self.should_tick() {

@@ -1,19 +1,21 @@
 pub mod blit;
 pub mod color;
 mod image;
+mod transition;
 
 pub use self::{
     blit::BlitParam,
     image::{Image, ImageRegistry, MAX_IMAGE},
 };
 
-use crate::vm::FRAME_INTERVAL_MS;
+use crate::{graphic::transition::Transition, vm::FRAME_INTERVAL_MS};
 use anyhow::{Result, anyhow, bail};
 use reikura_util::image::bgr_color;
 
 pub struct Graphics {
     pub display: Image,
-    _main_temp: Image,
+    transition_source: Image,
+    transition: Option<Transition>,
     _x: u32,
     _y: u32,
     registry: ImageRegistry,
@@ -24,7 +26,8 @@ impl Graphics {
     pub fn new(view_width: u32, view_height: u32) -> Self {
         Self {
             display: Image::new(view_width, view_height),
-            _main_temp: Image::new(view_width, view_height),
+            transition_source: Image::new(view_width, view_height),
+            transition: None,
             _x: 0,
             _y: 0,
             registry: ImageRegistry::new(),
@@ -34,20 +37,52 @@ impl Graphics {
 
     #[inline]
     fn update_display(&mut self) {
-        if let Some(main_image) = self.registry.get_main_ref() {
-            let w = self.display.width as i32;
-            let h = self.display.height as i32;
-            blit::copy(main_image, &mut self.display, BlitParam::new(0, 0, w, h));
+        if let Some(main_image) = self.registry.get_ref(None) {
+            let full_region = self.display.region();
+            blit::copy(main_image, &mut self.display, full_region);
         } else {
             self.display.clear(color::BLACK);
         };
 
-        self.request_redraw = true
+        self.request_redraw = true;
     }
 
-    pub fn update(&mut self, advance: u32) {
-        // let _advance_ms = (advance << 4) + advance;
-        let _advance_ms = advance * FRAME_INTERVAL_MS;
+    pub fn is_on_transition(&self) -> bool {
+        self.transition.is_some()
+    }
+
+    pub fn update(&mut self, frame_step: u32) {
+        let Some(transition) = &mut self.transition else {
+            return;
+        };
+
+        let frame_time = frame_step * FRAME_INTERVAL_MS;
+        transition.advance(frame_time);
+        let finished = transition.is_finished();
+        let alpha = transition.alpha();
+        let full_region = self.display.region();
+
+        if finished {
+            blit::copy(
+                &self.registry.get_ref(None).unwrap(),
+                &mut self.display,
+                full_region,
+            );
+        } else {
+            blit::copy(&self.transition_source, &mut self.display, full_region);
+            blit::blend_alpha(
+                self.registry.get_ref(None).unwrap(),
+                &mut self.display,
+                transition.dirty_region,
+                if finished { 255 } else { alpha },
+            );
+        }
+
+        if finished {
+            self.transition = None;
+        }
+
+        self.request_redraw = true;
     }
 
     pub fn unset_main_image(&mut self) {
@@ -83,16 +118,14 @@ impl Graphics {
         Ok(())
     }
 
-    pub fn clear_image(&mut self, id: u8, (r, g, b): (u8, u8, u8)) -> Result<()> {
-        let color = bgr_color(b, g, r);
-
+    pub fn clear_image(&mut self, id: Option<u8>, r: u8, g: u8, b: u8) -> Result<()> {
         let Some(image) = self.registry.get_mut(id) else {
-            bail!("failed to get image id: {id}");
+            bail!("failed to get image id: {id:?}");
         };
 
-        image.clear(color);
+        image.clear(bgr_color(b, g, r));
 
-        if self.registry.main == Some(id) {
+        if self.registry.main == id {
             self.update_display();
         }
 
@@ -108,7 +141,7 @@ impl Graphics {
         if dst_id == Some(src_id) {
             let src = self
                 .registry
-                .get_mut(src_id)
+                .get_mut(Some(src_id))
                 .ok_or(anyhow!("failed to get image {src_id}"))?;
 
             blit::copy_within(src, param);
@@ -144,6 +177,29 @@ impl Graphics {
         if dst_id.is_none() || self.registry.main == dst_id {
             self.update_display();
         }
+
+        Ok(())
+    }
+
+    pub fn start_fade_in_image(
+        &mut self,
+        src_id: u8,
+        param: BlitParam,
+        duration_ms: u32,
+    ) -> Result<()> {
+        if self.transition.is_some() {
+            bail!("transition already running");
+        }
+
+        let (src, main) = self
+            .registry
+            .get_pair(src_id, None)
+            .ok_or(anyhow!("failed to get image {src_id}"))?;
+        let transition_region = self.transition_source.region();
+
+        blit::copy(main, &mut self.transition_source, transition_region);
+        blit::blend(src, main, param);
+        self.transition = Some(Transition::new(duration_ms, param.dst_region()));
 
         Ok(())
     }
