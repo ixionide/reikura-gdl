@@ -24,7 +24,7 @@ inst! {
     r#if,
     exa, exs, exc,
     //
-    vset, gn, gf, gc, /* gi, go, */ gl, gp,
+    vset, gn, gf, gc, /* gi, */ go, gl, gp,
     //
     ml, mp, mf, ms, ser, sep, sed, pcmon, pcml, pcms, pcmend, ses,
     //
@@ -119,7 +119,7 @@ pub static INSTRUCTION_SET: [Instruction; 256] = const {
     insts[0x52] = Inst::new("GF", gf);
     insts[0x53] = Inst::new("GC", gc);
     insts[0x54] = stub("GI");
-    insts[0x55] = stub("GO");
+    insts[0x55] = Inst::new("GO", go);
     insts[0x56] = Inst::new("GL", gl);
     insts[0x57] = Inst::new("GP", gp);
     insts[0x58] = stub("GB");

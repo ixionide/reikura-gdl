@@ -64,7 +64,7 @@ impl Graphics {
 
         if finished {
             blit::copy(
-                &self.registry.get_ref(None).unwrap(),
+                self.registry.get_ref(None).unwrap(),
                 &mut self.display,
                 full_region,
             );
@@ -200,6 +200,25 @@ impl Graphics {
         blit::copy(main, &mut self.transition_source, transition_region);
         blit::blend(src, main, param);
         self.transition = Some(Transition::new(duration_ms, param.dst_region()));
+
+        Ok(())
+    }
+
+    pub fn start_fade_in_color(&mut self, r: u8, g: u8, b: u8, duration_ms: u32) -> Result<()> {
+        if self.transition.is_some() {
+            bail!("transition already running");
+        }
+
+        let main = self
+            .registry
+            .get_mut(None)
+            .ok_or(anyhow!("failed to get main image"))?;
+
+        let transition_region = self.transition_source.region();
+        blit::copy(main, &mut self.transition_source, transition_region);
+        main.clear(bgr_color(b, g, r));
+
+        self.transition = Some(Transition::new(duration_ms, transition_region));
 
         Ok(())
     }
