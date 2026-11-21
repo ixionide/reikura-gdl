@@ -149,7 +149,7 @@ impl ApplicationHandler for ReikuraApp {
                 window.request_redraw();
             }
             WindowEvent::SurfaceResized(size) => {
-                if size.width <= 0 || size.height <= 0 {
+                if size.width & size.height == 0 {
                     return;
                 }
 
@@ -183,9 +183,7 @@ impl ApplicationHandler for ReikuraApp {
 
                         vm.handle_window_event(VmWindowEvent::Button { button, down });
                     }
-
-                    // TODO
-                    // winit::event::ButtonSource::Touch { finger_id, force } => todo!(),
+                    winit::event::ButtonSource::Touch { .. } => todo!(),
                     _ => (),
                 };
             }

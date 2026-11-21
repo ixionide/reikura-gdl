@@ -88,7 +88,7 @@ impl InputManager {
             };
         };
 
-        return 0;
+        0
     }
 }
 
