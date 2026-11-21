@@ -1,26 +1,19 @@
 use crate::{
-    KeyMap, Vm,
+    Keymap, Vm,
     input::MAX_HOTSPOTS,
-    instruction::{InstructionInfo, Rect, Value},
+    instruction::{InstructionInfo, Value},
 };
 
 pub fn ihk(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let id: u8 = vm.parser.read_param()?;
     let index = id as usize % MAX_HOTSPOTS;
-    let map1 = vm.parser.read_param::<Rect<Value>>()?.eval(&vm.ctx);
-    let map2 = vm.parser.read_param::<Rect<Value>>()?.eval(&vm.ctx);
-    let map: [u8; 8] = [
-        map1.x.try_into()?,
-        map1.y.try_into()?,
-        map1.w.try_into()?,
-        map1.h.try_into()?,
-        map2.x.try_into()?,
-        map2.y.try_into()?,
-        map2.w.try_into()?,
-        map2.h.try_into()?,
-    ];
 
-    vm.input.key_maps[index] = Some(KeyMap { id, map });
+    let mut map: [u8; 8] = [0; 8];
+    for m in &mut map {
+        *m = vm.parser.read_param::<Value>()?.eval(&vm.ctx).try_into()?;
+    }
+
+    vm.input.keymaps[index] = Some(Keymap { id, map });
 
     Ok(())
 }

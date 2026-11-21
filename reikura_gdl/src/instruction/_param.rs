@@ -135,38 +135,3 @@ impl Parameters for ParamString {
         Ok(Self { buffer })
     }
 }
-
-pub struct Rect<T> {
-    pub x: T,
-    pub y: T,
-    pub w: T,
-    pub h: T,
-}
-
-impl Rect<Value> {
-    pub fn eval(&self, ctx: &VmContext) -> Rect<i32> {
-        Rect {
-            x: self.x.eval(ctx),
-            y: self.y.eval(ctx),
-            w: self.w.eval(ctx),
-            h: self.h.eval(ctx),
-        }
-    }
-}
-
-impl<T: Parameters> Parameters for Rect<T> {
-    fn parse(parser: &mut ScenarioParser) -> anyhow::Result<Self> {
-        Ok(Self {
-            x: parser.read_param()?,
-            y: parser.read_param()?,
-            w: parser.read_param()?,
-            h: parser.read_param()?,
-        })
-    }
-}
-
-impl<T> From<Rect<T>> for [T; 4] {
-    fn from(rect: Rect<T>) -> Self {
-        [rect.x, rect.y, rect.w, rect.h]
-    }
-}

@@ -1,5 +1,5 @@
 use crate::{
-    HitMask, Vm,
+    Hitmask, Vm,
     instruction::{AssetName, InstructionInfo, Value},
 };
 
@@ -9,7 +9,7 @@ pub fn ihgl(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let y = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
     let image = vm.assets.load_image(image_name)?;
 
-    vm.input.hit_mask = Some(HitMask { x, y, image });
+    vm.input.hitmask = Some(Hitmask { x, y, image });
 
     Ok(())
 }

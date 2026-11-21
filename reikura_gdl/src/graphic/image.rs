@@ -133,7 +133,6 @@ impl ImageRegistry {
     }
 
     #[inline]
-    #[allow(dead_code)]
     pub fn get_ref(&self, id: Option<u8>) -> Option<&Image> {
         let id = id.or(self.main)?;
         self.images[id as usize % MAX_IMAGE].as_ref()

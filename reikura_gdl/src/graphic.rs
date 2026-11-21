@@ -18,7 +18,7 @@ pub struct Graphics {
     transition: Option<Transition>,
     _x: u32,
     _y: u32,
-    registry: ImageRegistry,
+    images: ImageRegistry,
     pub request_redraw: bool,
 }
 
@@ -30,14 +30,14 @@ impl Graphics {
             transition: None,
             _x: 0,
             _y: 0,
-            registry: ImageRegistry::new(),
+            images: ImageRegistry::new(),
             request_redraw: false,
         }
     }
 
     #[inline]
     fn update_display(&mut self) {
-        if let Some(main_image) = self.registry.get_ref(None) {
+        if let Some(main_image) = self.images.get_ref(None) {
             let full_region = self.display.region();
             blit::copy(main_image, &mut self.display, full_region);
         } else {
@@ -52,6 +52,10 @@ impl Graphics {
     }
 
     pub fn update(&mut self, frame_step: u32) {
+        let Some(main_image) = self.images.get_ref(None) else {
+            return;
+        };
+
         let Some(transition) = &mut self.transition else {
             return;
         };
@@ -63,35 +67,28 @@ impl Graphics {
         let full_region = self.display.region();
 
         if finished {
-            blit::copy(
-                self.registry.get_ref(None).unwrap(),
-                &mut self.display,
-                full_region,
-            );
+            blit::copy(main_image, &mut self.display, full_region);
+            self.transition = None;
         } else {
             blit::copy(&self.transition_source, &mut self.display, full_region);
             blit::blend_alpha(
-                self.registry.get_ref(None).unwrap(),
+                main_image,
                 &mut self.display,
                 transition.dirty_region,
-                if finished { 255 } else { alpha },
+                alpha,
             );
-        }
-
-        if finished {
-            self.transition = None;
         }
 
         self.request_redraw = true;
     }
 
     pub fn unset_main_image(&mut self) {
-        self.registry.unset_main();
+        self.images.unset_main();
         self.update_display();
     }
 
     pub fn set_main_image(&mut self, id: u8, x: u32, y: u32) {
-        self.registry.set_main(id);
+        self.images.set_main(id);
         self._x = x;
         self._y = y;
 
@@ -99,9 +96,9 @@ impl Graphics {
     }
 
     pub fn new_image(&mut self, id: u8, width: u32, height: u32) -> Result<()> {
-        self.registry.set(id, width, height, None)?;
+        self.images.set(id, width, height, None)?;
 
-        if self.registry.main == Some(id) {
+        if self.images.main == Some(id) {
             self.update_display();
         }
 
@@ -109,9 +106,9 @@ impl Graphics {
     }
 
     pub fn set_image(&mut self, id: u8, width: u32, height: u32, data: &[u8]) -> Result<()> {
-        self.registry.set(id, width, height, Some(data))?;
+        self.images.set(id, width, height, Some(data))?;
 
-        if self.registry.main == Some(id) {
+        if self.images.main == Some(id) {
             self.update_display();
         }
 
@@ -119,13 +116,13 @@ impl Graphics {
     }
 
     pub fn clear_image(&mut self, id: Option<u8>, r: u8, g: u8, b: u8) -> Result<()> {
-        let Some(image) = self.registry.get_mut(id) else {
+        let Some(image) = self.images.get_mut(id) else {
             bail!("failed to get image id: {id:?}");
         };
 
         image.clear(bgr_color(b, g, r));
 
-        if self.registry.main == id {
+        if self.images.main == id {
             self.update_display();
         }
 
@@ -140,21 +137,21 @@ impl Graphics {
     ) -> Result<()> {
         if dst_id == Some(src_id) {
             let src = self
-                .registry
+                .images
                 .get_mut(Some(src_id))
-                .ok_or(anyhow!("failed to get image {src_id}"))?;
+                .ok_or_else(|| anyhow!("failed to get image {src_id}"))?;
 
             blit::copy_within(src, param);
         } else {
             let (src, dst) = self
-                .registry
+                .images
                 .get_pair(src_id, dst_id)
-                .ok_or(anyhow!("failed to get image {src_id} & {dst_id:?}"))?;
+                .ok_or_else(|| anyhow!("failed to get image {src_id} & {dst_id:?}"))?;
 
             blit::copy(src, dst, param);
         }
 
-        if dst_id.is_none() || self.registry.main == dst_id {
+        if dst_id.is_none() || self.images.main == dst_id {
             self.update_display();
         }
 
@@ -168,13 +165,13 @@ impl Graphics {
         param: BlitParam,
     ) -> Result<()> {
         let (src, dst) = self
-            .registry
+            .images
             .get_pair(src_id, dst_id)
-            .ok_or(anyhow!("failed to get image {src_id} & {dst_id:?}"))?;
+            .ok_or_else(|| anyhow!("failed to get image {src_id} & {dst_id:?}"))?;
 
         blit::blend(src, dst, param);
 
-        if dst_id.is_none() || self.registry.main == dst_id {
+        if dst_id.is_none() || self.images.main == dst_id {
             self.update_display();
         }
 
@@ -192,9 +189,9 @@ impl Graphics {
         }
 
         let (src, main) = self
-            .registry
+            .images
             .get_pair(src_id, None)
-            .ok_or(anyhow!("failed to get image {src_id}"))?;
+            .ok_or_else(|| anyhow!("failed to get image {src_id}"))?;
         let transition_region = self.transition_source.region();
 
         blit::copy(main, &mut self.transition_source, transition_region);
@@ -210,9 +207,9 @@ impl Graphics {
         }
 
         let main = self
-            .registry
+            .images
             .get_mut(None)
-            .ok_or(anyhow!("failed to get main image"))?;
+            .ok_or_else(|| anyhow!("failed to get main image"))?;
 
         let transition_region = self.transition_source.region();
         blit::copy(main, &mut self.transition_source, transition_region);

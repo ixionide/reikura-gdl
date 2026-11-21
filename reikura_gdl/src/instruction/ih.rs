@@ -2,9 +2,9 @@ use anyhow::bail;
 use reikura_util::const_iota;
 
 use crate::{
-    HotSpot, Vm,
+    Hotspot, Vm,
     input::{MAX_HOTSPOTS, StateStorage},
-    instruction::{InstructionInfo, Rect, Value},
+    instruction::{InstructionInfo, Value},
 };
 
 const_iota! {
@@ -15,7 +15,10 @@ const_iota! {
 
 pub fn ih(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let id: u8 = vm.parser.read_param()?;
-    let rect: Rect<Value> = vm.parser.read_param()?;
+    let x = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
+    let y = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
+    let w = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
+    let h = vm.parser.read_param::<Value>()?.eval(&vm.ctx);
     let state_storage: u8 = vm.parser.read_param::<u8>()?;
     let state_index = vm.parser.read_param::<u16>()? as usize;
     let _unknown: [u8; 3] = vm.parser.read_param()?;
@@ -27,9 +30,9 @@ pub fn ih(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
         _ => bail!("unknown hotspot state storage: {state_storage}"),
     };
 
-    vm.input.hot_spots[index] = Some(HotSpot {
+    vm.input.hotspots[index] = Some(Hotspot {
         id,
-        rect: rect.eval(&vm.ctx).into(),
+        rect: [x, y, w, h],
         state_storage,
         state_index,
         _unknown,

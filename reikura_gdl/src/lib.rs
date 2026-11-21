@@ -22,7 +22,7 @@ pub use self::{
     audio::{Audio, AudioManager},
     cache::CacheManager,
     image::{Image, ImageDecoder},
-    input::{HitMask, HotSpot, InputManager, KeyMap},
+    input::{Hitmask, Hotspot, InputManager, Keymap},
     manifest::Manifest,
     parser::{Parser, ScenarioParser},
     runtime::{Runtime, State},
