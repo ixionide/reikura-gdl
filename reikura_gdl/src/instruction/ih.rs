@@ -9,8 +9,8 @@ use crate::{
 
 const_iota! {
     u8 = iota,
-    REGISTER,
     FLAG,
+    REGISTER,
 }
 
 pub fn ih(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
@@ -25,8 +25,8 @@ pub fn ih(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
     let index = id as usize % MAX_HOTSPOTS;
 
     let state_storage = match state_storage {
-        REGISTER => StateStorage::Register,
         FLAG => StateStorage::Flag,
+        REGISTER => StateStorage::Register,
         _ => bail!("unknown hotspot state storage: {state_storage}"),
     };
 

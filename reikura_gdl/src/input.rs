@@ -102,8 +102,8 @@ pub struct Hotspot {
 
 #[repr(u8)]
 pub enum StateStorage {
-    Register,
     Flag,
+    Register,
 }
 
 impl Hotspot {
