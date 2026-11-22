@@ -17,6 +17,7 @@ pub enum Button {
 pub struct InputManager {
     // inputs: HashMap<Input, InputState>,
     focused: Option<u8>,
+    // TODO: refactor
     button: Option<ButtonState>,
     pub default_key_map: Option<u8>,
     pub keymaps: [Option<Keymap>; MAX_HOTSPOTS],
@@ -38,8 +39,12 @@ impl InputManager {
         }
     }
 
-    pub(crate) fn cursor_left(&mut self) {
+    pub(crate) fn reset_cursor_pos(&mut self) {
         self.cursor_pos = None;
+    }
+
+    pub(crate) fn reset_focused(&mut self) {
+        self.focused = None;
     }
 
     pub(crate) fn set_cursor_position(&mut self, x: i32, y: i32) {
@@ -50,13 +55,16 @@ impl InputManager {
         self.button = Some(ButtonState { button, down });
     }
 
-    pub fn get_selected(&self, vm_ctx: &VmContext, check_count: u8) -> i32 {
+    pub fn get_active_hotspot(&self, vm_ctx: &VmContext, check_count: u8) -> i32 {
+        const CURSOR_OUTSIDE: i32 = -2;
+        const HOTSPOT_NONE: i32 = 0;
+
         if let Some(focused_id) = self.focused {
             return focused_id as i32;
         }
 
         let Some((x, y)) = self.cursor_pos else {
-            return -2;
+            return CURSOR_OUTSIDE;
         };
 
         let hovered_id = self.hitmask.as_ref().and_then(|hm| hm.get(x, y));
@@ -74,21 +82,25 @@ impl InputManager {
             }
         }
 
-        -1
+        HOTSPOT_NONE
     }
 
-    pub fn get_button_state(&self) -> i32 {
+    pub fn get_action(&self) -> i32 {
+        const ACTION_CANCEL: i32 = -1;
+        const ACTION_NONE: i32 = 0;
+        const ACTION_ADVANCE: i32 = 2;
+
         if let Some(state) = &self.button
             && state.down
         {
             // is this correct what about the other? enter key?
             return match state.button {
-                Button::Left => 2,
-                Button::Right => -1,
+                Button::Left => ACTION_ADVANCE,
+                Button::Right => ACTION_CANCEL,
             };
         };
 
-        0
+        ACTION_NONE
     }
 }
 

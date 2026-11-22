@@ -133,13 +133,23 @@ impl Vm {
 
     pub fn handle_window_event(&mut self, event: WindowEvent) {
         match event {
+            WindowEvent::Button { button, down } => {
+                self.input.reset_focused();
+                self.input.set_button_state(button, down)
+            }
             WindowEvent::Close => self.runtime.state.exit(),
             WindowEvent::CursorMove { x, y } => {
                 // TODO: interact with choice
+                self.input.reset_focused();
                 self.input.set_cursor_position(x, y);
             }
-            WindowEvent::CursorLeave => self.input.cursor_left(),
-            WindowEvent::Button { button, down } => self.input.set_button_state(button, down),
+            WindowEvent::CursorLeave => {
+                self.input.reset_focused();
+                self.input.reset_cursor_pos();
+            }
+            WindowEvent::Focused(_) => {
+                // TODO
+            }
         }
     }
 }

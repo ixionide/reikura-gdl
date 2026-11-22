@@ -194,8 +194,11 @@ impl ApplicationHandler for ReikuraApp {
                     .map_position(self.manifest.view_size, position.into());
                 vm.handle_window_event(VmWindowEvent::CursorMove { x, y });
             }
-            WindowEvent::PointerLeft { .. } | WindowEvent::Focused(false) => {
+            WindowEvent::PointerLeft { .. } => {
                 vm.handle_window_event(VmWindowEvent::CursorLeave);
+            }
+            WindowEvent::Focused(focused) => {
+                vm.handle_window_event(VmWindowEvent::Focused(focused));
             }
             _ => (),
         }
