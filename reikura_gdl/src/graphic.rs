@@ -163,13 +163,18 @@ impl Graphics {
         src_id: u8,
         dst_id: Option<u8>,
         param: BlitParam,
+        alpha: Option<u8>,
     ) -> Result<()> {
         let (src, dst) = self
             .images
             .get_pair(src_id, dst_id)
             .ok_or_else(|| anyhow!("failed to get image {src_id} & {dst_id:?}"))?;
 
-        blit::blend(src, dst, param);
+        if let Some(alpha) = alpha {
+            blit::blend_alpha(src, dst, param, alpha);
+        } else {
+            blit::blend(src, dst, param);
+        }
 
         if dst_id.is_none() || self.images.main == dst_id {
             self.update_display();
