@@ -46,19 +46,6 @@ pub const fn premul_color(color: u32) -> u32 {
 }
 
 #[inline]
-pub const fn blend_color(bg: u32, fg: u32) -> u32 {
-    let [fg_b, fg_g, fg_r, fg_a] = unpack_color(premul_color(fg));
-    let [bg_b, bg_g, bg_r, bg_a] = unpack_color(bg);
-
-    bgra_color(
-        mul_div_255(255 - fg_a, bg_b) + fg_b,
-        mul_div_255(255 - fg_a, bg_g) + fg_g,
-        mul_div_255(255 - fg_a, bg_r) + fg_r,
-        mul_div_255(255 - fg_a, bg_a) + fg_a,
-    )
-}
-
-#[inline]
 pub const fn blend_premultiplied_color(bg: u32, fg: u32) -> u32 {
     let [bg_b, bg_g, bg_r, bg_a] = unpack_color(bg);
     let [fg_b, fg_g, fg_r, fg_a] = unpack_color(fg);
@@ -69,6 +56,11 @@ pub const fn blend_premultiplied_color(bg: u32, fg: u32) -> u32 {
         mul_div_255(255 - fg_a, bg_r) + fg_r,
         mul_div_255(255 - fg_a, bg_a) + fg_a,
     )
+}
+
+#[inline]
+pub const fn blend_color(bg: u32, fg: u32) -> u32 {
+    blend_premultiplied_color(bg, premul_color(fg))
 }
 
 #[inline]
