@@ -57,7 +57,7 @@ impl InputManager {
 
     pub fn get_active_hotspot(&self, vm_ctx: &VmContext, check_count: u8) -> i32 {
         const CURSOR_OUTSIDE: i32 = -2;
-        const HOTSPOT_NONE: i32 = 0;
+        const HOTSPOT_NONE: i32 = -1;
 
         if let Some(focused_id) = self.focused {
             return focused_id as i32;

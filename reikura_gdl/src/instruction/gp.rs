@@ -25,7 +25,12 @@ pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
 
     let src_id = u8::try_from(src_id_value)?;
     match cmd {
-        BLIT_COPY => {
+        BLIT_COPY | 20 => {
+            if cmd == 20 {
+                // TODO: figure out what is this
+                let _value = parser.read_param::<Value>()?.eval(ctx);
+            }
+
             let dst_id = u8::try_from(value)?;
             vm.gfx.blit_copy_image(
                 src_id,
@@ -33,7 +38,12 @@ pub fn gp(vm: &mut Vm, _info: InstructionInfo) -> anyhow::Result<()> {
                 BlitParam::new_offset(sx, sy, sw, sh, dx, dy),
             )?;
         }
-        BLIT_BLEND => {
+        BLIT_BLEND | 21 => {
+            if cmd == 21 {
+                // TODO: figure out what is this
+                let _value = parser.read_param::<Value>()?.eval(ctx);
+            }
+
             let dst_id = u8::try_from(value)?;
             vm.gfx.blit_blend_image(
                 src_id,

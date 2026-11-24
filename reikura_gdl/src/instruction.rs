@@ -303,6 +303,7 @@ impl Instruction {
         // let offset = ip + vm.parser.scenario.metadata.code_offset;
         // dbg!(ip);
         // dbg!(offset);
+        // dbg!("=========");
 
         // end of scenario
         if info.len == 0 {
@@ -314,7 +315,9 @@ impl Instruction {
 
         if vm.parser.scenario.is_debug_version() {
             if let Err(err) = result {
+                dbg!(self.name);
                 dbg!(err);
+                dbg!("=========");
                 vm.parser.state.ip = next_ip
             }
         } else {

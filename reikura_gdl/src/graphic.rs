@@ -122,7 +122,7 @@ impl Graphics {
 
         image.clear(bgr_color(b, g, r));
 
-        if self.images.main == id {
+        if id.is_none() || self.images.main == id {
             self.update_display();
         }
 
